@@ -1,0 +1,57 @@
+name: MVG
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - amaraw.com
+      - blackcockpassion.com
+      - gogayguy.com
+      - iluvmilfs.com
+      - iluvteens.com
+      - italianshotclub.com
+      - lesbiantribe.com
+      - myslutwifegoesblack.com
+      - oblackgirls.com
+      - oblowjobs.com
+      - pornlandvideos.com
+      - sologirlsmania.com
+      - upshemale.com
+      - vangoren.com
+    scraper: sceneScraper
+xPathScrapers:
+  sceneScraper:
+    scene:
+      Title:
+        selector: //h1
+      Date: 
+        selector: //span[@class='date']
+        postProcess:
+          - parseDate: 2-January-2006
+      Performers:
+        Name: //div[@class="starring"]//a
+      Tags:
+        Name: //div[contains(@class,'genres') or contains(@class,'tags')]//a | //span[i[contains(@class,'fa-tag')]]/a
+      Details:
+        selector: //div[@class='description']//p
+      Image:
+        selector: //meta[@property="og:image"]/@content
+      Studio:
+        Name:
+          selector: //title
+          postProcess:
+            - replace:
+                - regex: .+\|([^\|]+?)(\.com)?$
+                  with: $1
+                - regex: '([a-z])([A-Z])'
+                  with: $1 $2
+            - map:
+               AMARAW: AMARaw
+               BLACKCOCKPASSION: Black Cock Passion
+               Gogayguy: Go Gay Guy
+               ILUVMILFS: I Luv Milfs
+               Iluvteens: I Luv Teens
+               italianshotclub: Italian Hot Club
+               oblackgirls : O Black Girls
+               oblowjobs: O Blowjobs
+               Pornlandvideos: Porn Land Videos
+               Upshemale: Up Shemale
+# Last Updated April 25, 2024

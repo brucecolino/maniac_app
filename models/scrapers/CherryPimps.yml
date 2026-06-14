@@ -1,0 +1,65 @@
+name: CherryPimps
+galleryByURL:
+  - action: scrapeXPath
+    url: &urls
+      - cherrypimps.com/trailers/
+    scraper: galleryScraper
+sceneByURL:
+  - action: scrapeXPath
+    url: *urls
+    scraper: sceneScraper
+
+xPathScrapers:
+  galleryScraper:
+    gallery:
+      Title: &titleSel //div[@class='item-title']/h1/text()
+      Studio: &studioAttr
+        Name:
+          selector: //a[contains(@href, 'cherrypimps.com/series/')]/@title
+          postProcess:
+            - map:
+                CherryPimps : "Cherry Pimps"
+                Alt         : "Alt" 
+                BCM         : "BCM.XXX"
+                Bush        : "Bush"
+                Busted      : "Busted"
+                Cheese      : "Cheese"
+                Confessions : "Confessions.XXX"
+                Cucked      : "Cucked.XXX"
+                Drilled     : "Drilled.XXX"
+                Ebony xxx   : "Ebony"
+                Exotic      : "Exotic"
+                Femme       : "Femme"
+                Fresh       : "Fresh"
+                Ginger      : "Ginger"
+                Milf xxx    : "MILF"
+                Pegged      : "Pegged"
+                Petite      : "Petite.XXX"
+                Taboo       : "Taboo"
+                Cherry spot : "Cherry Spot"
+                Archives    : "CherryPimps Archives"
+                Wild on cam : "Wild on Cam"
+                COTM        : "Cherry of the Month"
+      Date: &dateAttr
+        selector: //i[@class='fa fa-calendar']/following-sibling::strong/following-sibling::text()
+        postProcess:
+          - parseDate: January 2, 2006
+      Performers: &perfAttr
+        Name: //div[@class='update-info-block models-list-thumbs']//span/text()
+      Details: &detailsSel //h4[normalize-space('Description:')]/following-sibling::p/text()
+      Tags: &tagsAttr
+        Name:
+          selector: //ul[@class='tags']/li/a/text()
+
+  sceneScraper:
+    scene:
+      Title: *titleSel
+      Studio: *studioAttr
+      Date: *dateAttr
+      Performers: *perfAttr
+      Details: *detailsSel
+      Tags: *tagsAttr
+      Image:
+        selector: //div[@class="player-thumb"]/img/@src0_1x
+        
+# Last Updated January 19, 2024

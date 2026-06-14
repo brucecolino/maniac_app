@@ -1,0 +1,50 @@
+name: 'MPL Studios'
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - mplstudios.com/update
+    scraper: sceneScraper
+
+galleryByURL:
+  - action: scrapeXPath
+    url:
+      - mplstudios.com/update
+    scraper: galleryScraper
+
+xPathScrapers:
+  sceneScraper:
+    scene:
+      Title: &title //div[contains(@class,'bg-panel')]/div[2]/span/text()
+      Date: &date
+        selector: //div[@class="me-3"]/text()
+        postProcess:
+          - replace:
+            - regex: (\d+)[a-z]+
+              with: $1
+          - parseDate: Jan 2, 2006
+      Performers: &performers
+        Name: //div[contains(@class,'bg-panel')]/div[1]/span/text()
+      Image: //div[@class='container-fluid']//img/@src
+      Tags: &tags 
+        Name: //div[@id='updateTags']/a
+      Studio: &studio
+        Name:
+          fixed: "MPL Studios"
+      Code: &code 
+        selector: //script[contains(.,'idNumber')]
+        postProcess:
+          - replace:
+              - regex: .+?idNumber\s*=\s*"([^"]+).+
+                with: $1
+  galleryScraper:
+    gallery:
+      Title: *title
+      Studio: *studio
+      Date: *date
+      Details: //div[@id="update_text"]/text()
+      Performers: *performers
+      Photographer: //span[contains(.,'Photographer')]/a
+      Code: *code
+      Tags: *tags
+
+# Last Updated May 13, 2024

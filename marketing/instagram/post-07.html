@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Maniac — Post 07 Color Grading</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1080px; height: 1080px; overflow: hidden;
+    background: #0A0A0F;
+    font-family: 'Inter', sans-serif;
+  }
+  .frame { position: absolute; inset: 40px; border: 1px solid rgba(139,111,209,0.12); border-radius: 24px; pointer-events: none; }
+
+  .logo-small { position: absolute; top: 64px; left: 72px; display: flex; align-items: center; gap: 10px; }
+  .logo-small img { width: 28px; height: 28px; filter: drop-shadow(0 0 8px rgba(139,111,209,0.6)); }
+  .logo-small span { font-size: 13px; font-weight: 800; color: #8B6FD1; letter-spacing: 1px; }
+  .top-label { position: absolute; top: 72px; right: 72px; font-size: 12px; font-weight: 600; letter-spacing: 4px; color: rgba(139,111,209,0.6); text-transform: uppercase; }
+
+  /* Split frame */
+  .split-frame {
+    position: absolute;
+    top: 140px; left: 80px; right: 80px;
+    height: 440px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(139,111,209,0.15);
+  }
+
+  /* Before side */
+  .side-before {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 50%;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
+    filter: saturate(0.3) brightness(0.7);
+    display: flex; align-items: flex-end; padding: 20px;
+  }
+
+  /* After side */
+  .side-after {
+    position: absolute; right: 0; top: 0; bottom: 0; width: 50%;
+    background: linear-gradient(135deg, #2d1b4e 0%, #1a0533 20%, #3d1a6e 50%, #1e0840 80%, #2a1052 100%);
+    filter: saturate(1.6) brightness(1.1) contrast(1.1);
+    display: flex; align-items: flex-end; padding: 20px; justify-content: flex-end;
+  }
+
+  /* Fake scene elements */
+  .scene-el {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(40px);
+  }
+
+  /* Cityscape silhouette */
+  .city {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 120px;
+  }
+
+  .label-badge {
+    font-size: 13px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase;
+    padding: 8px 18px; border-radius: 8px;
+    position: relative; z-index: 2;
+  }
+  .label-before { background: rgba(0,0,0,0.5); color: rgba(255,255,255,0.5); }
+  .label-after { background: rgba(139,111,209,0.8); color: #fff; }
+
+  /* Center divider */
+  .divider-line {
+    position: absolute; left: 50%; top: 0; bottom: 0; width: 2px;
+    background: #8B6FD1;
+    box-shadow: 0 0 12px rgba(139,111,209,1), 0 0 24px rgba(139,111,209,0.5);
+    z-index: 10;
+    transform: translateX(-50%);
+  }
+  .divider-handle {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #8B6FD1;
+    box-shadow: 0 0 16px rgba(139,111,209,0.8);
+    z-index: 11;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 12px; font-weight: 700;
+  }
+
+  /* Sliders panel */
+  .sliders-panel {
+    position: absolute;
+    top: 608px; left: 80px; right: 80px;
+    background: #14141C;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+  }
+  .sp-item { display: flex; flex-direction: column; gap: 8px; }
+  .sp-name { font-size: 11px; font-weight: 700; color: #60607A; text-transform: uppercase; letter-spacing: 1px; }
+  .sp-track { height: 4px; background: rgba(255,255,255,0.06); border-radius: 4px; position: relative; }
+  .sp-fill { height: 100%; border-radius: 4px; background: #8B6FD1; }
+  .sp-thumb { position: absolute; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2px solid #8B6FD1; }
+  .sp-val { font-size: 13px; font-weight: 700; color: #F2F2F5; }
+  .sp-val.pos { color: #8B6FD1; }
+
+  /* Bottom */
+  .bottom { position: absolute; bottom: 72px; left: 80px; right: 80px; }
+  .headline { font-size: 46px; font-weight: 800; color: #F2F2F5; line-height: 1.1; margin-bottom: 12px; }
+  .headline em { color: #8B6FD1; font-style: normal; }
+  .sub-caption { font-size: 16px; color: #60607A; }
+</style>
+</head>
+<body>
+  <div class="frame"></div>
+  <div class="logo-small"><img src="../../assets/maniac_logo.png" alt=""><span>MANIAC</span></div>
+  <div class="top-label">Feature #6</div>
+
+  <div class="split-frame">
+    <div class="side-before">
+      <!-- Background scene elements -->
+      <div class="scene-el" style="width:200px;height:200px;background:#1a1a3e;top:-20px;left:30px;"></div>
+      <div class="scene-el" style="width:150px;height:150px;background:#16213e;top:50px;right:40px;"></div>
+      <svg class="city" viewBox="0 0 540 120" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="60" width="40" height="60" fill="rgba(10,10,20,0.8)"/>
+        <rect x="30" y="40" width="20" height="80" fill="rgba(10,10,20,0.9)"/>
+        <rect x="80" y="70" width="30" height="50" fill="rgba(10,10,20,0.8)"/>
+        <rect x="120" y="45" width="50" height="75" fill="rgba(10,10,20,0.9)"/>
+        <rect x="130" y="30" width="30" height="90" fill="rgba(10,10,20,0.85)"/>
+        <rect x="185" y="55" width="35" height="65" fill="rgba(10,10,20,0.8)"/>
+        <rect x="230" y="35" width="45" height="85" fill="rgba(10,10,20,0.9)"/>
+        <rect x="285" y="65" width="25" height="55" fill="rgba(10,10,20,0.8)"/>
+        <rect x="320" y="40" width="40" height="80" fill="rgba(10,10,20,0.85)"/>
+        <rect x="370" y="50" width="50" height="70" fill="rgba(10,10,20,0.9)"/>
+        <rect x="430" y="30" width="35" height="90" fill="rgba(10,10,20,0.85)"/>
+        <rect x="475" y="55" width="45" height="65" fill="rgba(10,10,20,0.8)"/>
+      </svg>
+      <div class="label-badge label-before">Prima</div>
+    </div>
+    <div class="side-after">
+      <div class="scene-el" style="width:250px;height:250px;background:rgba(139,111,209,0.3);top:-30px;right:-20px;"></div>
+      <div class="scene-el" style="width:180px;height:180px;background:rgba(100,60,180,0.2);top:80px;left:10px;"></div>
+      <svg class="city" viewBox="0 0 540 120" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="60" width="40" height="60" fill="rgba(30,10,60,0.9)"/>
+        <rect x="10" y="40" width="20" height="80" fill="rgba(40,15,80,0.95)"/>
+        <rect x="60" y="70" width="30" height="50" fill="rgba(30,10,60,0.9)"/>
+        <rect x="100" y="45" width="50" height="75" fill="rgba(40,15,80,0.95)"/>
+        <rect x="110" y="30" width="30" height="90" fill="rgba(50,20,90,0.9)"/>
+        <rect x="165" y="55" width="35" height="65" fill="rgba(30,10,60,0.9)"/>
+        <rect x="210" y="35" width="45" height="85" fill="rgba(40,15,80,0.95)"/>
+        <rect x="265" y="65" width="25" height="55" fill="rgba(30,10,60,0.9)"/>
+        <rect x="300" y="40" width="40" height="80" fill="rgba(50,20,90,0.9)"/>
+        <rect x="350" y="50" width="50" height="70" fill="rgba(40,15,80,0.95)"/>
+        <rect x="410" y="30" width="35" height="90" fill="rgba(30,10,60,0.9)"/>
+        <rect x="455" y="55" width="85" height="65" fill="rgba(40,15,80,0.9)"/>
+        <!-- Window lights -->
+        <rect x="115" y="50" width="4" height="4" fill="rgba(139,111,209,0.8)"/>
+        <rect x="125" y="60" width="4" height="4" fill="rgba(139,111,209,0.6)"/>
+        <rect x="215" y="55" width="4" height="4" fill="rgba(166,143,224,0.9)"/>
+        <rect x="225" y="45" width="4" height="4" fill="rgba(139,111,209,0.7)"/>
+        <rect x="305" y="60" width="4" height="4" fill="rgba(139,111,209,0.8)"/>
+        <rect x="415" y="48" width="4" height="4" fill="rgba(166,143,224,0.9)"/>
+      </svg>
+      <div class="label-badge label-after">Dopo</div>
+    </div>
+    <div class="divider-line"></div>
+    <div class="divider-handle">⇔</div>
+  </div>
+
+  <div class="sliders-panel">
+    <div class="sp-item">
+      <div class="sp-name">Brightness</div>
+      <div class="sp-track"><div class="sp-fill" style="width:58%"></div><div class="sp-thumb" style="left:calc(58%-6px)"></div></div>
+      <div class="sp-val pos">+15%</div>
+    </div>
+    <div class="sp-item">
+      <div class="sp-name">Contrast</div>
+      <div class="sp-track"><div class="sp-fill" style="width:65%"></div><div class="sp-thumb" style="left:calc(65%-6px)"></div></div>
+      <div class="sp-val pos">+22%</div>
+    </div>
+    <div class="sp-item">
+      <div class="sp-name">Saturation</div>
+      <div class="sp-track"><div class="sp-fill" style="width:75%"></div><div class="sp-thumb" style="left:calc(75%-6px)"></div></div>
+      <div class="sp-val pos">+40%</div>
+    </div>
+    <div class="sp-item">
+      <div class="sp-name">Hue</div>
+      <div class="sp-track"><div class="sp-fill" style="width:52%"></div><div class="sp-thumb" style="left:calc(52%-6px)"></div></div>
+      <div class="sp-val">+8°</div>
+    </div>
+    <div class="sp-item">
+      <div class="sp-name">Gamma</div>
+      <div class="sp-track"><div class="sp-fill" style="width:60%"></div><div class="sp-thumb" style="left:calc(60%-6px)"></div></div>
+      <div class="sp-val pos">1.2</div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="headline"><em>Color grading</em><br>in tempo reale.</div>
+    <div class="sub-caption">Nessun export · Nessuna attesa · Per ogni player indipendente</div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=../validator/scraper.schema.json
+name: FuckPassVR
+sceneByName:
+  action: scrapeXPath
+  scraper: sceneByName
+  queryURL: https://www.fuckpassvr.com/destination?s={}
+sceneByQueryFragment:
+  action: scrapeXPath
+  scraper: fuckpassvrScraper
+  queryURL: "{url}"
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - fuckpassvr.com/video/
+    scraper: fuckpassvrScraper
+performerByName:
+  action: scrapeXPath
+  scraper: sceneByName
+  queryURL: https://www.fuckpassvr.com/destination?s={}
+performerByURL:
+  - action: scrapeXPath
+    url:
+      - fuckpassvr.com/vr-pornstars/
+    scraper: fuckpassvrScraper
+xPathScrapers:
+  sceneByName:
+    common:
+      $card: //div[contains(@class, "videos__element")]
+    performer:
+      Name: $card//a[contains(@href, "/vr-pornstars/")]/text()
+      URLs: $card//a[contains(@href, "/vr-pornstars/")]/@href
+    scene:
+      Title: $card//a[@class="videos__videoTitle"]
+      URL: $card//a/@href
+      Image: $card//img/@src
+  fuckpassvrScraper:
+    performer:
+      Name: //h1
+      Measurements: //p[contains(text(), "Measurements:")]/span/text()
+      Height: //p[contains(text(), "Height:")]/span/text()
+      Weight: //p[contains(text(), "Weight:")]/span/text()
+      EyeColor: //p[contains(text(), "Eye Color:")]/span/text()
+      HairColor: //p[contains(text(), "Hair Color:")]/span/text()
+      Country: //p[contains(text(), "Country:")]/span/text()
+      Image: //div[@class="pornstar"]/img/@src
+      Gender:
+        fixed: Female
+      URLs: //div[@class="pornstar__wrapper"]//div[contains(@class, "shareBtn__shareElement--copy")]/@data-url
+    scene:
+      Title: //h1[@class='video__title']
+      Details:
+        selector: //meta[@property="og:description"]/@content
+        postProcess:
+          - replace:
+              # maintain line breaks
+              - regex: (<br>|</p>)
+                with: "\n"
+              # strip any remaining tags
+              - regex: <[^>]+>
+                with: ""
+          - javascript: |
+              if (value && value.length) {
+                // HTML entity decode
+                const map = {
+                  '&amp;': '&',
+                  '&lt;': '<',
+                  '&gt;': '>',
+                  '&quot;': '"',
+                  '&#39;': "'"
+                };
+                return value.replace(/&(?:amp|lt|gt|quot|#39);/g, m => map[m]);
+              }
+      Tags:
+        Name:
+          selector: //p[span[text()="Tags:"]]/*/text()
+          postProcess:
+            - replace:
+                # this is a "hack" to add a fixed tag to the list of tags
+                - regex: ^Tags:$
+                  with: Virtual Reality
+      Performers:
+        Name: //div[@class="models"]/a//text()
+      Image:
+        selector: &imageSel //div[@class='video__videoWrapper']/pornhall-player/@poster
+        postProcess:
+          - replace:
+              - regex: "'"
+                with: ""
+      Studio:
+        Name:
+          fixed: FuckPassVR
+      Date:
+        selector: //span[text()="Released:"]//following-sibling::text()
+        postProcess:
+          - parseDate: Jan 2 2006
+      Code:
+        selector: *imageSel
+        postProcess:
+          - replace:
+              - regex: .*/scenes/([^/]*)/.*
+                with: $1
+      URL: //link[@rel="canonical"]/@href
+# Last Updated January 21, 2026

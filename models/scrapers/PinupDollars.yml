@@ -1,0 +1,38 @@
+name: Pinupdollars
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - lanakendrick.com
+      - leannecrow.com
+      - monicamendez.com
+      - pinupfiles.com
+      - rachelaldana.com
+      - tessafowler.com
+    scraper: sceneScraper
+xPathScrapers:
+  sceneScraper:
+    scene:
+      Title:
+        selector: //div[@class='item-title']/h1
+      Date:
+        selector: //div[@class="update-info-row"]/strong[contains(.,"Added:")]/following-sibling::text()
+        postProcess:
+          - parseDate: January 2, 2006
+      Performers:
+        Name: //div[@class="update-info-block models-list-thumbs"]//a
+      Details:
+        selector: //div[@class="update-info-block"]/h3[contains(.,"Description:")]/following-sibling::text()
+        concat: "\n\n"
+      Tags:
+        Name: //ul[@class="tags"]//a
+      Image:
+        selector: //base/@href | //div[@id="fakeplayer"]//img[@id]/@src0_1x
+        concat: __SEPARATOR__
+        postProcess:
+          - replace:
+              - regex: __SEPARATOR__
+                with: ""
+      Studio:
+        Name:
+          selector: //meta[@name="author"]/@content
+# Last Updated March 01, 2024

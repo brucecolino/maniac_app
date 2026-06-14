@@ -1,0 +1,65 @@
+{
+  "app": { "name": "Maniac" },
+  "menu": {
+    "file": "Datei", "edit": "Bearbeiten", "view": "Ansicht", "tools": "Werkzeuge", "help": "?",
+    "open_file": "Datei öffnen…", "open_folder": "Ordner öffnen…",
+    "import_playlist": "Playlist importieren", "export_playlist": "Playlist exportieren",
+    "settings": "Einstellungen", "exit": "Beenden"
+  },
+  "common": {
+    "ok": "OK", "cancel": "Abbrechen", "close": "Schließen", "save": "Speichern",
+    "delete": "Löschen", "back": "Zurück", "next": "Weiter", "apply": "Übernehmen",
+    "loading": "Lädt…", "search": "Suchen", "all": "Alle", "none": "Keiner",
+    "yes": "Ja", "no": "Nein", "error": "Fehler", "retry": "Erneut versuchen"
+  },
+  "player": {
+    "play": "Wiedergabe", "pause": "Pause", "stop": "Stopp",
+    "next": "Weiter", "prev": "Zurück", "volume": "Lautstärke", "mute": "Stumm",
+    "fullscreen": "Vollbild", "speed": "Geschwindigkeit",
+    "subtitles": "Untertitel", "tracks": "Audiospuren", "cinema": "Kinomodus"
+  },
+  "panels": {
+    "playlist": "Playlist", "tags": "Tags", "settings": "Einstellungen",
+    "downloads": "Downloads", "ai_history": "KI-Verlauf"
+  },
+  "settings": {
+    "general": "Allgemein", "language": "Sprache", "theme": "Thema",
+    "theme_dark": "Dunkel", "theme_light": "Hell", "shortcuts": "Tastenkürzel",
+    "audio": "Audio", "video": "Video", "ai": "KI", "advanced": "Erweitert"
+  },
+  "ai": {
+    "wizard_title": "KI-Analyse", "select_modes": "Modi wählen",
+    "mode_face": "Gesichter", "mode_object": "Objekte", "mode_animal": "Tiere",
+    "mode_place": "Orte", "mode_genre": "Genres", "mode_category": "Kategorien",
+    "analyze": "Analysieren", "summary_title": "Analyse-Übersicht",
+    "auto_suggestions": "Automatische Vorschläge", "select_manually": "Manuell auswählen",
+    "accept": "Akzeptieren", "reject": "Ablehnen", "apply_all": "Alle anwenden",
+    "no_results": "Keine Ergebnisse", "preparing": "Vorbereitung…",
+    "venv_check": "KI-Umgebung prüfen…", "venv_recheck": "Erneut prüfen"
+  },
+  "subs": {
+    "title": "Untertitel", "generate": "Untertitel generieren", "translate": "Übersetzen",
+    "language_source": "Ausgangssprache", "language_target": "Zielsprache",
+    "auto_detect": "Automatisch erkennen", "model": "Modell",
+    "import": "SRT/VTT importieren", "install_pack": "Paket installieren"
+  },
+  "organizer": {
+    "title": "Organisator", "step_sources": "Quellordner",
+    "step_preferences": "Einstellungen", "step_analyze": "Analyse",
+    "step_preview": "Vorschau", "step_confirm": "Bestätigen",
+    "by_year": "Nach Jahr", "by_genre": "Nach Genre", "by_actor": "Nach Schauspieler",
+    "by_type": "Nach Dateityp", "snapshots": "Snapshot-Verlauf",
+    "restore": "Wiederherstellen", "moved_count": "{{n}} Dateien verschoben",
+    "destination": "Ziel"
+  },
+  "downloads": {
+    "title": "Downloads", "url": "Direkte URL", "vibravid": "VibraVid",
+    "quality": "Qualität", "queue": "Warteschlange", "pause": "Pause",
+    "resume": "Fortsetzen", "cancel": "Abbrechen", "open_folder": "Ordner öffnen"
+  },
+  "spectrum": {
+    "title": "Spektrum", "fft": "FFT",
+    "lufs_momentary": "LUFS M", "lufs_short": "LUFS S", "lufs_integrated": "LUFS I",
+    "true_peak": "True Peak", "stereo_width": "Stereobreite", "phase": "Phase"
+  }
+}

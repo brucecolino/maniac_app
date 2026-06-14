@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Maniac — Post 06 Audio Suite</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1080px; height: 1080px; overflow: hidden;
+    background: #0A0A0F;
+    font-family: 'Inter', sans-serif;
+  }
+  .frame { position: absolute; inset: 40px; border: 1px solid rgba(139,111,209,0.12); border-radius: 24px; pointer-events: none; }
+  .bg-glow { position: absolute; width: 800px; height: 500px; top: 42%; left: 50%; transform: translate(-50%,-50%); background: radial-gradient(ellipse, rgba(139,111,209,0.1) 0%, transparent 70%); }
+
+  .logo-small { position: absolute; top: 64px; left: 72px; display: flex; align-items: center; gap: 10px; }
+  .logo-small img { width: 28px; height: 28px; filter: drop-shadow(0 0 8px rgba(139,111,209,0.6)); }
+  .logo-small span { font-size: 13px; font-weight: 800; color: #8B6FD1; letter-spacing: 1px; }
+  .top-label { position: absolute; top: 72px; right: 72px; font-size: 12px; font-weight: 600; letter-spacing: 4px; color: rgba(139,111,209,0.6); text-transform: uppercase; }
+
+  /* Main EQ card */
+  .eq-card {
+    position: absolute;
+    top: 145px; left: 80px; right: 80px;
+    background: #14141C;
+    border: 1px solid rgba(139,111,209,0.2);
+    border-radius: 16px;
+    padding: 28px 32px;
+    box-shadow: 0 0 30px rgba(139,111,209,0.08);
+  }
+
+  .eq-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+  .eq-title { font-size: 13px; font-weight: 700; color: #8B6FD1; letter-spacing: 2px; text-transform: uppercase; }
+  .eq-player-badge { padding: 5px 14px; background: rgba(139,111,209,0.15); border: 1px solid rgba(139,111,209,0.3); border-radius: 100px; font-size: 12px; font-weight: 600; color: #8B6FD1; }
+
+  /* EQ bars */
+  .eq-bars { display: flex; align-items: flex-end; justify-content: center; gap: 16px; height: 160px; margin-bottom: 16px; }
+  .eq-band { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .eq-bar-track { width: 56px; height: 140px; background: rgba(255,255,255,0.04); border-radius: 8px; position: relative; display: flex; align-items: flex-end; overflow: hidden; }
+  .eq-bar-fill {
+    width: 100%; border-radius: 6px;
+    background: linear-gradient(180deg, #A68FE0 0%, #8B6FD1 60%, rgba(139,111,209,0.4) 100%);
+    box-shadow: 0 -4px 16px rgba(139,111,209,0.4);
+    transition: height 0.3s;
+  }
+  .eq-label { font-size: 11px; font-weight: 700; color: #60607A; text-transform: uppercase; letter-spacing: 1px; }
+  .eq-db { font-size: 12px; font-weight: 700; color: #8B6FD1; }
+
+  .eq-zero-line { position: absolute; bottom: 50%; left: 0; right: 0; height: 1px; background: rgba(255,255,255,0.08); }
+
+  /* Sliders row */
+  .sliders-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 8px; }
+  .slider-item { display: flex; flex-direction: column; gap: 8px; }
+  .slider-name { font-size: 11px; font-weight: 700; color: #60607A; text-transform: uppercase; letter-spacing: 1px; }
+  .slider-track { height: 4px; background: rgba(255,255,255,0.06); border-radius: 4px; position: relative; }
+  .slider-fill { height: 100%; border-radius: 4px; background: #8B6FD1; }
+  .slider-thumb { position: absolute; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 2px solid #8B6FD1; box-shadow: 0 0 8px rgba(139,111,209,0.5); }
+  .slider-val { font-size: 12px; font-weight: 700; color: #F2F2F5; }
+
+  /* Per-player section */
+  .per-player { position: absolute; top: 680px; left: 80px; right: 80px; display: flex; gap: 12px; }
+  .pp-card { flex: 1; background: #14141C; border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 14px 16px; }
+  .pp-card.active { border-color: rgba(139,111,209,0.35); background: rgba(139,111,209,0.06); }
+  .pp-title { font-size: 11px; font-weight: 700; color: #60607A; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .pp-card.active .pp-title { color: #8B6FD1; }
+  .pp-val { font-size: 18px; font-weight: 800; color: #F2F2F5; }
+  .pp-unit { font-size: 11px; color: #60607A; font-weight: 400; }
+
+  /* Bottom */
+  .bottom { position: absolute; bottom: 72px; left: 80px; right: 80px; }
+  .headline { font-size: 44px; font-weight: 800; color: #F2F2F5; line-height: 1.1; margin-bottom: 12px; }
+  .headline em { color: #8B6FD1; font-style: normal; }
+  .sub-caption { font-size: 16px; color: #60607A; }
+</style>
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <div class="frame"></div>
+  <div class="logo-small"><img src="../../assets/maniac_logo.png" alt=""><span>MANIAC</span></div>
+  <div class="top-label">Feature #5</div>
+
+  <div class="eq-card">
+    <div class="eq-header">
+      <div class="eq-title">Equalizzatore</div>
+      <div class="eq-player-badge">Player 1 · Indipendente</div>
+    </div>
+
+    <div class="eq-bars">
+      <div class="eq-band">
+        <div class="eq-db">+4 dB</div>
+        <div class="eq-bar-track">
+          <div class="eq-zero-line"></div>
+          <div class="eq-bar-fill" style="height:65%"></div>
+        </div>
+        <div class="eq-label">Bass</div>
+      </div>
+      <div class="eq-band">
+        <div class="eq-db">+2 dB</div>
+        <div class="eq-bar-track">
+          <div class="eq-zero-line"></div>
+          <div class="eq-bar-fill" style="height:56%"></div>
+        </div>
+        <div class="eq-label">Mid</div>
+      </div>
+      <div class="eq-band">
+        <div class="eq-db">-1 dB</div>
+        <div class="eq-bar-track">
+          <div class="eq-zero-line"></div>
+          <div class="eq-bar-fill" style="height:46%;opacity:0.6"></div>
+        </div>
+        <div class="eq-label">Treble</div>
+      </div>
+    </div>
+
+    <div class="sliders-row">
+      <div class="slider-item">
+        <div class="slider-name">Gain</div>
+        <div class="slider-track">
+          <div class="slider-fill" style="width:70%"></div>
+          <div class="slider-thumb" style="left:calc(70% - 7px)"></div>
+        </div>
+        <div class="slider-val">+3.2 dB</div>
+      </div>
+      <div class="slider-item">
+        <div class="slider-name">Balance</div>
+        <div class="slider-track">
+          <div class="slider-fill" style="width:50%"></div>
+          <div class="slider-thumb" style="left:calc(50% - 7px)"></div>
+        </div>
+        <div class="slider-val">Centro</div>
+      </div>
+      <div class="slider-item">
+        <div class="slider-name">Delay</div>
+        <div class="slider-track">
+          <div class="slider-fill" style="width:20%"></div>
+          <div class="slider-thumb" style="left:calc(20% - 7px)"></div>
+        </div>
+        <div class="slider-val">120 ms</div>
+      </div>
+      <div class="slider-item">
+        <div class="slider-name">Noise Gate</div>
+        <div class="slider-track">
+          <div class="slider-fill" style="width:40%"></div>
+          <div class="slider-thumb" style="left:calc(40% - 7px)"></div>
+        </div>
+        <div class="slider-val">-30 dB</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="per-player">
+    <div class="pp-card active">
+      <div class="pp-title">Output Device</div>
+      <div class="pp-val">Cuffie Sony <span class="pp-unit">WH-1000XM5</span></div>
+    </div>
+    <div class="pp-card">
+      <div class="pp-title">Volume Boost</div>
+      <div class="pp-val">150% <span class="pp-unit">boost</span></div>
+    </div>
+    <div class="pp-card">
+      <div class="pp-title">Modalità</div>
+      <div class="pp-val">Stereo</div>
+    </div>
+    <div class="pp-card">
+      <div class="pp-title">LUFS Live</div>
+      <div class="pp-val">-14.2 <span class="pp-unit">LUFS</span></div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="headline">Il tuo <em>studio audio</em>.<br>Per ogni singolo player.</div>
+    <div class="sub-caption">EQ · Device routing · Noise gate · LUFS · Boost fino al 300%</div>
+  </div>
+</body>
+</html>

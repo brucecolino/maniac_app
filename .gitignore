@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+release/
+
+# Python venv (bundled at build time, not versioned)
+venv311/
+
+# ML model weights (scaricati on-demand al primo uso)
+models/ml/
+
+# Secrets / chiavi API (mai versionare)
+_stashdb_key.txt
+*.key
+
+# Python caches
+__pycache__/
+*.pyc
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local Claude Code settings (personal, not shared)
+.claude/settings.local.json

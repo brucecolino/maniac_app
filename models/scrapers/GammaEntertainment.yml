@@ -1,0 +1,177 @@
+name: "GammaEntertainment"
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - alettaoceanempire.com/en/video/
+      - ashleyfires.com/
+      - bigfatcreampie.com/
+      - bskow.com/en/video/
+      - bushybushy.com/
+      - buttman.com/
+      - cumshotoasis.com/
+      - currycreampie.com/
+      - devonlee.com/
+      - dylanryder.com/
+      - gapingangels.com/
+      - girlsandstuds.com/
+      - grannyghetto.com/
+      - jaysinxxx.com/
+      - lanesisters.com/
+      - lesbianfactor.com/
+      - lexingtonsteele.com/
+      - maledigital.com/en/video/
+      - maskurbate.com/en/video/
+      - motherfuckerxxx.com/
+      - myteenoasis.com/
+      - openlife.com/
+      - povthis.com/
+      - silverstonedvd.com/
+      - silviasaint.com/
+      - squirtalicious.com/
+      - squirtinglesbian.com/en/video/
+      - squirtingorgies.com/en/scene/
+      - sunnyleone.com/
+      - transsexualroadtrip.com/
+    scraper: sceneScraper
+
+performerByURL:
+  - action: scrapeXPath
+    url:
+      - activeduty.com/en/pornstar/
+      - assholefever.com/en/pornstar/
+    scraper: performerScraper
+
+xPathScrapers:
+  sceneScraper:
+    common:
+      $info: //div[@id="sceneInfoPlayer"]/div
+      $actors: //div[@class="sceneCol sceneColActors"]
+      $tags: //div[@class="sceneCol sceneColCategories"]
+      $detailscript: //script[contains(text(), 'sceneDetails')]/text()
+    scene:
+      Title: //div[@id="breadcrumb"]/span[3]/text()|//div[@id="breadCrumb"]/span[3]/text()|//div[@id="BreadcrumbMenu"]/span[3]/text()|//h1[@class="sceneTitle"]/text()|//div[@id="playerWrapper"]//h1/text()|//div[@id="scenePlayer"]//h1/text()|//div[@id="scenePlayerScene"]//h1/text()|//h3[@class="sceneTitle"]/text()
+      Date:
+        selector: //li[@class="updatedDate"]/text()[2]|//div[@class="updatedDate"]/text()[2]|//p[@class="updatedDate"]/text()[2]|//div[@class="sceneCol updatedDate"]/span/text()|//p[@class="p-updated"]/text()
+        postProcess:
+          - replace:
+              - regex: (\d{4})-(\d{2})-(\d{2})
+                with: $2-$3-$1
+              - regex: (\d{2})\/(\d{2})\/(\d{4})
+                with: $1-$2-$3
+              - regex: ":"
+                with:
+          - parseDate: 01-02-2006
+      Details:
+        selector: $detailscript
+        postProcess:
+          - replace:
+              - regex: .+(?:sceneDescription":")(.+)(?:","sceneActors).+
+                with: $1
+              # Second regex in case no description is provided.
+              - regex: .+(?:"sceneDescription":"").+
+                with:
+              - regex: <\\\/br>|<br\s\\\/>|<br>|<br\\/>
+                with: "\n"
+              - regex: <strong>|<\\\/strong>
+                with:
+      Tags:
+        Name: $tags/a/text()|//div[@class="sceneCol categories"]/a/text()|//div[@class="sceneCol sceneColCategories"]//span[not(@class="categorySeparator")]/text()|//div[@class="sceneCategories"]/a/text()
+      Performers:
+        Name: $actors/a/text()|$actors//span[not(@class="actorSeparator")]/text()|//div[@class="sceneCol actors"]/a/text()|//span[@class="slide-title"]/text()|//a[@class="pornstarName"]/strong/text()|//p[@class="starringLinks"]/a/text()|//p[@class="p-actors"]/a/text()
+      Groups:
+        Name:
+          selector: $info/a/img/@title|//a[@class="sceneLink  "]/@title|//a[@class="dvdLink  "]/@title
+        URL:
+          selector: //link[@rel='canonical']/@href|$info/a/@href
+          concat: "|"
+          postProcess:
+            - replace:
+                - regex: \.com.*[|]
+                  with: ".com"
+      Image:
+        selector: //script[contains(text(), 'picPreview')]/text()
+        postProcess:
+          - replace:
+              - regex: .+(?:picPreview":")([\w:]+)(?:[\\\/]+)([\w-\.]+)(?:[\\\/]+)(\w+)(?:[\\\/]+)(\d+)(?:[\\\/]+)([\d_]+)(?:[\\\/]+)(\w+)(?:[\\\/]+)(\d+)(?:[\\\/]+)(\d+)(?:[\\\/]+)([\w]+)(?:[\\\/]+)([\w.]+).+
+                with: $1//$2/$3/$4/$5/$6/$7/$8/$9/$10
+              # if using the transport subdomain, parameters need to be passed
+              # otherwise a cropped square image is returned by default
+              - regex: (https:\/\/transform.+)
+                with: $1?width=1920&height=1080&enlarge=true
+      Studio:
+        Name:
+          selector: //*[local-name()="div" or local-name()=p][contains(text(),"is a site owned and operated by Gamma")]|//meta[@name="twitter:domain"]/@content
+          postProcess:
+            - replace:
+                - regex: ([^\.]+)\.com(\s+)is(.+)
+                  with: $1
+                - regex: \.com$
+                  with: ""
+            - map:
+                activeduty: Active Duty
+                alettaoceanempire: Aletta Ocean Empire
+                allblackx: All Black X
+                analacrobats: Anal Acrobats
+                ashleyfires: Ashley Fires
+                bigfatcreampie: Big Fat Cream Pie
+                bskow: BsKow
+                bushybushy: Bushy Bushy
+                buttman: Buttman
+                cumshotoasis: Cumshot Oasis
+                currycreampie: Curry Creampie
+                darkx: DarkX
+                devonlee: Devon Lee
+                dylanryder: Dylan Ryder
+                eroticax: EroticaX
+                evilangel: Evil Angel
+                familycreep: Family Creep
+                gapingangels: Gaping Angels
+                girlsandstuds: Girls And Studs
+                grannyghetto: Granny Ghetto
+                jaysinxxx: Jay Sin XXX
+                jonnidarkkoxxx: Jonni Darkko XXX
+                lanesisters: Lane Sisters
+                lesbianfactor: Lesbian Factor
+                lesbianx: Lesbian X
+                lexingtonsteele: Lexington Steele
+                maledigital: Male Digital
+                maskurbate: Maskurbate
+                motherfuckerxxx: Mother Fucker XXX
+                myteenoasis: My Teen Oasis
+                openlife: Open Life
+                outofthefamily: Out Of The Family
+                pantypops: Panty Pops
+                povblowjobs: POV Blowjobs
+                povthis: POV This
+                silverstonedvd: Silverstone DVD
+                silviasaint: Silvia Saint
+                squirtalicious: Squirtalicious
+                squirtinglesbian: Squirting Lesbian
+                squirtingorgies: Squirting Orgies
+                strapattackers: Strap Attackers
+                sunnyleone: Sunny Leone
+                tittycreampies: Titty Creampies
+                transsexualangel: Transsexual Angel
+                transsexualroadtrip: Transsexual Roadtrip
+                xempire: XEmpire
+
+  performerScraper:
+    performer:
+      Name: //h1[@class='actorName']
+      Image: //img[@class='actorPicture']/@src
+
+  movieScraper:
+    group:
+      Name: //h3[@class='dvdTitle']//text()
+      Director: //ul[@class='directedBy']/li/a/text()
+      Duration: //li[@class='length']/text()
+      Date:
+        selector: //li[@class='updatedOn']/text()
+        postProcess:
+          - parseDate: 2006-01-02
+      Synopsis: //p[@class='descriptionText']/text()
+      Studio:
+        Name: //a[contains(@class, 'GA_Id_headerLogo')]/span[@class='linkMainCaption']/text()
+      FrontImage: //a[@class='frontCoverImg']/@href
+      BackImage: //a[@class='backCoverImg']/@href
+# Last Updated August 13, 2025

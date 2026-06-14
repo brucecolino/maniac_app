@@ -1,0 +1,73 @@
+name: "EricVideos"
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - ericvideos.com
+    scraper: sceneScraper
+performerByURL:
+  - action: scrapeXPath
+    url:
+      - ericvideos.com
+    scraper: performerScraper
+xPathScrapers:
+  sceneScraper:
+    common:
+      $videoScript: //script[contains(., "videojs")]
+    scene:
+      Title: //h1
+      Details: //div[@class="texte"]
+      Date:
+        selector: $videoScript
+        postProcess:
+          - replace:
+              - regex: .+video_(\d+).+
+                with: $1
+          - parseDate: unix
+      Tags:
+        Name: //a[@class='badge badge-dark']
+      Performers:
+        Name:
+          selector: //a/div[@class='acteur']/div[@class='nom']
+        URLs:
+          selector: //a[div[@class='acteur']]/@href
+          postProcess: &prependDomain
+            - replace:
+                - regex: ^
+                  with: https://www.ericvideos.com
+      Studio:
+        Name:
+          fixed: EricVideos
+      Image:
+        selector: $videoScript
+        postProcess:
+          - replace:
+              - regex: '.+poster: "(.+?)".+'
+                with: https://www.ericvideos.com$1
+
+  performerScraper:
+    performer:
+      Name: //h1
+      Height:
+        selector: //li[@class='list-group-item'][2]
+        postProcess:
+          - feetToCm: true
+      PenisLength: //li[@class='list-group-item'][3]
+      Gender:
+        fixed: male
+      Image:
+        selector: //div[@class='photo_acteur']/img[@class='thumbnail']/@src
+        postProcess: *prependDomain
+
+driver:
+  cookies:
+    - CookieURL: "http://www.ericvideos.com"
+      Cookies:
+        - Name: "warning"
+          Domain: "www.ericvideos.com"
+          Value: "1"
+          Path: "/"
+        - Name: "trailerViews"
+          Domain: "www.ericvideos.com"
+          Value: "1"
+          Path: "/"
+# Last Updated September 17, 2025

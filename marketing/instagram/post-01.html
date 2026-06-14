@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080">
+<title>Maniac — Post 01</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1080px; height: 1080px; overflow: hidden;
+    background: #0A0A0F;
+    font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+  }
+
+  /* Radial glow background */
+  .bg-glow {
+    position: absolute;
+    width: 700px; height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(139,111,209,0.18) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Corner dots */
+  .corner {
+    position: absolute;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(139,111,209,0.4);
+  }
+  .corner.tl { top: 48px; left: 48px; }
+  .corner.tr { top: 48px; right: 48px; }
+  .corner.bl { bottom: 48px; left: 48px; }
+  .corner.br { bottom: 48px; right: 48px; }
+
+  /* Border frame */
+  .frame {
+    position: absolute; inset: 40px;
+    border: 1px solid rgba(139,111,209,0.12);
+    border-radius: 24px;
+    pointer-events: none;
+  }
+
+  /* Top label */
+  .top-label {
+    position: absolute;
+    top: 72px;
+    left: 50%; transform: translateX(-50%);
+    font-size: 13px; font-weight: 600;
+    letter-spacing: 4px;
+    color: #8B6FD1;
+    text-transform: uppercase;
+  }
+
+  /* Center content */
+  .center {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 0;
+  }
+
+  .logo-wrap {
+    position: relative;
+    margin-bottom: 48px;
+  }
+  .logo-wrap img {
+    width: 160px; height: 160px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 40px rgba(139,111,209,0.8)) drop-shadow(0 0 80px rgba(139,111,209,0.4));
+  }
+
+  .brand-name {
+    font-size: 120px; font-weight: 800;
+    letter-spacing: -4px;
+    color: #F2F2F5;
+    line-height: 1;
+    text-shadow: 0 0 60px rgba(139,111,209,0.3);
+  }
+
+  .divider {
+    width: 60px; height: 2px;
+    background: linear-gradient(90deg, transparent, #8B6FD1, transparent);
+    margin: 32px auto;
+  }
+
+  .tagline {
+    font-size: 22px; font-weight: 400;
+    color: #A0A0B3;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* Bottom badge */
+  .bottom-badge {
+    position: absolute;
+    bottom: 72px;
+    left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(139,111,209,0.1);
+    border: 1px solid rgba(139,111,209,0.25);
+    border-radius: 100px;
+    padding: 10px 24px;
+    white-space: nowrap;
+  }
+  .bottom-badge span {
+    font-size: 14px; font-weight: 600;
+    color: #8B6FD1;
+    letter-spacing: 1px;
+  }
+  .dot { width: 5px; height: 5px; border-radius: 50%; background: #8B6FD1; }
+
+  /* Version tag */
+  .version {
+    position: absolute;
+    top: 72px; right: 72px;
+    font-size: 12px; font-weight: 600;
+    color: rgba(160,160,179,0.4);
+    letter-spacing: 2px;
+  }
+</style>
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <div class="frame"></div>
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+  <div class="top-label">Introducing</div>
+  <div class="version">Windows · v1.0</div>
+
+  <div class="center">
+    <div class="logo-wrap">
+      <img src="../../assets/maniac_logo.png" alt="Maniac Logo">
+    </div>
+    <div class="brand-name">MANIAC</div>
+    <div class="divider"></div>
+    <div class="tagline">Clean · Coherent · Professional</div>
+  </div>
+
+  <div class="bottom-badge">
+    <div class="dot"></div>
+    <span>Il media player che aspettavi</span>
+    <div class="dot"></div>
+  </div>
+</body>
+</html>

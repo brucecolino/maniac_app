@@ -1,0 +1,38 @@
+name: "FrolicMe"
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - frolicme.com/films/
+    scraper: sceneScraper
+xPathScrapers:
+  sceneScraper:
+    common:
+      $platform: //div[@class="js-platform-video"]
+    scene:
+      Title:
+        selector: //div[@class="entry-title"]
+        postProcess:
+          - replace:
+              - regex: "(?i)( - Film)"
+                with:
+      Date:
+        selector: //script[@type="application/ld+json"]/text()
+        postProcess:
+          - replace:
+              - regex: .*(datePublished":")(\d{4}-\d{2}-\d{2}).*
+                with: $2
+          - parseDate: 2006-01-02
+      Details:
+        selector: //div[@class="entry-content"]/p
+        concat: "\n\n"
+      Performers:
+        Name: //a[@rel="tag" and contains(@href,"/models/")]/text()
+      Tags:
+        Name: //a[@rel="tag" and not(contains(@href,"/models/"))]/text()
+      Image:
+        selector: $platform/img/@src
+      Studio:
+        Name:
+          fixed: "FrolicMe"
+
+# Last Updated January 19, 2024

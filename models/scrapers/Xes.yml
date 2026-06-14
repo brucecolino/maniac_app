@@ -1,0 +1,29 @@
+name: xes.pl
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - xes.pl
+    scraper: sceneScraper
+xPathScrapers:
+  sceneScraper:
+    common:
+      $hidden: //div[@class="details_hidden"]/table/tbody/tr
+    scene:
+      Title: //div[@class="video-page"]/div/h1
+      URLs: //link[@rel="canonical"]/@href
+      Details:
+        selector: //div[@class="video-article-wrap"]/article/p
+        concat: "\n\n"
+      Performers:
+        Name: $hidden/td[text()="Aktorzy:" or text()="Actors:"]/following-sibling::td/ul/li/a
+      Studio:
+        Name: //a[@class="producerLink"]
+      Date: //div[@class="details"]/table/tbody/tr/td[text()="Data dodania:" or text()="Add date:"]/following-sibling::td
+      Tags:
+        Name: $hidden/td[text()="Kategorie:" or text()="Categories:"]/following-sibling::td/ul/li/a
+      Image:
+        selector: //div[@class="video-type-select"]/picture/img/@src
+        postProcess:
+          - replace:
+              - regex: ^//
+                with: https://

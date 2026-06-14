@@ -1,0 +1,28 @@
+name: Faphouse
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - faphouse.com/videos/
+    scraper: sceneScraper
+xPathScrapers:
+  sceneScraper:
+    scene:
+      Title: //h1[@class="video__title"]
+      Date:
+        selector: //span[contains(@class, "video-publish-date")]
+        postProcess:
+          - replace:
+              - regex: Published:\s*
+                with: ""
+          - parseDate: "02.01.2006"
+      Details:
+        selector: //div[contains(@class,"video-info-details__description")]//p
+        concat: " "
+      Performers:
+        Name: //div[contains(@class, "categories")]/a[contains(@href, "pornstars")]
+      Tags:
+        Name: //div[contains(@class, "categories")]/a[not (contains(@href, "pornstars") or contains(@href, "studios"))]
+      Studio:
+        Name: //a[contains(@class, "studio-link")]
+      Image: //meta[@property="og:image"]/@content
+# Last Updated December 31, 2023

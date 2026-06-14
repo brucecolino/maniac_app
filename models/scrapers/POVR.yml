@@ -1,0 +1,132 @@
+name: POVR
+sceneByURL:
+  - action: scrapeXPath
+    url: &urls
+      - povr.com
+    scraper: sceneScraper
+  - action: scrapeXPath
+    url: &urlsPremium
+      - brasilvr.com
+      - milfvr.com
+      - tranzvr.com
+      - wankzvr.com
+    scraper: sceneScraperPremium
+galleryByURL:
+  - action: scrapeXPath
+    url: *urls
+    scraper: sceneScraper
+  - action: scrapeXPath
+    url: *urlsPremium
+    scraper: sceneScraperPremium
+groupByURL:
+  - action: scrapeXPath
+    url:
+      - wankzvr.com
+    scraper: movieScraper
+xPathScrapers:
+  sceneScraperPremium:
+    common:
+      $info: &infoSel //div[@class="detail"]
+      $url: &urlSel //link[@rel="canonical"]/@href
+    scene:
+      Title: &titleSel //div[@class="detail__header detail__header-lg"]/h1
+      Date: &dateAttr
+        selector: $info//span[@class="detail__date"]/text()
+        postProcess:
+          - parseDate: 2 January, 2006
+      Details: &detailsAttr
+        selector: //div[@class="detail__txt detail__txt-show_lg"]/text()|//span[@class="more__body"]/text()
+        concat: " "
+      Tags: &tagsAttr
+        Name: $info//div[@class="tag-list__body"]//a/text()
+      Performers: &performersAttr
+        Name: //div[@class="detail__inf detail__inf-align_right"]/div[@class="detail__models"]/a/text()
+      Image: &imageAttr
+        selector: //meta[@property="og:image"]/@content|//div[@class="photo-strip__body"]/div[2]/@data-src
+        postProcess:
+          - replace:
+              - regex: medium.jpg
+                with: large.jpg
+              # TranzVR defaults to smaller covers, but we can grab a bigger one
+              - regex: 472/cover.jpg
+                with: 680/cover.jpg
+              # All of these domains give 403 errors when saving the scraped image
+              # but povr.com has the same images and is totally cool with our scraping
+              - regex: cdns-i.wankzvr.com
+                with: images.povr.com/wvr
+              - regex: images.tranzvr.com
+                with: images.povr.com/tvr
+              - regex: cdns-i.milfvr.com
+                with: images.povr.com/mvr
+              - regex: cdns-i.brasilvr.com
+                with: images.povr.com
+      Studio: &studioAttr
+        Name:
+          selector: *urlSel
+          postProcess:
+            - replace:
+                - regex: ^.*//(?:www.)?([^/]*).*$
+                  with: $1
+            - map:
+                brasilvr.com: BrasilVR
+                milfvr.com: MilfVR
+                tranzvr.com: TranzVR
+                wankzvr.com: WankzVR
+      Code: &codeAttr
+        selector: *urlSel
+        postProcess:
+          - replace:
+              - regex: ^.*-(\d+)$
+                with: $1
+    gallery:
+      Title: *titleSel
+      Date: *dateAttr
+      Details: *detailsAttr
+      Tags: *tagsAttr
+      Performers: *performersAttr
+      Studio: *studioAttr
+      Code: *codeAttr
+  sceneScraper:
+    scene:
+      Title: &title
+        selector: //h1[contains(@class, "heading-title")]
+      Date: &date //meta[@property="video:release_date"]/@content
+      Performers: &performers
+        Name: //meta[@property="video:actor"]/@content
+      Tags: &tags
+        Name: //li[span[contains(text(), "Tags:")]]/following-sibling::li/a
+      Details: &details //div[contains(@class, "player__description")]/p
+      Image: *imageAttr
+      Studio: &studio
+        Name:
+          selector: //span[contains(text(), "Studio:")]/following-sibling::a
+      Code: *codeAttr
+    gallery:
+      Title: *title
+      Date: *date
+      Details: *details
+      Tags: *tags
+      Performers: *performers
+      Studio: *studio
+      Code: *codeAttr
+  movieScraper:
+    common:
+      $info: *infoSel
+    group:
+      Name:
+        selector: *titleSel
+        postProcess:
+          - replace:
+              - regex: ^
+                with: "WankzVR - "
+      Duration:
+        selector: $info//span[@class="time"]/text()
+        postProcess:
+          - replace:
+              - regex: \smin
+                with: ":00"
+      Date: *dateAttr
+      Studio: *studioAttr
+      Synopsis: *detailsAttr
+      FrontImage: *imageAttr
+# Last Updated April 17, 2025

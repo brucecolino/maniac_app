@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Maniac — Post 05 Download</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1080px; height: 1080px; overflow: hidden;
+    background: #0A0A0F;
+    font-family: 'Inter', sans-serif;
+  }
+  .frame { position: absolute; inset: 40px; border: 1px solid rgba(139,111,209,0.12); border-radius: 24px; pointer-events: none; }
+  .bg-glow { position: absolute; width: 700px; height: 500px; top: 45%; left: 50%; transform: translate(-50%,-50%); background: radial-gradient(ellipse, rgba(139,111,209,0.09) 0%, transparent 70%); }
+
+  .logo-small { position: absolute; top: 64px; left: 72px; display: flex; align-items: center; gap: 10px; }
+  .logo-small img { width: 28px; height: 28px; filter: drop-shadow(0 0 8px rgba(139,111,209,0.6)); }
+  .logo-small span { font-size: 13px; font-weight: 800; color: #8B6FD1; letter-spacing: 1px; }
+  .top-label { position: absolute; top: 72px; right: 72px; font-size: 12px; font-weight: 600; letter-spacing: 4px; color: rgba(139,111,209,0.6); text-transform: uppercase; }
+
+  /* URL bar */
+  .url-bar {
+    position: absolute;
+    top: 148px; left: 80px; right: 80px;
+    height: 56px;
+    background: #14141C;
+    border: 1px solid rgba(139,111,209,0.3);
+    border-radius: 10px;
+    display: flex; align-items: center; padding: 0 20px; gap: 12px;
+    box-shadow: 0 0 20px rgba(139,111,209,0.08);
+  }
+  .url-icon { font-size: 16px; color: #8B6FD1; }
+  .url-text { font-size: 15px; color: #A0A0B3; font-family: 'JetBrains Mono', monospace; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .url-text span { color: #8B6FD1; }
+  .url-btn { padding: 8px 20px; background: #8B6FD1; border-radius: 6px; font-size: 13px; font-weight: 700; color: #fff; cursor: pointer; }
+
+  /* Download list */
+  .dl-list { position: absolute; top: 230px; left: 80px; right: 80px; display: flex; flex-direction: column; gap: 10px; }
+
+  .dl-item {
+    background: #14141C;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .dl-item.active { border-color: rgba(139,111,209,0.3); }
+
+  .dl-thumb { width: 56px; height: 40px; background: #1C1C27; border-radius: 6px; flex-shrink: 0; position: relative; overflow: hidden; }
+  .dl-thumb::after { content: '▶'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: rgba(139,111,209,0.5); }
+
+  .dl-info { flex: 1; min-width: 0; }
+  .dl-name { font-size: 14px; font-weight: 600; color: #F2F2F5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px; }
+  .dl-bar-wrap { height: 4px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+  .dl-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #8B6FD1, #A68FE0); }
+  .dl-meta { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+  .dl-pct { font-size: 11px; font-weight: 700; color: #8B6FD1; }
+  .dl-speed { font-size: 11px; color: #60607A; }
+  .dl-size { font-size: 11px; color: #60607A; }
+
+  .dl-status { font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 100px; white-space: nowrap; }
+  .status-dl { background: rgba(139,111,209,0.15); color: #8B6FD1; border: 1px solid rgba(139,111,209,0.3); }
+  .status-done { background: rgba(63,184,131,0.12); color: #3FB883; border: 1px solid rgba(63,184,131,0.3); }
+  .status-wait { background: rgba(96,96,122,0.15); color: #60607A; border: 1px solid rgba(96,96,122,0.2); }
+
+  /* Feature tags */
+  .feature-tags { position: absolute; top: 710px; left: 80px; right: 80px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .ftag { padding: 8px 18px; border-radius: 100px; border: 1px solid rgba(139,111,209,0.25); font-size: 13px; font-weight: 600; color: #A0A0B3; background: rgba(139,111,209,0.06); }
+  .ftag.hi { color: #8B6FD1; border-color: rgba(139,111,209,0.5); background: rgba(139,111,209,0.12); }
+
+  /* Bottom */
+  .bottom { position: absolute; bottom: 72px; left: 80px; right: 80px; }
+  .headline { font-size: 46px; font-weight: 800; color: #F2F2F5; line-height: 1.1; margin-bottom: 14px; }
+  .headline em { color: #8B6FD1; font-style: normal; }
+  .sub-caption { font-size: 16px; color: #60607A; }
+</style>
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <div class="frame"></div>
+  <div class="logo-small"><img src="../../assets/maniac_logo.png" alt=""><span>MANIAC</span></div>
+  <div class="top-label">Feature #4</div>
+
+  <div class="url-bar">
+    <div class="url-icon">⬇</div>
+    <div class="url-text"><span>https://</span>youtube.com/watch?v=dQw4w9WgXcQ</div>
+    <div class="url-btn">Scarica</div>
+  </div>
+
+  <div class="dl-list">
+    <div class="dl-item active">
+      <div class="dl-thumb"></div>
+      <div class="dl-info">
+        <div class="dl-name">Never Gonna Give You Up [Official 4K]</div>
+        <div class="dl-bar-wrap"><div class="dl-bar-fill" style="width:72%"></div></div>
+        <div class="dl-meta">
+          <span class="dl-pct">72%</span>
+          <span class="dl-speed">8.4 MB/s</span>
+          <span class="dl-size">312 MB / 430 MB</span>
+        </div>
+      </div>
+      <div class="dl-status status-dl">↓ 8.4 MB/s</div>
+    </div>
+    <div class="dl-item">
+      <div class="dl-thumb"></div>
+      <div class="dl-info">
+        <div class="dl-name">Interstellar — Official Trailer (1080p)</div>
+        <div class="dl-bar-wrap"><div class="dl-bar-fill" style="width:100%"></div></div>
+        <div class="dl-meta">
+          <span class="dl-pct" style="color:#3FB883">✓ Completato</span>
+          <span class="dl-size">1.2 GB</span>
+        </div>
+      </div>
+      <div class="dl-status status-done">Completato</div>
+    </div>
+    <div class="dl-item">
+      <div class="dl-thumb"></div>
+      <div class="dl-info">
+        <div class="dl-name">Breaking Bad S01 — Playlist (10 ep.)</div>
+        <div class="dl-bar-wrap"><div class="dl-bar-fill" style="width:0%"></div></div>
+        <div class="dl-meta"><span class="dl-size">In attesa...</span></div>
+      </div>
+      <div class="dl-status status-wait">In coda</div>
+    </div>
+  </div>
+
+  <div class="feature-tags">
+    <div class="ftag hi">yt-dlp integrato</div>
+    <div class="ftag">Cookie automatici</div>
+    <div class="ftag">Retry intelligente</div>
+    <div class="ftag">Ripresa download</div>
+    <div class="ftag">Audio/Video/Playlist</div>
+  </div>
+
+  <div class="bottom">
+    <div class="headline">Scarica da <em>qualsiasi sito</em>.<br>Direttamente nel player.</div>
+    <div class="sub-caption">Incolla il link — il resto lo fa Maniac</div>
+  </div>
+</body>
+</html>

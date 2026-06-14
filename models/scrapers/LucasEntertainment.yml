@@ -1,0 +1,114 @@
+name: Lucas Entertainment
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - lucasentertainment.com/movies/
+      - lucasentertainment.com/scenes/
+      - lucasentertainment.com/tour/movies/
+      - lucasentertainment.com/tour/scenes/
+    scraper: sceneScraper
+sceneByName:
+  action: scrapeXPath
+  queryURL: https://lucasentertainment.com/find/{}
+  scraper: search
+sceneByQueryFragment:
+  action: scrapeXPath
+  queryURL: "{url}"
+  scraper: sceneScraper
+groupByURL:
+  - action: scrapeXPath
+    url:
+      - lucasentertainment.com/movies/
+      - lucasentertainment.com/tour/movies/
+    scraper: movieScraper
+performerByURL:
+  - action: scrapeXPath
+    url:
+      - lucasentertainment.com/models/
+      - lucasentertainment.com/tour/models/
+    scraper: performerScraper
+performerByName:
+  action: scrapeXPath
+  queryURL: https://lucasentertainment.com/find/{}
+  scraper: search
+xPathScrapers:
+  search:
+    common:
+      $scene: //div[@class="scenes-panel"]//a[@class="scene-box"]
+      $performer: //div[@class="model-panel" and not(.//div[contains(@class, "movie-item")])]//a[@class="scene-box"]
+    scene:
+      Title: $scene/@title
+      URL: $scene/@href
+      Image: $scene/img/@data-original
+      Date:
+        selector: $scene//h6
+        postProcess:
+          - parseDate: "01.02.06"
+      Details: $scene//p
+    performer:
+      Name: $performer/@title
+      URLs: $performer/@href
+      Image: $performer/img/@data-original
+  sceneScraper:
+    common:
+      $performer: //strong[text() = "Performers:"]/following-sibling::a
+    scene:
+      Title: &titleSel //h2/text()
+      Date:
+        selector: &dateSel //strong[text() = "Release Date:"]/following-sibling::text()[1]
+        postProcess:
+          - replace:
+              - regex: (^[a-zA-Z]+\s[0-9]+)[a-z]+(\s[0-9]+$)
+                with: $1$2
+          - parseDate: January 2 2006
+          - parseDate: Jan 2, 2006
+      Performers:
+        Name: $performer/text()
+        URLs: $performer/@href
+      Details: &detailsAttr
+        selector: //div[@class="container"]//p[@class="plain-link"]/following-sibling::p/text()
+        concat: "\n\n"
+      Image: //meta[@name='twitter:image']/@content
+      Studio: &studioAttr
+        Name:
+          fixed: Lucas Entertainment
+      Groups:
+        Name: //strong[text() = "From:"]/following-sibling::a[1]/text()
+        URL: //strong[text() = "From:"]/following-sibling::a[1]/@href
+  movieScraper:
+    group:
+      Name: *titleSel
+      Date:
+        selector: *dateSel
+        postProcess:
+          - parseDate: Jan 02, 2006
+      Duration:
+        selector: //strong[text() = "Runtime:"]/following-sibling::text()[1]
+        postProcess:
+          - replace:
+              - regex: "^[^0-9]*([0-9]+)\\s+minutes"
+                with: "0:$1:00"
+          - replace:
+              - regex: "^.*N/A.*$"
+                with:
+      Synopsis: *detailsAttr
+      Studio: *studioAttr
+      FrontImage: //img[@class="movie-front-cover main-photo"]/@src
+  performerScraper:
+    performer:
+      Name: *titleSel
+      Gender:
+        fixed: Male
+      PenisLength:
+        selector: //strong[text() = "Dick Size:"]/following-sibling::text()[1]
+        postProcess:
+          - replace:
+              - regex: ^
+                with: 0'
+          - feetToCm: true
+      Height:
+        selector: //strong[text() = "Height:"]/following-sibling::text()[1]
+        postProcess:
+          - feetToCm: true
+      Image: //div[@class="col-sm-5 col-md-5 col-lg-4 model-main-photo"]/img/@data-original
+# Last Updated September 17, 2025

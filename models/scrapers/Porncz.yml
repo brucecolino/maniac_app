@@ -1,0 +1,53 @@
+name: PornCZ
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - amateripremium.com
+      - amateursfrombohemia.com
+      - boysfuckmilfs.com
+      - chloelamour.com
+      - czechanalsex.com
+      - czechbiporn.com
+      - czechboobs.com
+      - czechcaravan.com
+      - czechescortgirls.com
+      - czechexecutor.com
+      - czechgaycity.com
+      - czechgypsies.com
+      - czechhitchhikers.com
+      - czechrealdolls.com
+      - czechsexcasting.com
+      - czechsexparty.com
+      - czechshemale.com
+      - dellaitwins.com
+      - dickontrip.com
+      - fuckingoffice.com
+      - fuckingstreet.com
+      - girlstakeaway.com
+      - hornydoctor.com
+      - hornygirlscz.com
+      - hunterpov.com
+      - ladydee.xxx
+      - porncz.com
+      - publicfrombohemia.com
+      - retroporncz.com
+      - sexintaxi.com
+      - sexwithmuslims.com
+      - susanayn.com
+      - teenfrombohemia.com
+      - vrporncz.com
+    scraper: sceneScraper
+xPathScrapers:
+  sceneScraper:
+    scene:
+      Title: //h1
+      Performers:
+        Name: //div[contains(@class, "mini-avatars")]//a
+      Details: //meta[@property="og:description"]/@content
+      Tags:
+        Name: //div[contains(@class, "video-info")]//a[contains(@href, "category")]
+      Image: //video/@data-poster | //deo-video/@cover-image
+      Date: //meta[@property="video:release_date"]/@content
+      URL: //link[@rel="canonical"]/@href
+      Studio:
+        Name: //meta[@property="video:series"]/@content

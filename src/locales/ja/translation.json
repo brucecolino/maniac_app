@@ -1,0 +1,65 @@
+{
+  "app": { "name": "Maniac" },
+  "menu": {
+    "file": "ファイル", "edit": "編集", "view": "表示", "tools": "ツール", "help": "?",
+    "open_file": "ファイルを開く…", "open_folder": "フォルダを開く…",
+    "import_playlist": "プレイリストをインポート", "export_playlist": "プレイリストをエクスポート",
+    "settings": "設定", "exit": "終了"
+  },
+  "common": {
+    "ok": "OK", "cancel": "キャンセル", "close": "閉じる", "save": "保存",
+    "delete": "削除", "back": "戻る", "next": "次へ", "apply": "適用",
+    "loading": "読み込み中…", "search": "検索", "all": "すべて", "none": "なし",
+    "yes": "はい", "no": "いいえ", "error": "エラー", "retry": "再試行"
+  },
+  "player": {
+    "play": "再生", "pause": "一時停止", "stop": "停止",
+    "next": "次へ", "prev": "前へ", "volume": "音量", "mute": "ミュート",
+    "fullscreen": "全画面", "speed": "速度",
+    "subtitles": "字幕", "tracks": "音声トラック", "cinema": "シネマモード"
+  },
+  "panels": {
+    "playlist": "プレイリスト", "tags": "タグ", "settings": "設定",
+    "downloads": "ダウンロード", "ai_history": "AI 履歴"
+  },
+  "settings": {
+    "general": "一般", "language": "言語", "theme": "テーマ",
+    "theme_dark": "ダーク", "theme_light": "ライト", "shortcuts": "ショートカット",
+    "audio": "オーディオ", "video": "ビデオ", "ai": "AI", "advanced": "詳細"
+  },
+  "ai": {
+    "wizard_title": "AI 解析", "select_modes": "モードを選択",
+    "mode_face": "顔", "mode_object": "物体", "mode_animal": "動物",
+    "mode_place": "場所", "mode_genre": "ジャンル", "mode_category": "カテゴリ",
+    "analyze": "解析", "summary_title": "解析サマリー",
+    "auto_suggestions": "自動候補", "select_manually": "手動で選択",
+    "accept": "承認", "reject": "却下", "apply_all": "すべて適用",
+    "no_results": "結果なし", "preparing": "準備中…",
+    "venv_check": "AI 環境を確認中…", "venv_recheck": "再確認"
+  },
+  "subs": {
+    "title": "字幕", "generate": "字幕生成", "translate": "翻訳",
+    "language_source": "ソース言語", "language_target": "ターゲット言語",
+    "auto_detect": "自動検出", "model": "モデル",
+    "import": "SRT/VTT を読み込む", "install_pack": "パックをインストール"
+  },
+  "organizer": {
+    "title": "整理ツール", "step_sources": "ソースフォルダ",
+    "step_preferences": "設定", "step_analyze": "解析",
+    "step_preview": "プレビュー", "step_confirm": "確認",
+    "by_year": "年別", "by_genre": "ジャンル別", "by_actor": "俳優別",
+    "by_type": "ファイル種別", "snapshots": "スナップショット履歴",
+    "restore": "復元", "moved_count": "{{n}} 件のファイルを移動",
+    "destination": "保存先"
+  },
+  "downloads": {
+    "title": "ダウンロード", "url": "直接 URL", "vibravid": "VibraVid",
+    "quality": "画質", "queue": "キュー", "pause": "一時停止",
+    "resume": "再開", "cancel": "キャンセル", "open_folder": "フォルダを開く"
+  },
+  "spectrum": {
+    "title": "スペクトラム", "fft": "FFT",
+    "lufs_momentary": "LUFS M", "lufs_short": "LUFS S", "lufs_integrated": "LUFS I",
+    "true_peak": "True Peak", "stereo_width": "ステレオ幅", "phase": "位相"
+  }
+}

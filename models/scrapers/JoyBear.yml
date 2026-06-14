@@ -1,0 +1,82 @@
+name: JoyBear
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - joybear.com/movies/
+    scraper: joybear
+sceneByName:
+  action: scrapeXPath
+  queryURL: "https://www.joybear.com/movies?q={}"
+  scraper: search
+sceneByQueryFragment:
+  action: scrapeXPath
+  queryURL: "{url}"
+  scraper: joybear
+
+groupByURL:
+  - action: scrapeXPath
+    url:
+      - joybear.com/features/
+    scraper: joybear
+
+xPathScrapers:
+  joybear:
+    scene:
+      Title:
+        selector: //h1
+        postProcess:
+          - replace:
+              - regex: ^Scene\s*(—|-)\s*
+                with: ""
+      Details:
+        selector: //div[@class="descriptions"]/p
+        concat: "\n\n"
+      Groups:
+        Name: //div[@class="fFilms"]//a/img/@alt
+        URL:
+          selector: //div[@class="fFilms"]//a/@href
+          postProcess: &makeAbsolute
+            - replace:
+                - regex: ^
+                  with: https://joybear.com
+        FrontImage: //div[@class="fFilms"]//a/img/@src
+        Studio: &studioName
+          Name:
+            fixed: JoyBear
+      Performers:
+        Name: //div[@class="castModels"]//a/span
+        URLs:
+          selector: //div[@class="castModels"]//a/@href
+          postProcess: *makeAbsolute
+      Tags:
+        Name: //div[@class="categories"]//a
+      Studio: *studioName
+      Image: &image
+        selector: //script[contains(text(), "poster")]
+        postProcess:
+          - replace:
+              - regex: .*poster:\s*"([^"]+).*
+                with: $1
+    group:
+      Name:
+        selector: //h1
+        postProcess:
+          - replace:
+              - regex: ^Feature\s*(—|-)\s*
+                with: ""
+      Synopsis: //div[@class="descriptions"]/p
+      FrontImage: *image
+      Studio: *studioName
+  search:
+    scene:
+      Title:
+        selector: //div[@class="allVideos"]//img[@alt]/@alt
+        postProcess:
+          - replace:
+              - regex: "joybear original porn video"
+                with: ""
+      Image: //div[@class="allVideos"]//video/@poster
+      URL:
+        selector: //div[@class="allVideos"]/a/@href
+        postProcess: *makeAbsolute
+# Last Updated September 17, 2025

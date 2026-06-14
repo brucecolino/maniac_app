@@ -1,0 +1,41 @@
+name: HouseOfGord
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - houseofgord.com/d
+    scraper: sceneScraper
+
+xPathScrapers:
+  sceneScraper:
+    scene:
+      Title:
+        selector: //*[@class="detail_title_etc"]/div[contains(concat(' ', @class, ' '), ' leading-none ')]/text()
+      Date:
+        selector: //*[@class="detail_title_etc"]/div[@class="links_to_pages"]/div[@class="text-xl"][contains(text()[1],"Video")]/text()[1]|//*[@class="detail_title_etc"]/div[@class="links_to_pages"]/div[@class="text-xl"][1]/text()
+        postProcess:
+          - replace:
+              - regex: .*\s+added\s+(.*)
+                with: $1
+          - parseDate: 02 Jan 2006
+      Details:
+        selector: //div[@id="main_content"]//p[@sanitize="false"]/text()
+        concat: "\n\n"
+      Performers:
+        Name:
+          selector: //div[@id="main_content"]/div[contains(concat(' ', @class, ' '), 'text-sm')]/a[not(preceding-sibling::text()[contains(., '-')]) and not(preceding-sibling::br)]/text()
+      Tags:
+        Name:
+          selector: //div[@id="main_content"]/div[contains(concat(' ', @class, ' '), 'text-sm')]/a[preceding-sibling::text()[contains(., '-')] or preceding-sibling::br]/text()
+      Studio:
+        Name:
+          fixed: House of Gord
+
+driver:
+  useCDP: true
+  cookies:
+    - Cookies:
+        - Name: legal_accepted2
+          Domain: .houseofgord.com
+          Value: yes
+          Path: /
+# Last Updated March 15, 2026

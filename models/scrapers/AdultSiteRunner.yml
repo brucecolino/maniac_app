@@ -1,0 +1,186 @@
+name: AdultSiteRunner
+performerByURL:
+  - action: scrapeXPath
+    scraper: performerScraper
+    url:
+      - blackboyaddictionz.com/profile/
+      - blacksondaddies.com/profile/
+      - boundjocks.com/profile/
+      - boyshalfwayhouse.com/profile/
+      - coltstudiogroup.com/profile/
+      - hotoldermale.com/profile/
+      - monstercub.com/profile/
+      - myfirstdaddy.com/profile/
+      - older4me.com/profile/
+      - playdaddy.com/profile/
+      - raunchybastards.com/profile/
+      - stockydudes.com/profile/
+      - toplatindaddies.com/profile/
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - daddycarl.com/scene/
+      - naturalbornbreeders.com/scene/
+    scraper: oldStyleSite
+  - action: scrapeXPath
+    url:
+      - blackboyaddictionz.com/scene/
+      - blacksondaddies.com/scene/
+      - boundjocks.com/scene/
+      - boyshalfwayhouse.com/scene/
+      - coltstudiogroup.com/scene/
+      - hotoldermale.com/scene/
+      - monstercub.com/scene/
+      - myfirstdaddy.com/scene/
+      - older4me.com/scene/
+      - playdaddy.com/scene/
+      - raunchybastards.com/scene/
+      - stockydudes.com/scene/
+      - toplatindaddies.com/scene/
+    scraper: newStyleSite
+xPathScrapers:
+  oldStyleSite:
+    common:
+      $scene: //div[contains(@class, "sceneContainer")]
+    scene:
+      Title: $scene/div[@class="sceneTitle"]
+      Code:
+        selector: $scene//div[contains(@class, "sceneImgBig")]/@id
+        postProcess:
+          - replace:
+              - regex: \D*
+                with: $1
+      Date:
+        selector: $scene//span[contains(@class, "sceneDetails")]
+        postProcess: &ppDate
+          - replace:
+              - regex: ^Details:\s*
+                with: ""
+              # https://regex101.com/r/rsjbb6/3
+              - regex: ^(\w{3}\s*\d{1,2}),\s*(\d{4}).*?$
+                with: $1, $2
+          - parseDate: Jan 2, 2006
+      # All of this can be replaced once scrapers get access to the URL they are scraping
+      Studio:
+        Name:
+          selector: &image >
+            $scene//video/@poster
+            | $scene//div[contains(@class, "sceneImgBig")]/img/@src
+            | //div[contains(@style, "background-image")]/@style
+            | //*[contains(@class, "videoTrailer") or contains(@class, "bgScene")]//@srcset
+          postProcess: &studioNameFromURL
+            - replace:
+                - regex: ^(?:https:\/\/[\w\.]*?)([^.]+)\.com.*$
+                  with: $1
+            - map:
+                blackboyaddictionz: Black Boy Addictionz
+                blacksondaddies: Blacks on Daddies
+                boundjocks: Bound Jocks
+                boyshalfwayhouse: Boys Halfway House
+                coltstudiogroup: Colt Studio Group
+                daddycarl: Daddy Carl
+                hotoldermale: Hot Older Male
+                monstercub: Monster Cub
+                myfirstdaddy: My First Daddy
+                naturalbornbreeders: Natural Born Breeders
+                older4me: Older4Me
+                playdaddy: Play Daddy
+                raunchybastards: Raunchy Bastards
+                stockydudees: Stocky dudes
+                toplatindaddies: Top Latin Daddies
+        URL:
+          selector: *image
+          postProcess:
+            - replace:
+                - regex: ^(?:https:\/\/[\w\.]*?)([^.]+)\.com.*$
+                  with: https://$1.com
+      Performers:
+        Name: >
+          $scene//div[contains(@class, "scenePerformers")]/a
+          | $scene//div[@class="scenePerf"]/span[@class="perfName"]
+        URLs: >
+          $scene//div[contains(@class, "scenePerformers")]/a/@href
+          | $scene//div[@class="scenePerf"]/@data-href
+      Tags:
+        Name: $scene//a[@class="sceneTagsLnk"]/text()
+      Details:
+        selector: $scene//div[contains(@class, "sceneDescription")]/text()
+        concat: "\n\n"
+      Image:
+        selector: *image
+        postProcess:
+          - replace:
+              - regex: .*url\("(.*)"\).*
+                with: $1
+              - regex: \s*2x$
+                with:
+
+  newStyleSite:
+    common:
+      $details: //div[contains(@class, "container_styled_1")]
+    scene:
+      Title: //h2[contains(@class, "sectionMainTitle")]
+      Code:
+        selector: //link[@rel="canonical"]/@href
+        postProcess:
+          - replace:
+              - regex: \D*
+                with: $1
+      # All of this can be replaced once scrapers get access to the URL they are scraping
+      Studio:
+        Name:
+          selector: //link[@rel="canonical"]/@href
+          postProcess: *studioNameFromURL
+        URL:
+          selector: //link[@rel="canonical"]/@href
+          postProcess:
+            - replace:
+                - regex: ^(?:https:\/\/[\w\.]*?)([^.]+)\.com.*$
+                  with: https://$1.com
+      Performers:
+        Name: $details//span[contains(@class, "perfImage")]/a
+        URLs: $details//span[contains(@class, "perfImage")]/a/@href
+      Details:
+        selector: $details//p/text()
+        concat: "\n\n"
+      Date:
+        selector: ($details//h5[contains(text(), "Details")]/text())[1]
+        postProcess: *ppDate
+      Image:
+        selector: //meta[@property="og:image"]/@content
+      Tags:
+        Name: $details//h5[contains(., "Categories")]/a/text()
+  performerScraper:
+    common:
+      $modelProfile: //div[@class="modelProfileSidebar"]
+    performer:
+      Name: //div[@class="main_title"]/h3/text()
+      Gender:
+        fixed: Male
+      Height:
+        selector: $modelProfile/div/ul/li[contains(text(),"Height")]/strong/text()
+        postProcess:
+          - feetToCm: true
+      Weight:
+        selector: $modelProfile/div/ul/li[contains(text(),"Weight")]/strong/text()
+        postProcess:
+          - replace:
+              - regex: " pounds$"
+                with: ""
+          - lbToKg: true
+      PenisLength:
+        selector: $modelProfile/div/ul/li[contains(text(),"Dick size")]/strong/text()
+        postProcess:
+          - replace:
+              - regex: (\d+)(\.(\d+) inches)
+                with: "0.$1$2"
+          - feetToCm: true
+      Circumcised:
+        selector: $modelProfile/div/ul/li[contains(text(),"Cut")]/strong/text()
+      Tags:
+        Name: $modelProfile/div/ul/li[5]/strong/text() |
+          $modelProfile//a[@class="tagsRnd"]/text()
+      Image: $modelProfile//div[@class="profile"]//img[contains(@class,"img-responsive")]
+      Twitter: //a[contains(@href,"twitter.com")]/@href
+      Details: $modelProfile//div[@class="main_title"]/p[not(@class)]/text()
+# Last Updated September 17, 2025

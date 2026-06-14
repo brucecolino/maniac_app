@@ -1,0 +1,11 @@
+
+# Folder
+bin
+lib64
+*__pycache__
+pyvenv.cfg
+
+# Project specific
+videos/
+tmp/
+debug.log

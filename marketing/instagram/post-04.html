@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Maniac — Post 04 Subtitles</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1080px; height: 1080px; overflow: hidden;
+    background: #0A0A0F;
+    font-family: 'Inter', sans-serif;
+  }
+  .frame { position: absolute; inset: 40px; border: 1px solid rgba(139,111,209,0.12); border-radius: 24px; pointer-events: none; }
+
+  /* Glow */
+  .bg-glow {
+    position: absolute;
+    width: 800px; height: 400px;
+    top: 40%; left: 50%; transform: translate(-50%, -50%);
+    background: radial-gradient(ellipse, rgba(139,111,209,0.1) 0%, transparent 70%);
+  }
+
+  /* Top */
+  .logo-small { position: absolute; top: 64px; left: 72px; display: flex; align-items: center; gap: 10px; }
+  .logo-small img { width: 28px; height: 28px; filter: drop-shadow(0 0 8px rgba(139,111,209,0.6)); }
+  .logo-small span { font-size: 13px; font-weight: 800; color: #8B6FD1; letter-spacing: 1px; }
+  .top-label { position: absolute; top: 72px; right: 72px; font-size: 12px; font-weight: 600; letter-spacing: 4px; color: rgba(139,111,209,0.6); text-transform: uppercase; }
+
+  /* Waveform */
+  .waveform-section {
+    position: absolute;
+    top: 140px; left: 80px; right: 80px;
+    height: 120px;
+    background: #14141C;
+    border: 1px solid rgba(139,111,209,0.15);
+    border-radius: 12px;
+    display: flex; align-items: center;
+    padding: 0 20px;
+    gap: 3px;
+    overflow: hidden;
+  }
+  .waveform-section::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 55%;
+    background: rgba(139,111,209,0.05);
+    border-right: 2px solid #8B6FD1;
+  }
+
+  .bar { flex: 1; border-radius: 2px; background: rgba(139,111,209,0.25); position: relative; z-index: 1; }
+  .bar.played { background: #8B6FD1; }
+
+  .time-cursor {
+    position: absolute;
+    left: 55%; top: 10px; bottom: 10px;
+    width: 2px;
+    background: #8B6FD1;
+    box-shadow: 0 0 8px rgba(139,111,209,0.8);
+  }
+  .time-label {
+    position: absolute;
+    bottom: 8px; right: 12px;
+    font-size: 11px; font-weight: 600; color: rgba(160,160,179,0.5);
+    font-variant-numeric: tabular-nums;
+  }
+  .time-label-left {
+    position: absolute;
+    bottom: 8px; left: 12px;
+    font-size: 11px; font-weight: 600; color: #8B6FD1;
+  }
+
+  /* Subtitle display */
+  .subtitle-block {
+    position: absolute;
+    top: 300px; left: 80px; right: 80px;
+  }
+
+  .sub-line {
+    background: rgba(139,111,209,0.08);
+    border: 1px solid rgba(139,111,209,0.2);
+    border-radius: 12px;
+    padding: 20px 28px;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 20px;
+  }
+  .sub-line.active {
+    background: rgba(139,111,209,0.15);
+    border-color: rgba(139,111,209,0.5);
+    box-shadow: 0 0 20px rgba(139,111,209,0.1);
+  }
+  .sub-ts { font-size: 12px; font-weight: 700; color: #8B6FD1; font-variant-numeric: tabular-nums; min-width: 70px; }
+  .sub-text { font-size: 22px; font-weight: 400; color: #F2F2F5; flex: 1; }
+  .sub-line:not(.active) .sub-text { color: #60607A; font-size: 18px; }
+  .sub-lang {
+    font-size: 11px; font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 100px;
+    background: rgba(63,184,131,0.15);
+    color: #3FB883;
+    border: 1px solid rgba(63,184,131,0.3);
+  }
+
+  /* Language flags row */
+  .lang-row {
+    position: absolute;
+    top: 620px; left: 80px; right: 80px;
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .lang-pill {
+    padding: 8px 16px;
+    border-radius: 100px;
+    background: rgba(26,26,39,0.8);
+    border: 1px solid rgba(255,255,255,0.06);
+    font-size: 13px; font-weight: 600; color: #A0A0B3;
+  }
+  .lang-pill.first { background: rgba(139,111,209,0.15); border-color: rgba(139,111,209,0.4); color: #8B6FD1; }
+
+  /* Bottom */
+  .bottom { position: absolute; bottom: 72px; left: 80px; right: 80px; }
+  .headline { font-size: 46px; font-weight: 800; color: #F2F2F5; line-height: 1.1; margin-bottom: 14px; }
+  .headline em { color: #8B6FD1; font-style: normal; }
+  .sub-caption { font-size: 16px; color: #60607A; font-weight: 400; }
+</style>
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <div class="frame"></div>
+
+  <div class="logo-small">
+    <img src="../../assets/maniac_logo.png" alt="">
+    <span>MANIAC</span>
+  </div>
+  <div class="top-label">Feature #3</div>
+
+  <div class="waveform-section">
+    <div class="bar played" style="height:35%"></div><div class="bar played" style="height:55%"></div><div class="bar played" style="height:70%"></div><div class="bar played" style="height:45%"></div><div class="bar played" style="height:80%"></div><div class="bar played" style="height:60%"></div><div class="bar played" style="height:50%"></div><div class="bar played" style="height:75%"></div><div class="bar played" style="height:40%"></div><div class="bar played" style="height:65%"></div><div class="bar played" style="height:85%"></div><div class="bar played" style="height:55%"></div><div class="bar played" style="height:70%"></div><div class="bar played" style="height:45%"></div><div class="bar played" style="height:60%"></div><div class="bar played" style="height:80%"></div><div class="bar played" style="height:50%"></div><div class="bar played" style="height:72%"></div><div class="bar played" style="height:38%"></div><div class="bar played" style="height:65%"></div><div class="bar played" style="height:55%"></div><div class="bar played" style="height:78%"></div><div class="bar played" style="height:48%"></div><div class="bar played" style="height:62%"></div><div class="bar played" style="height:88%"></div><div class="bar played" style="height:52%"></div><div class="bar played" style="height:72%"></div><div class="bar played" style="height:42%"></div><div class="bar played" style="height:68%"></div><div class="bar played" style="height:58%"></div>
+    <div class="bar" style="height:45%"></div><div class="bar" style="height:65%"></div><div class="bar" style="height:35%"></div><div class="bar" style="height:75%"></div><div class="bar" style="height:55%"></div><div class="bar" style="height:85%"></div><div class="bar" style="height:50%"></div><div class="bar" style="height:40%"></div><div class="bar" style="height:70%"></div><div class="bar" style="height:60%"></div><div class="bar" style="height:45%"></div><div class="bar" style="height:80%"></div><div class="bar" style="height:55%"></div><div class="bar" style="height:65%"></div><div class="bar" style="height:38%"></div><div class="bar" style="height:72%"></div><div class="bar" style="height:48%"></div><div class="bar" style="height:62%"></div><div class="bar" style="height:88%"></div><div class="bar" style="height:52%"></div>
+    <div class="time-cursor"></div>
+    <div class="time-label">03:24 / 06:12</div>
+    <div class="time-label-left">01:34</div>
+  </div>
+
+  <div class="subtitle-block">
+    <div class="sub-line">
+      <div class="sub-ts">01:31</div>
+      <div class="sub-text" style="color:#60607A;font-size:18px;">— Sapevo che sarebbe successo...</div>
+    </div>
+    <div class="sub-line active">
+      <div class="sub-ts">01:34</div>
+      <div class="sub-text">"Ci sono momenti che cambiano tutto."</div>
+      <div class="sub-lang">IT → EN</div>
+    </div>
+    <div class="sub-line">
+      <div class="sub-ts">01:38</div>
+      <div class="sub-text" style="color:#60607A;font-size:18px;">— Questo è uno di quei momenti.</div>
+    </div>
+  </div>
+
+  <div class="lang-row">
+    <div class="lang-pill first">🎙 Whisper AI</div>
+    <div class="lang-pill">🇮🇹 Italiano</div>
+    <div class="lang-pill">🇬🇧 English</div>
+    <div class="lang-pill">🇪🇸 Español</div>
+    <div class="lang-pill">🇩🇪 Deutsch</div>
+    <div class="lang-pill">🇯🇵 日本語</div>
+    <div class="lang-pill">+7 lingue</div>
+  </div>
+
+  <div class="bottom">
+    <div class="headline">Sottotitoli <em>automatici</em>.<br>Offline. 12 lingue.</div>
+    <div class="sub-caption">Whisper AI — zero cloud, zero account, zero attesa</div>
+  </div>
+</body>
+</html>

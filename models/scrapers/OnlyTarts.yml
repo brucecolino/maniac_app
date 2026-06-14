@@ -1,0 +1,32 @@
+name: OnlyTarts
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - onlytarts.com/video
+    scraper: sceneScraper
+xPathScrapers:
+  sceneScraper:
+    common:
+      $desktopDetails: //div[contains(@class, "video-detail__desktop-sidebar")]
+    scene:
+      Title: $desktopDetails/h1
+      Details: //details/p/text()
+      Date:
+        selector: $desktopDetails//div[@class="video-info__time"]
+        postProcess:
+          - replace:
+              # TODO: This also contains the exact scene duration if we ever get
+              # scrapers to return that field as well
+              - regex: .*•\s+(.*)
+                with: $1
+          - parseDate: 2 January, 2006
+      Image: //meta[@property="og:image"]/@content
+      Studio:
+        Name:
+          fixed: OnlyTarts
+      Tags:
+        Name: //a[contains(@class, "tags__item")]
+      Performers:
+        Name: $desktopDetails//div[contains(@class, "video-info__text")]//a[contains(@href, "/model")]
+        URLs: $desktopDetails//div[contains(@class, "video-info__text")]//a[contains(@href, "/model")]/@href
+# Last Updated September 17, 2025

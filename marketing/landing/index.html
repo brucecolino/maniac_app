@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maniac Player — Clean. Coherent. Professional.</title>
+<meta name="description" content="Il media player Windows con AI integrata. Face recognition, sottotitoli automatici, multi-view, download e suite audio pro. €4.99/anno.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0A0A0F;
+    --bg1:      #14141C;
+    --bg2:      #1C1C27;
+    --bg3:      #262632;
+    --accent:   #8B6FD1;
+    --accent2:  #A68FE0;
+    --text:     #F2F2F5;
+    --text2:    #A0A0B3;
+    --text3:    #60607A;
+    --stroke:   #2E2E3D;
+    --green:    #3FB883;
+    --red:      #E05565;
+    --amber:    #E0B24C;
+    --radius:   12px;
+    --radius-lg: 20px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── NAVBAR ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 64px;
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center;
+    padding: 0 48px;
+    gap: 0;
+  }
+  .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .nav-logo img { width: 28px; height: 28px; filter: drop-shadow(0 0 8px rgba(139,111,209,0.6)); }
+  .nav-logo span { font-size: 15px; font-weight: 800; color: var(--accent); letter-spacing: 1px; text-shadow: 0 0 12px rgba(139,111,209,0.4); }
+  .nav-links { display: flex; align-items: center; gap: 32px; margin-left: 48px; }
+  .nav-links a { font-size: 14px; font-weight: 500; color: var(--text2); text-decoration: none; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .btn-ghost { padding: 8px 20px; border: 1px solid var(--stroke); border-radius: var(--radius); font-size: 14px; font-weight: 600; color: var(--text2); text-decoration: none; transition: all 0.2s; }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+  .btn-primary { padding: 10px 24px; background: var(--accent); border-radius: var(--radius); font-size: 14px; font-weight: 700; color: #fff; text-decoration: none; box-shadow: 0 4px 16px rgba(139,111,209,0.3); transition: all 0.2s; }
+  .btn-primary:hover { background: var(--accent2); box-shadow: 0 4px 24px rgba(139,111,209,0.5); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+    padding: 120px 48px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-glow-1 { position: absolute; width: 800px; height: 800px; top: 50%; left: 50%; transform: translate(-50%,-55%); background: radial-gradient(circle, rgba(139,111,209,0.15) 0%, transparent 65%); pointer-events: none; }
+  .hero-glow-2 { position: absolute; width: 400px; height: 400px; top: 30%; left: 50%; transform: translate(-50%,-50%); background: radial-gradient(circle, rgba(166,143,224,0.1) 0%, transparent 65%); pointer-events: none; }
+  .dots-bg { position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(139,111,209,0.12) 1px, transparent 1px); background-size: 36px 36px; mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,0.4) 0%, transparent 100%); pointer-events: none; }
+
+  .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(139,111,209,0.1); border: 1px solid rgba(139,111,209,0.3); border-radius: 100px; padding: 8px 20px; margin-bottom: 32px; font-size: 13px; font-weight: 600; color: var(--accent); }
+  .hero-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+  h1 { font-size: clamp(52px, 7vw, 88px); font-weight: 800; line-height: 1.05; letter-spacing: -3px; margin-bottom: 24px; }
+  h1 em { color: var(--accent); font-style: normal; }
+  .hero-sub { font-size: 20px; color: var(--text2); max-width: 600px; margin: 0 auto 48px; font-weight: 400; line-height: 1.6; }
+
+  .hero-ctas { display: flex; gap: 14px; align-items: center; justify-content: center; flex-wrap: wrap; margin-bottom: 64px; }
+  .btn-hero { padding: 16px 36px; background: var(--accent); border-radius: var(--radius); font-size: 16px; font-weight: 700; color: #fff; text-decoration: none; box-shadow: 0 8px 32px rgba(139,111,209,0.4); transition: all 0.2s; }
+  .btn-hero:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 12px 40px rgba(139,111,209,0.5); }
+  .btn-hero-ghost { padding: 16px 36px; border: 1px solid var(--stroke); border-radius: var(--radius); font-size: 16px; font-weight: 600; color: var(--text2); text-decoration: none; transition: all 0.2s; }
+  .btn-hero-ghost:hover { border-color: var(--accent); color: var(--text); }
+
+  .hero-note { font-size: 13px; color: var(--text3); }
+
+  /* App screenshot placeholder */
+  .hero-screenshot {
+    width: 100%; max-width: 960px;
+    background: var(--bg1);
+    border: 1px solid rgba(139,111,209,0.2);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,111,209,0.1);
+  }
+  .screenshot-bar { height: 36px; background: var(--bg2); border-bottom: 1px solid var(--stroke); display: flex; align-items: center; padding: 0 16px; gap: 8px; }
+  .sc-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .sc-dot.r { background: var(--red); }
+  .sc-dot.a { background: var(--amber); }
+  .sc-dot.g { background: var(--green); }
+  .sc-title { flex: 1; text-align: center; font-size: 12px; font-weight: 600; color: var(--text3); }
+  .screenshot-body {
+    height: 480px;
+    background: linear-gradient(135deg, #0D0D18 0%, #14141C 50%, #0A0A12 100%);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 2px;
+  }
+  .mock-panel { background: #0A0A10; border-radius: 4px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .mock-panel::before { content: '▶'; font-size: 28px; color: rgba(139,111,209,0.2); }
+  .mock-panel-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 32px; background: rgba(20,20,28,0.95); border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; padding: 0 12px; gap: 8px; }
+  .mp-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .mp-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; flex: 1; }
+  .mp-bar { flex: 1; height: 3px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+  .mp-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+
+  /* ── FEATURES ── */
+  .section { padding: 100px 48px; max-width: 1200px; margin: 0 auto; }
+  .section-label { font-size: 12px; font-weight: 700; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; margin-bottom: 16px; }
+  .section-title { font-size: clamp(32px, 4vw, 48px); font-weight: 800; letter-spacing: -1.5px; margin-bottom: 16px; }
+  .section-sub { font-size: 18px; color: var(--text2); max-width: 600px; margin-bottom: 64px; }
+
+  .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .feature-card {
+    background: var(--bg1);
+    border: 1px solid var(--stroke);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .feature-card:hover { border-color: rgba(139,111,209,0.4); box-shadow: 0 8px 32px rgba(139,111,209,0.08); }
+  .feature-card.highlight { border-color: rgba(139,111,209,0.35); background: linear-gradient(135deg, rgba(139,111,209,0.08) 0%, var(--bg1) 100%); }
+  .fc-icon { width: 48px; height: 48px; background: rgba(139,111,209,0.12); border: 1px solid rgba(139,111,209,0.25); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 20px; }
+  .fc-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+  .fc-desc { font-size: 14px; color: var(--text2); line-height: 1.7; }
+  .fc-badge { display: inline-block; margin-top: 14px; padding: 4px 12px; background: rgba(139,111,209,0.12); border: 1px solid rgba(139,111,209,0.25); border-radius: 100px; font-size: 11px; font-weight: 700; color: var(--accent); }
+
+  /* ── PRICING ── */
+  .pricing-section { padding: 100px 48px; background: radial-gradient(ellipse at 50% 0%, rgba(139,111,209,0.08) 0%, transparent 60%); }
+  .pricing-inner { max-width: 1200px; margin: 0 auto; }
+  .pricing-cards { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 16px; max-width: 900px; margin: 0 auto; align-items: start; }
+
+  .pc {
+    background: var(--bg1);
+    border: 1px solid var(--stroke);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+  }
+  .pc.featured {
+    border-color: var(--accent);
+    background: linear-gradient(180deg, rgba(139,111,209,0.12) 0%, var(--bg1) 100%);
+    box-shadow: 0 0 40px rgba(139,111,209,0.15);
+    position: relative;
+  }
+  .pc-recommended { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: var(--accent); border-radius: 100px; padding: 5px 18px; font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; }
+  .pc-name { font-size: 13px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; }
+  .pc-price { display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px; }
+  .pc-price-main { font-size: 52px; font-weight: 800; color: var(--text); letter-spacing: -2px; }
+  .pc-price-curr { font-size: 24px; font-weight: 700; color: var(--accent); }
+  .pc-price-period { font-size: 15px; color: var(--text3); }
+  .pc-note { font-size: 13px; color: var(--text3); margin-bottom: 24px; }
+  .pc-note span { color: var(--green); font-weight: 600; }
+  .pc-divider { height: 1px; background: var(--stroke); margin-bottom: 24px; }
+  .pc-features { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
+  .pcf { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--text2); }
+  .pcf-check { color: var(--green); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .pcf-x { color: var(--text3); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .pc-cta { width: 100%; padding: 14px; border-radius: var(--radius); font-size: 15px; font-weight: 700; text-align: center; text-decoration: none; display: block; transition: all 0.2s; }
+  .pc-cta.primary { background: var(--accent); color: #fff; box-shadow: 0 6px 24px rgba(139,111,209,0.35); }
+  .pc-cta.primary:hover { background: var(--accent2); }
+  .pc-cta.ghost { border: 1px solid var(--stroke); color: var(--text2); }
+  .pc-cta.ghost:hover { border-color: var(--accent); color: var(--text); }
+
+  /* ── STACK ── */
+  .stack-section { padding: 80px 48px; max-width: 1200px; margin: 0 auto; }
+  .stack-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .stack-tag { padding: 10px 20px; background: var(--bg1); border: 1px solid var(--stroke); border-radius: 100px; font-size: 14px; font-weight: 600; color: var(--text2); }
+  .stack-tag.hi { color: var(--accent); border-color: rgba(139,111,209,0.35); background: rgba(139,111,209,0.08); }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--stroke);
+    padding: 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    max-width: 1200px; margin: 0 auto;
+  }
+  .footer-logo { display: flex; align-items: center; gap: 10px; }
+  .footer-logo img { width: 24px; height: 24px; filter: drop-shadow(0 0 6px rgba(139,111,209,0.5)); }
+  .footer-logo span { font-size: 14px; font-weight: 800; color: var(--accent); }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 14px; color: var(--text3); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--text); }
+  .footer-right { font-size: 13px; color: var(--text3); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .features-grid { grid-template-columns: 1fr 1fr; }
+    .pricing-cards { grid-template-columns: 1fr; max-width: 420px; }
+    nav { padding: 0 24px; }
+    .nav-links { display: none; }
+    .section { padding: 60px 24px; }
+    h1 { letter-spacing: -2px; }
+  }
+  @media (max-width: 600px) {
+    .features-grid { grid-template-columns: 1fr; }
+    .hero { padding: 100px 24px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+  <a class="nav-logo" href="#">
+    <img src="../../assets/maniac_logo.png" alt="Maniac">
+    <span>MANIAC</span>
+  </a>
+  <div class="nav-links">
+    <a href="#features">Funzionalità</a>
+    <a href="#pricing">Prezzi</a>
+    <a href="#download">Download</a>
+  </div>
+  <div class="nav-right">
+    <a href="#" class="btn-ghost">Accedi</a>
+    <a href="#download" class="btn-primary">Scarica gratis</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow-1"></div>
+  <div class="hero-glow-2"></div>
+  <div class="dots-bg"></div>
+
+  <div class="hero-badge">
+    <div class="hero-badge-dot"></div>
+    Disponibile ora per Windows 10 / 11
+  </div>
+
+  <h1>Il media player<br>con <em>AI integrata</em>.</h1>
+  <p class="hero-sub">Face recognition, sottotitoli automatici, multi-view, download, suite audio pro — tutto in un'unica app. Sul tuo PC. Senza cloud.</p>
+
+  <div class="hero-ctas">
+    <a href="#download" class="btn-hero">Scarica gratis — 30 giorni</a>
+    <a href="#features" class="btn-hero-ghost">Scopri le funzionalità</a>
+  </div>
+  <div class="hero-note">Gratis per 30 giorni · poi €4.99/anno · Nessuna carta richiesta</div>
+
+  <div style="width:100%;max-width:960px;margin-top:60px;">
+    <div class="hero-screenshot">
+      <div class="screenshot-bar">
+        <div class="sc-dot r"></div>
+        <div class="sc-dot a"></div>
+        <div class="sc-dot g"></div>
+        <div class="sc-title">Maniac Player — Multi-View</div>
+      </div>
+      <div class="screenshot-body">
+        <div class="mock-panel" style="grid-column: 1; grid-row: 1;">
+          <div class="mock-panel-bar">
+            <div class="mp-dot" style="background:#8B6FD1;box-shadow:0 0 4px #8B6FD1"></div>
+            <div class="mp-label">Player 1</div>
+            <div class="mp-bar"><div class="mp-fill" style="width:65%"></div></div>
+          </div>
+        </div>
+        <div class="mock-panel" style="grid-column: 2; grid-row: 1;">
+          <div class="mock-panel-bar">
+            <div class="mp-dot" style="background:#3FB883"></div>
+            <div class="mp-label">Player 2</div>
+            <div class="mp-bar"><div class="mp-fill" style="width:30%"></div></div>
+          </div>
+        </div>
+        <div class="mock-panel" style="grid-column: 1; grid-row: 2;">
+          <div class="mock-panel-bar">
+            <div class="mp-dot" style="background:#E0B24C"></div>
+            <div class="mp-label">Player 3</div>
+            <div class="mp-bar"><div class="mp-fill" style="width:80%"></div></div>
+          </div>
+        </div>
+        <div class="mock-panel" style="grid-column: 2; grid-row: 2;">
+          <div class="mock-panel-bar">
+            <div class="mp-dot" style="background:#E05565"></div>
+            <div class="mp-label">Player 4</div>
+            <div class="mp-bar"><div class="mp-fill" style="width:45%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-label">Funzionalità</div>
+  <h2 class="section-title">Non è un player.<br>È uno studio personale.</h2>
+  <p class="section-sub">Ogni funzionalità è progettata per chi lavora seriamente con i video.</p>
+
+  <div class="features-grid">
+    <div class="feature-card highlight">
+      <div class="fc-icon">🧠</div>
+      <div class="fc-title">AI Face Recognition</div>
+      <div class="fc-desc">Scansiona la libreria, riconosce i volti, raggruppa le clip per persona. Tutto on-device, senza cloud.</div>
+      <div class="fc-badge">YOLOv8 · face-api.js · Privacy</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">📺</div>
+      <div class="fc-title">Multi-View 4 Player</div>
+      <div class="fc-desc">Guarda fino a 4 video simultaneamente. Ogni player ha playlist, EQ, filtri e device audio indipendenti.</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">💬</div>
+      <div class="fc-title">Sottotitoli Automatici</div>
+      <div class="fc-desc">Whisper AI trascrive l'audio e traduce in 12 lingue. Offline, zero account, zero attesa.</div>
+      <div class="fc-badge">Whisper · Argos Translate</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">⬇</div>
+      <div class="fc-title">Download Integrato</div>
+      <div class="fc-desc">Incolla un link e Maniac scarica. Video, audio, playlist intere. Cookie automatici, retry, ripresa.</div>
+      <div class="fc-badge">yt-dlp · Browser cookies</div>
+    </div>
+    <div class="feature-card highlight">
+      <div class="fc-icon">🎚</div>
+      <div class="fc-title">Suite Audio Pro</div>
+      <div class="fc-desc">EQ 3 bande, routing per device, gain, noise gate, balance, delay sync e LUFS live per ogni player.</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">🎨</div>
+      <div class="fc-title">Color Grading Live</div>
+      <div class="fc-desc">Brightness, contrast, saturation, hue, gamma in tempo reale. Nessun export, nessuna attesa.</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">🏷</div>
+      <div class="fc-title">Tag System</div>
+      <div class="fc-desc">32 colori, tag persistenti per file, export M3U/JSON, bulk tag a folder interi.</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">📷</div>
+      <div class="fc-title">Webcam &amp; IP Camera</div>
+      <div class="fc-desc">Streaming WebRTC da webcam o telecamere IP con registrazione e impostazioni persistenti.</div>
+    </div>
+    <div class="feature-card">
+      <div class="fc-icon">🌐</div>
+      <div class="fc-title">Streaming &amp; Torrent</div>
+      <div class="fc-desc">WebTorrent integrato e supporto magnet link. Streaming diretto senza download.</div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing-section" id="pricing">
+  <div class="pricing-inner">
+    <div style="text-align:center;margin-bottom:64px;">
+      <div class="section-label" style="justify-content:center;display:block;">Prezzi</div>
+      <h2 class="section-title">Semplice. Onesto. Conveniente.</h2>
+      <p class="section-sub" style="margin:0 auto;">Un prezzo unico. Tutte le funzionalità incluse. Nessuna sorpresa.</p>
+    </div>
+
+    <div class="pricing-cards">
+      <div class="pc">
+        <div class="pc-name">Free Trial</div>
+        <div class="pc-price"><span class="pc-price-main">0</span><span class="pc-price-curr">€</span></div>
+        <div class="pc-note">Per 30 giorni completi</div>
+        <div class="pc-divider"></div>
+        <div class="pc-features">
+          <div class="pcf"><span class="pcf-check">✓</span> Tutte le funzionalità AI</div>
+          <div class="pcf"><span class="pcf-check">✓</span> Multi-view completo</div>
+          <div class="pcf"><span class="pcf-check">✓</span> Download illimitati</div>
+          <div class="pcf"><span class="pcf-x">✗</span> <span style="color:var(--text3)">Dopo 30gg scade</span></div>
+        </div>
+        <a href="#download" class="pc-cta ghost">Inizia gratis</a>
+      </div>
+
+      <div class="pc featured">
+        <div class="pc-recommended">Consigliato</div>
+        <div class="pc-name">Pro</div>
+        <div class="pc-price">
+          <span class="pc-price-curr">€</span>
+          <span class="pc-price-main" style="color:var(--accent)">4.99</span>
+          <span class="pc-price-period">/ anno</span>
+        </div>
+        <div class="pc-note"><span>30 giorni gratis</span> — nessuna carta richiesta</div>
+        <div class="pc-divider"></div>
+        <div class="pc-features">
+          <div class="pcf"><span class="pcf-check">✓</span> Tutte le funzionalità AI</div>
+          <div class="pcf"><span class="pcf-check">✓</span> Multi-view 1/2/3/4 player</div>
+          <div class="pcf"><span class="pcf-check">✓</span> Download illimitati</div>
+          <div class="pcf"><span class="pcf-check">✓</span> Suite audio completa</div>
+          <div class="pcf"><span class="pcf-check">✓</span> Aggiornamenti inclusi</div>
+          <div class="pcf"><span class="pcf-check">✓</span> Nessun cloud · Privacy totale</div>
+        </div>
+        <a href="#download" class="pc-cta primary">Inizia gratis — 30 giorni</a>
+      </div>
+
+      <div class="pc">
+        <div class="pc-name">Lifetime</div>
+        <div class="pc-price"><span class="pc-price-curr">€</span><span class="pc-price-main">19.99</span></div>
+        <div class="pc-note">Pagamento unico · Per sempre</div>
+        <div class="pc-divider"></div>
+        <div class="pc-features">
+          <div class="pcf"><span class="pcf-check">✓</span> Tutto del piano Pro</div>
+          <div class="pcf"><span class="pcf-check">✓</span> Aggiornamenti a vita</div>
+          <div class="pcf"><span class="pcf-check">✓</span> Nessun rinnovo mai</div>
+          <div class="pcf"><span class="pcf-check">✓</span> Priorità nel supporto</div>
+        </div>
+        <a href="#download" class="pc-cta ghost">Acquista Lifetime</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH STACK -->
+<section class="stack-section">
+  <div class="section-label">Tecnologia</div>
+  <h2 class="section-title" style="margin-bottom:24px;">Costruito su<br>tecnologie moderne.</h2>
+  <div class="stack-grid">
+    <div class="stack-tag hi">Electron</div>
+    <div class="stack-tag hi">Whisper AI</div>
+    <div class="stack-tag hi">YOLOv8</div>
+    <div class="stack-tag hi">face-api.js</div>
+    <div class="stack-tag hi">yt-dlp</div>
+    <div class="stack-tag">WebTorrent</div>
+    <div class="stack-tag">Argos Translate</div>
+    <div class="stack-tag">Places365</div>
+    <div class="stack-tag">WebRTC</div>
+    <div class="stack-tag">SQLite</div>
+    <div class="stack-tag">ffmpeg</div>
+    <div class="stack-tag">Python 3.11</div>
+    <div class="stack-tag">LUFS AudioWorklet</div>
+    <div class="stack-tag hi">Windows 10 / 11</div>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<section class="section" id="download" style="text-align:center;">
+  <div class="section-label" style="display:block;">Download</div>
+  <h2 class="section-title">Pronto in 2 minuti.</h2>
+  <p class="section-sub" style="margin:0 auto 48px;">Scarica l'installer, eseguilo, apri un video. Nessuna configurazione richiesta.</p>
+
+  <div style="display:inline-flex;flex-direction:column;align-items:center;gap:16px;">
+    <a href="#" class="btn-hero" style="font-size:18px;padding:20px 48px;">
+      ⬇ &nbsp;Scarica per Windows
+    </a>
+    <div style="font-size:13px;color:var(--text3)">
+      Windows 10 / 11 · 64-bit · ~120 MB installer
+    </div>
+    <div style="font-size:13px;color:var(--text3)">
+      Gratis per 30 giorni · poi €4.99/anno · Nessuna carta
+    </div>
+  </div>
+
+  <div style="margin-top:48px;display:flex;gap:32px;justify-content:center;flex-wrap:wrap;">
+    <div style="text-align:center;">
+      <div style="font-size:28px;font-weight:800;color:var(--text)">v1.0</div>
+      <div style="font-size:13px;color:var(--text3)">Versione attuale</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:28px;font-weight:800;color:var(--accent)">€4.99</div>
+      <div style="font-size:13px;color:var(--text3)">Per anno</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:28px;font-weight:800;color:var(--green)">30gg</div>
+      <div style="font-size:13px;color:var(--text3)">Trial gratuito</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:28px;font-weight:800;color:var(--text)">9+</div>
+      <div style="font-size:13px;color:var(--text3)">Funzionalità AI</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">
+    <img src="../../assets/maniac_logo.png" alt="Maniac">
+    <span>MANIAC</span>
+  </div>
+  <div class="footer-links">
+    <a href="#">GitHub</a>
+    <a href="#">Instagram</a>
+    <a href="#">Product Hunt</a>
+    <a href="mailto:ciao@maniacplayer.app">Contatti</a>
+  </div>
+  <div class="footer-right">© 2026 Maniac Player · Windows</div>
+</footer>
+
+</body>
+</html>

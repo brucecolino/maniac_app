@@ -1,0 +1,131 @@
+# yaml-language-server: $schema=../../validator/scraper.schema.json
+name: Arx
+sceneByURL:
+  - action: scrapeXPath
+    url: &urls
+      - analvault.com
+      - cuckhunter.com
+      - honeytrans.com
+      - japanlust.com
+      - joibabes.com
+      - lesworship.com
+      - nudeyogaporn.com
+      - povmasters.com
+      - randypass.com
+      - transdaylight.com
+      - transmidnight.com
+      - transroommates.com
+    scraper: htmlScraper
+galleryByURL:
+  - action: scrapeXPath
+    url: *urls
+    scraper: htmlScraper
+performerByURL:
+  - action: scrapeXPath
+    url: *urls
+    scraper: htmlScraper
+xPathScrapers:
+  htmlScraper:
+    scene:
+      Title: &titleSel //meta[@property="og:title"]/@content
+      Date: &date
+        selector: //h1/following-sibling::div[contains(@class, "items-center")]//span[@class="block"]/text()
+        postProcess:
+          - parseDate: Jan 2, 2006
+      Details: &detailsSel //span[text()="Description:"]/following-sibling::span
+      Performers:
+        Name: &performersSel //span[text()="Models:"]/following-sibling::div//a//span/text()
+      Tags:
+        Name: &tagsSel //a[contains(@href, "/categories/")]//text()
+      URL: &urlSel //meta[@property="og:url"]/@content
+      Image: &imageSel //meta[@property="og:image"]/@content
+      Code: &code
+        selector: *urlSel
+        postProcess:
+          - replace:
+              - regex: &domainAndCodeRegex 'https?://([^/]+)/scenes/(\d+)/.*'
+                with: $2
+      Studio:
+        Name: &studioName
+          selector: *imageSel
+          postProcess:
+            - replace:
+                - regex: '.*/scene_thumbs/([^\d]+).*'
+                  with: $1
+            - map:
+                hhdp: Anal Vault
+                chi: Cuck Hunter
+                hhsf: Honey Trans
+                hhsm: Honey Trans
+                hhsss: Honey Trans
+                jlo: Japan Lust
+                jly: Japan Lust
+                joi: JOI Babes
+                hhles: Les Worship
+                yoga: Nude Yoga Porn
+                pov: POV Masters
+                tsdl: Trans Daylight
+                tstm: Trans Midnight
+                tsrm: Trans Roommates
+        URL:
+          selector: *urlSel
+          postProcess:
+            - replace:
+                - regex: *domainAndCodeRegex
+                  with: https://www.$1
+    gallery:
+      Title:
+        selector: *titleSel
+        postProcess:
+          - replace:
+              - regex: "Photos for Scene \\| "
+                with: ""
+      Code: *code
+      URL: *urlSel
+      Date:
+        selector: *urlSel
+        postProcess:
+          - replace: &removePhotos
+              - regex: /photos$
+                with: ""
+          - subScraper: *date
+      Studio:
+        Name:
+          selector: *urlSel
+          postProcess:
+            - replace: *removePhotos
+            - subScraper: *studioName
+      Performers:
+        Name:
+          selector: *urlSel
+          postProcess:
+            - replace: *removePhotos
+            - subScraper:
+                selector: *performersSel
+                concat: ","
+          split: ","
+      Tags:
+        Name:
+          selector: *urlSel
+          postProcess:
+            - replace: *removePhotos
+            - subScraper:
+                selector: *tagsSel
+                concat: ","
+          split: ","
+      Details:
+        selector: *urlSel
+        postProcess:
+          - replace: *removePhotos
+          - subScraper: *detailsSel
+    performer:
+      Name: //meta[@property="og:image:alt"]/@content
+      Image:
+        selector: *imageSel
+        postProcess:
+          - replace:
+              - regex: ^(https://[^/]+/fit-in/)[^/]+(.*)$
+                with: "${1}0x0${2}"
+      Tags:
+        Name: *tagsSel
+# Last Updated November 7, 2025

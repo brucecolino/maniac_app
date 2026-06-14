@@ -1,0 +1,40 @@
+[project]
+name = "ai-sub"
+version = "2.8.2"
+authors = [
+  { name="FlippFuzz" },
+]
+description = "AI-Powered Subtitle Generation with Translation"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pysubs2",
+    "static-ffmpeg",
+    "pydantic",
+    "pydantic-ai-slim[google, logfire, duckduckgo]",
+    "pydantic-settings",
+    "json_repair",
+    "pyrate-limiter",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/FlippFuzz/ai-sub"
+"Bug Tracker" = "https://github.com/FlippFuzz/ai-sub/issues"
+
+[project.scripts]
+ai-sub = "ai_sub.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+preview = true
+select = ["D", "DOC", "E", "F", "I"]
+fixable = ["ALL"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Maniac — Post 09 Pricing</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1080px; height: 1080px; overflow: hidden;
+    background: #0A0A0F;
+    font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .frame { position: absolute; inset: 40px; border: 1px solid rgba(139,111,209,0.12); border-radius: 24px; pointer-events: none; }
+
+  /* Background glow */
+  .bg-glow { position: absolute; width: 700px; height: 700px; top: 50%; left: 50%; transform: translate(-50%,-50%); background: radial-gradient(circle, rgba(139,111,209,0.14) 0%, transparent 65%); }
+
+  /* Top dots pattern */
+  .dots-pattern {
+    position: absolute; top: 0; left: 0; right: 0; height: 300px;
+    background-image: radial-gradient(circle, rgba(139,111,209,0.15) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, transparent 100%);
+  }
+
+  .logo-small { position: absolute; top: 64px; left: 72px; display: flex; align-items: center; gap: 10px; }
+  .logo-small img { width: 28px; height: 28px; filter: drop-shadow(0 0 8px rgba(139,111,209,0.6)); }
+  .logo-small span { font-size: 13px; font-weight: 800; color: #8B6FD1; letter-spacing: 1px; }
+
+  /* Pricing card */
+  .pricing-card {
+    position: relative; z-index: 1;
+    width: 580px;
+    background: #14141C;
+    border: 1px solid rgba(139,111,209,0.35);
+    border-radius: 24px;
+    padding: 48px 52px;
+    box-shadow: 0 0 60px rgba(139,111,209,0.15), 0 40px 80px rgba(0,0,0,0.4);
+  }
+
+  /* PRO badge */
+  .pro-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, #8B6FD1, #A68FE0);
+    border-radius: 100px;
+    padding: 8px 22px;
+    margin-bottom: 32px;
+  }
+  .pro-badge span { font-size: 13px; font-weight: 800; color: #fff; letter-spacing: 2px; text-transform: uppercase; }
+  .pro-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.6); }
+
+  /* Price */
+  .price-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 8px; }
+  .price-currency { font-size: 36px; font-weight: 800; color: #8B6FD1; line-height: 1; }
+  .price-amount { font-size: 96px; font-weight: 800; color: #F2F2F5; line-height: 1; letter-spacing: -4px; }
+  .price-period { font-size: 20px; font-weight: 400; color: #60607A; align-self: flex-end; padding-bottom: 12px; }
+
+  .price-note { font-size: 14px; color: #60607A; margin-bottom: 36px; }
+  .price-note span { color: #3FB883; font-weight: 600; }
+
+  /* Divider */
+  .divider { height: 1px; background: rgba(255,255,255,0.06); margin-bottom: 32px; }
+
+  /* Feature list */
+  .feature-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 40px; }
+  .fi { display: flex; align-items: center; gap: 14px; }
+  .fi-check { width: 22px; height: 22px; border-radius: 50%; background: rgba(63,184,131,0.15); border: 1px solid rgba(63,184,131,0.4); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; color: #3FB883; font-weight: 700; }
+  .fi-text { font-size: 16px; font-weight: 500; color: #A0A0B3; }
+  .fi-text strong { color: #F2F2F5; font-weight: 600; }
+
+  /* CTA button */
+  .cta-btn {
+    width: 100%; padding: 20px;
+    background: linear-gradient(135deg, #8B6FD1, #A68FE0);
+    border-radius: 12px;
+    text-align: center;
+    font-size: 18px; font-weight: 800; color: #fff;
+    box-shadow: 0 8px 32px rgba(139,111,209,0.4);
+    margin-bottom: 16px;
+  }
+  .cta-sub { text-align: center; font-size: 13px; color: #60607A; }
+
+  /* Comparison badges */
+  .compare { position: absolute; right: 80px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 12px; }
+  .cmp { background: #14141C; border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 16px; text-align: right; }
+  .cmp-name { font-size: 12px; color: #60607A; font-weight: 600; margin-bottom: 4px; }
+  .cmp-price { font-size: 16px; font-weight: 800; color: #F2F2F5; }
+  .cmp-price.ours { color: #8B6FD1; font-size: 18px; }
+  .cmp-label { font-size: 10px; color: #3FB883; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+  <div class="dots-pattern"></div>
+  <div class="bg-glow"></div>
+  <div class="frame"></div>
+  <div class="logo-small"><img src="../../assets/maniac_logo.png" alt=""><span>MANIAC</span></div>
+
+  <div class="pricing-card">
+    <div class="pro-badge">
+      <div class="pro-dot"></div>
+      <span>Pro</span>
+      <div class="pro-dot"></div>
+    </div>
+
+    <div class="price-row">
+      <div class="price-currency">€</div>
+      <div class="price-amount">4.99</div>
+      <div class="price-period">/ anno</div>
+    </div>
+    <div class="price-note"><span>30 giorni gratis</span> — nessuna carta richiesta</div>
+
+    <div class="divider"></div>
+
+    <div class="feature-list">
+      <div class="fi"><div class="fi-check">✓</div><div class="fi-text"><strong>Tutte le funzionalità AI</strong> — face, subtitles, scene</div></div>
+      <div class="fi"><div class="fi-check">✓</div><div class="fi-text"><strong>Multi-view</strong> — fino a 4 player simultanei</div></div>
+      <div class="fi"><div class="fi-check">✓</div><div class="fi-text"><strong>Download illimitati</strong> — yt-dlp integrato</div></div>
+      <div class="fi"><div class="fi-check">✓</div><div class="fi-text"><strong>Suite audio pro</strong> — EQ, routing, LUFS</div></div>
+      <div class="fi"><div class="fi-check">✓</div><div class="fi-text"><strong>Aggiornamenti inclusi</strong> — sempre l'ultima versione</div></div>
+      <div class="fi"><div class="fi-check">✓</div><div class="fi-text"><strong>Nessun cloud</strong> — tutto gira sul tuo PC</div></div>
+    </div>
+
+    <div class="cta-btn">Inizia gratis — 30 giorni</div>
+    <div class="cta-sub">maniacplayer.app · Windows 10 / 11</div>
+  </div>
+</body>
+</html>

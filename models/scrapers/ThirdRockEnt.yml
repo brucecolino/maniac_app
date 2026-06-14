@@ -1,0 +1,123 @@
+name: ThirdRockEnt
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - abbiemaley.com/trailers/
+      - analamateur.com/trailers/
+      - analbbc.com/trailers/
+      - analized.com/trailers/
+      - analviolation.com/trailers/
+      - baddaddypov.com/trailers/
+      - brokensluts.net/trailers/
+      - cumdumpsterteens.com/trailers/
+      - dtfsluts.com/trailers/
+      - girlfaction.com/trailers/
+      - hergape.com/trailers/
+      - homemadeanalwhores.com/trailers/
+      - jamesdeen.com/trailers/
+      - lesbiananalsluts.com/trailers/
+      - mugfucked.com/trailers/
+      - onlyprince.com/trailers/
+      - pervertgallery.com/trailers/
+      - porkvendors.com/trailers/
+      - pornforce.com/trailers/
+      - publicsexdate.com/trailers/
+      - slutinspection.com/trailers/
+      - sluttybbws.com/trailers/
+      - teasingandpleasing.com/trailers/
+      - teenageanalsluts.com/trailers/
+      - teenagecorruption.com/trailers/
+      - teenagetryouts.com/trailers/
+      - twistedvisual.com/trailers/
+      - yourmomdoesanal.com/trailers/
+      - yourmomdoesporn.com/trailers/
+
+      # There is currently no known way to scrape the correct
+      # substudio when scraping from these network sites
+      - badfamilypov.com/trailers/
+      - fullpornnetwork.com/trailers/
+
+      # These sites no longer have public scenes but might open up again
+      - badmommypov.com/trailers/
+      - daughterjoi.com/trailers/
+      - mommyjoi.com/trailers/
+
+      # Old sites that are just redirects now
+      - downtofuckdating.com/trailers/
+      - realfuckingdating.com/trailers/
+      - wifespov.com/trailers/
+      - slutsbts.com/trailers/
+      - povperverts.net/trailers/
+      - shefucksonthefirstdate.com/trailers/
+
+    scraper: sceneScraper
+xPathScrapers:
+  sceneScraper:
+    scene:
+      Title: //h1[@class="title_bar trailer_title text-center text-3xl text-accent"]
+      Details: //p[@class="description-text"]
+      Date:
+        selector: //label[contains(text(),"Date Added")]/following-sibling::p/text()
+        postProcess:
+          - parseDate: 2006-01-02
+      URLs: &url //meta[@property="og:url"]/@content
+      Performers:
+        Name: //p[@class="mb-1"]//a
+      Tags:
+        Name: //label[contains(., "Categories")]/following-sibling::div/ul/li/a
+      Image:
+        selector: //img[@alt="trailer"]/@src0_1x | //div[@id="video_player"]//@poster | //video[@id="my-player"]/@poster
+        postProcess:
+          - replace:
+              # If images have been resized we can get the full image instead, suffering no loss of quality (and maybe getting higher qualities!)
+              - regex: (:?-[1-4]x)?\.jpg$
+                with: "-full.jpg"
+      Studio:
+        Name:
+          selector: *url
+          postProcess:
+            - replace:
+                - regex: ^(?:https:\/\/[\w\.]*?)([^.]+)\.(?:com|net).*
+                  with: $1
+            - map:
+                abbiemaley: Abbie Maley
+                analamateur: Anal Amateur
+                analbbc: AnalBBC
+                analized: Analized
+                analviolation: Anal Violation
+                baddaddypov: Bad Daddy POV
+                badfamilypov: Bad Family POV
+                badmommypov: Bad Mommy POV
+                brokensluts: Broken Sluts
+                cumdumpsterteens: Cum Dumpster Teens
+                daughterjoi: Daughter JOI
+                downtofuckdating: Down To Fuck Dating
+                dtfsluts: DTF Sluts
+                fullpornnetwork: Full Porn Network
+                girlfaction: Girlfaction
+                hergape: Her Gape
+                homemadeanalwhores: Homemade Anal Whores
+                jamesdeen: James Deen
+                lesbiananalsluts: Lesbian Anal Sluts
+                mommyjoi: Mommy JOI
+                mugfucked: Mug Fucked
+                onlyprince: Only Prince
+                pervertgallery: Pervert Gallery
+                porkvendors: Pork Vendors
+                pornforce: Porn Force
+                povperverts: POV Perverts
+                publicsexdate: Public Sex Date
+                realfuckingdating: Real Fucking Dating
+                shefucksonthefirstdate: She Fucks On The First Date
+                slutinspection: Slut Inspection
+                slutsbts: Sluts BTS
+                slutspov: Sluts POV
+                sluttybbws: Slutty BBWs
+                teasingandpleasing: Teasing and Pleasing
+                teenageanalsluts: Teenage Anal Sluts
+                teenagecorruption: Teenage Corruption
+                teenagetryouts: Teenage Tryouts
+                twistedvisual: Twisted Visual
+                wifespov: Wifes POV
+                yourmomdoesanal: Your Mom Does Anal
+                yourmomdoesporn: Your Mom Does Porn

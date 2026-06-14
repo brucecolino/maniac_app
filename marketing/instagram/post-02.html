@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Maniac — Post 02 Multi-View</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1080px; height: 1080px; overflow: hidden;
+    background: #0A0A0F;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .frame { position: absolute; inset: 40px; border: 1px solid rgba(139,111,209,0.12); border-radius: 24px; pointer-events: none; }
+
+  /* Top section */
+  .top { position: absolute; top: 72px; left: 0; right: 0; text-align: center; }
+  .top-label { font-size: 12px; font-weight: 600; letter-spacing: 4px; color: #8B6FD1; text-transform: uppercase; }
+
+  /* Grid area */
+  .grid-wrap {
+    position: absolute;
+    top: 140px; left: 80px; right: 80px;
+    bottom: 200px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .panel {
+    background: #14141C;
+    border: 1px solid rgba(139,111,209,0.2);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .panel:nth-child(1) { border-color: rgba(139,111,209,0.5); box-shadow: 0 0 20px rgba(139,111,209,0.15); }
+
+  /* Fake video bars */
+  .panel-video {
+    flex: 1;
+    background: #06060B;
+    position: relative;
+    overflow: hidden;
+  }
+  .panel-video::before {
+    content: '▶';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    color: rgba(139,111,209,0.3);
+  }
+  /* Scanline effect */
+  .panel-video::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.015) 3px, rgba(255,255,255,0.015) 4px);
+  }
+
+  /* Fake waveform in panel */
+  .waveform {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 28px;
+    display: flex; align-items: flex-end; gap: 2px; padding: 0 8px 4px;
+  }
+  .waveform span {
+    flex: 1; background: rgba(139,111,209,0.35); border-radius: 2px 2px 0 0;
+  }
+
+  .panel-bar {
+    height: 28px;
+    background: #1C1C27;
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 6px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .panel-label { font-size: 10px; font-weight: 600; color: #A0A0B3; letter-spacing: 1px; text-transform: uppercase; flex: 1; }
+  .panel-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .p1 .panel-dot { background: #8B6FD1; box-shadow: 0 0 6px #8B6FD1; }
+  .p2 .panel-dot { background: #3FB883; }
+  .p3 .panel-dot { background: #E0B24C; }
+  .p4 .panel-dot { background: #E05565; }
+
+  /* Bottom text */
+  .bottom { position: absolute; bottom: 72px; left: 80px; right: 80px; }
+  .headline { font-size: 42px; font-weight: 800; color: #F2F2F5; line-height: 1.1; margin-bottom: 12px; }
+  .headline em { color: #8B6FD1; font-style: normal; }
+  .sub { font-size: 16px; font-weight: 400; color: #60607A; }
+
+  /* Logo small */
+  .logo-small {
+    position: absolute; top: 64px; right: 72px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-small img { width: 28px; height: 28px; filter: drop-shadow(0 0 8px rgba(139,111,209,0.6)); }
+  .logo-small span { font-size: 13px; font-weight: 800; color: #8B6FD1; letter-spacing: 1px; text-shadow: 0 0 12px rgba(139,111,209,0.4); }
+</style>
+</head>
+<body>
+  <div class="frame"></div>
+
+  <div class="top">
+    <div class="top-label">Feature #1</div>
+  </div>
+
+  <div class="logo-small">
+    <img src="../../assets/maniac_logo.png" alt="">
+    <span>MANIAC</span>
+  </div>
+
+  <div class="grid-wrap">
+    <div class="panel p1">
+      <div class="panel-video">
+        <div class="waveform">
+          <span style="height:40%"></span><span style="height:65%"></span><span style="height:45%"></span><span style="height:80%"></span><span style="height:55%"></span><span style="height:90%"></span><span style="height:60%"></span><span style="height:70%"></span><span style="height:50%"></span><span style="height:85%"></span><span style="height:40%"></span><span style="height:60%"></span><span style="height:75%"></span><span style="height:45%"></span><span style="height:55%"></span><span style="height:70%"></span>
+        </div>
+      </div>
+      <div class="panel-bar">
+        <div class="panel-dot"></div>
+        <div class="panel-label">Player 1</div>
+        <span style="font-size:10px;color:#8B6FD1;font-weight:600;">LIVE</span>
+      </div>
+    </div>
+    <div class="panel p2">
+      <div class="panel-video">
+        <div class="waveform">
+          <span style="height:55%"></span><span style="height:30%"></span><span style="height:70%"></span><span style="height:45%"></span><span style="height:85%"></span><span style="height:50%"></span><span style="height:65%"></span><span style="height:75%"></span><span style="height:40%"></span><span style="height:60%"></span><span style="height:80%"></span><span style="height:35%"></span><span style="height:55%"></span><span style="height:70%"></span><span style="height:45%"></span><span style="height:60%"></span>
+        </div>
+      </div>
+      <div class="panel-bar">
+        <div class="panel-dot"></div>
+        <div class="panel-label">Player 2</div>
+      </div>
+    </div>
+    <div class="panel p3">
+      <div class="panel-video">
+        <div class="waveform">
+          <span style="height:70%"></span><span style="height:50%"></span><span style="height:85%"></span><span style="height:60%"></span><span style="height:40%"></span><span style="height:75%"></span><span style="height:55%"></span><span style="height:90%"></span><span style="height:65%"></span><span style="height:45%"></span><span style="height:70%"></span><span style="height:80%"></span><span style="height:50%"></span><span style="height:60%"></span><span style="height:75%"></span><span style="height:40%"></span>
+        </div>
+      </div>
+      <div class="panel-bar">
+        <div class="panel-dot"></div>
+        <div class="panel-label">Player 3</div>
+      </div>
+    </div>
+    <div class="panel p4">
+      <div class="panel-video">
+        <div class="waveform">
+          <span style="height:45%"></span><span style="height:75%"></span><span style="height:55%"></span><span style="height:85%"></span><span style="height:40%"></span><span style="height:65%"></span><span style="height:80%"></span><span style="height:50%"></span><span style="height:70%"></span><span style="height:60%"></span><span style="height:45%"></span><span style="height:75%"></span><span style="height:55%"></span><span style="height:90%"></span><span style="height:40%"></span><span style="height:65%"></span>
+        </div>
+      </div>
+      <div class="panel-bar">
+        <div class="panel-dot"></div>
+        <div class="panel-label">Player 4</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="headline">Guarda <em>4 video</em><br>in una schermata.</div>
+    <div class="sub">Playlist · EQ · Filtri · Device audio — indipendenti per ogni player</div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,88 @@
+name: Fetishnetwork
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - fetishnetwork.com/t2/showgal
+    scraper: sceneScraper
+xPathScrapers:
+  sceneScraper:
+    scene:
+      # Title: //div[contains(@class,"detail-area")]//h3
+      Title:
+        selector: //title
+        postProcess:
+          - replace:
+              - regex: ^(.+)(?:\s\|).+$
+                with: $1
+      Details:
+        selector: |
+          //div[contains(@class,"description-long-text")]//text()
+          |//span[@class="vg_description-scene"]/text()
+          |//span[@class="strong"][contains(text(), "Description")]/following-sibling::text()
+          |//div[contains(@class, "description")]//div[contains(@class, "scene-desc")]
+        postProcess:
+          - replace:
+              - regex: Description:\s?
+                with:
+              - regex: �
+                with:
+      Date:
+        selector: |
+          //div[contains(@class,"date-section")]/h4[@class="light-grey"]
+          |//span[@class="vg_dateadded"]
+          |//span[contains(text(), "Added")]/text()
+          |//div[contains(@class, "date-views")]/span[1]
+        postProcess:
+          - replace:
+              - regex: Added:\s
+                with:
+          - parseDate: January 2, 2006
+      Image:
+        selector: |
+          //video/@poster
+          |//div[@class="banner-img-single"]/img/@src
+          |//div[@class="banner-img banner-img-one"]/img/@src
+          |//div[@class="display-panel"]/img/@src
+          |(//img[contains(@src,"content/flash/")]/@src)[1]
+        postProcess:
+          - replace:
+              - regex: ^
+                with: http://www.fetishnetwork.com/t2/
+      Studio:
+        Name:
+          selector: |
+            //span[@class="white-text"]
+            |//div[@id="header"][1]/h1/a/text()
+            |//span[@class="vg_attribute-title"][contains(text(), "Site")]/following-sibling::a[1]
+            |/html/head/title
+          postProcess:
+            - replace:
+                - regex: ^.*Scene by(.+)$
+                  with: $1
+                - regex: \sVideos
+                  with:
+                - regex: \.com
+                  with:
+                - regex: BDSM
+                  with: Bdsm
+                - regex: FemDom
+                  with: Femdom
+                - regex: "[A-Z][^A-Z]+|[A-Z]+$"
+                  with: "$0 "
+      Performers:
+        Name:
+          # If the genre contains lesbian, split the scene title in case it contains a comma,
+          # otherwise (title does not contain names) extract performer name from image url
+          selector: |
+            //a[contains(text(),"Lesbian")]/following::h3/text()[contains(., ", ")]
+            |//video/@poster
+            |//div[@class="display-panel"]/img/@src
+          split: ", "
+          postProcess:
+            - replace:
+                - regex: ^.+\d_(.*?)(?:_\d+)?(?:_video/thumbs|_1//thumbs).+$
+                  with: $1
+                - regex: _
+                  with: " "
+
+# Last Updated August 12, 2024

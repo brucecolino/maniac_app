@@ -1,0 +1,68 @@
+{
+  "name": "maniac-player",
+  "version": "1.0.1",
+  "description": "Maniac - AI-Powered Media Player",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder --win"
+  },
+  "author": "Maniac",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "webtorrent": "^2.4.1"
+  },
+  "build": {
+    "appId": "com.maniac.player",
+    "productName": "Maniac",
+    "protocols": [
+      { "name": "Magnet Link", "schemes": ["magnet"] },
+      { "name": "Maniac Download", "schemes": ["maniac"] }
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "publish": null,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/maniac_logo.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": "assets/maniac_logo.ico",
+      "uninstallerIcon": "assets/maniac_logo.ico",
+      "installerHeaderIcon": "assets/maniac_logo.ico",
+      "artifactName": "Maniac-1.0-1-Setup.${ext}"
+    },
+    "extraResources": [
+      { "from": "models/scrapers/", "to": "models/scrapers/", "filter": ["**/*", "!**/.git/**"] },
+      { "from": "tools/", "to": "tools/" },
+      { "from": "python/", "to": "python/", "filter": ["**/*", "!__pycache__/**", "!*.pyc"] },
+      { "from": "StreamingCommunity_api-main/", "to": "StreamingCommunity_api-main/", "filter": ["**/*", "!**/.git/**", "!**/__pycache__/**", "!**/*.pyc"] },
+      { "from": "ai-sub-main/", "to": "ai-sub-main/", "filter": ["**/*", "!**/.git/**", "!**/__pycache__/**", "!**/*.pyc", "!**/test/**", "!**/tests/**"] },
+      { "from": "venv311/", "to": "venv311/", "filter": ["**/*", "!**/__pycache__/**", "!**/*.pyc", "!**/test/**", "!**/tests/**"] }
+    ],
+    "files": [
+      "main.js",
+      "preload.js",
+      "py-bridge.js",
+      "src/**/*",
+      "assets/**/*"
+    ]
+  }
+}

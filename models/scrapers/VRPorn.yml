@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=../validator/scraper.schema.json
+name: "VRPorn"
+
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - vrporn.com/
+    scraper: sceneScraper
+sceneByName:
+  action: scrapeXPath
+  queryURL: https://vrporn.com/search/videos/?query={}
+  scraper: sceneSearch
+sceneByQueryFragment:
+  action: scrapeXPath
+  queryURL: "{url}"
+  scraper: sceneScraper
+
+xPathScrapers:
+  sceneScraper:
+    scene:
+      Title: //h1
+      Date:
+        selector: //span[contains(@class,"ui-player-title__sub-text")][@data-allow-mismatch]
+        postProcess:
+          - parseDate: Jan 02 2006
+      Details:
+        selector: //div[@class="app-comment-item__content-textarea"]/text()
+        concat: "\n"
+      Tags:
+        Name: //div[contains(@class,"tags")]//a/text()
+      Performers:
+        Name: //a[@class="ui-card-model__name"]/text()
+      Studio:
+        Name: //div[contains(@class,"studio")]/a/@title
+      Image:
+        selector: //meta[@property="og:image:url"]/@content
+      URL: //link[@rel="canonical"]/@href
+  sceneSearch:
+    common:
+      $card: //article
+    scene:
+      Title: $card/header/a/@title
+      URL: $card/header/a/@href
+# Last Updated October 17, 2025

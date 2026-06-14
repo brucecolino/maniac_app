@@ -1,0 +1,45 @@
+name: Puta Locura
+sceneByURL:
+  - action: scrapeXPath
+    url:
+      - putalocura.com/en/
+    scraper: sceneScraper
+
+xPathScrapers:
+  sceneScraper:
+    scene:
+      Title:
+        selector: //title
+        postProcess:
+          - replace:
+              - regex: \s*\|.+
+                with: ""
+      Code:
+        selector: //video/source/@src
+        postProcess:
+          - replace:
+              - regex: .+?trailers/([A-Z]+_\d+).*
+                with: "$1"
+      Date:
+        selector: (//div[@class="released-views"]/span)[1]
+        postProcess:
+          - parseDate: 02/01/2006
+      Details: //p[@class="desc"]/following-sibling::p
+      Performers:
+        Name:
+          selector: //span[@class="site-name"]
+          postProcess:
+            - replace:
+                - regex: \s*[-&,]\s*
+                  with: " and "
+          split: " and "
+      Studio:
+        Name:
+          fixed: "Puta Locura"
+      Image:
+        selector: //div[@class="top-area-content"]/script
+        postProcess:
+          - replace:
+              - regex: .+posterImage.*"(.+)".*
+                with: "$1"
+      URL: //link[@rel="canonical"]/@href

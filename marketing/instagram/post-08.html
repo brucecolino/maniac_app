@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Maniac — Post 08 Tag System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1080px; height: 1080px; overflow: hidden;
+    background: #0A0A0F;
+    font-family: 'Inter', sans-serif;
+  }
+  .frame { position: absolute; inset: 40px; border: 1px solid rgba(139,111,209,0.12); border-radius: 24px; pointer-events: none; }
+  .bg-glow { position: absolute; width: 700px; height: 600px; top: 40%; left: 50%; transform: translate(-50%,-50%); background: radial-gradient(ellipse, rgba(139,111,209,0.08) 0%, transparent 70%); }
+
+  .logo-small { position: absolute; top: 64px; left: 72px; display: flex; align-items: center; gap: 10px; }
+  .logo-small img { width: 28px; height: 28px; filter: drop-shadow(0 0 8px rgba(139,111,209,0.6)); }
+  .logo-small span { font-size: 13px; font-weight: 800; color: #8B6FD1; letter-spacing: 1px; }
+  .top-label { position: absolute; top: 72px; right: 72px; font-size: 12px; font-weight: 600; letter-spacing: 4px; color: rgba(139,111,209,0.6); text-transform: uppercase; }
+
+  /* Tag cloud area */
+  .tag-area {
+    position: absolute;
+    top: 140px; left: 80px; right: 80px;
+    height: 480px;
+    background: #14141C;
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 16px;
+    padding: 28px;
+    overflow: hidden;
+  }
+
+  .tag-area-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .tah-title { font-size: 13px; font-weight: 700; color: #60607A; text-transform: uppercase; letter-spacing: 2px; }
+  .tah-count { font-size: 13px; font-weight: 700; color: #8B6FD1; }
+
+  /* Tags grid */
+  .tags-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+
+  .tag-pill {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 18px;
+    border-radius: 100px;
+    font-size: 14px; font-weight: 600;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tag-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .tag-count { font-size: 11px; font-weight: 700; opacity: 0.6; }
+
+  /* Tag colors */
+  .t1  { color: #8B6FD1; border-color: rgba(139,111,209,0.4); background: rgba(139,111,209,0.12); }
+  .t1  .tag-dot { background: #8B6FD1; }
+  .t2  { color: #3FB883; border-color: rgba(63,184,131,0.35); background: rgba(63,184,131,0.08); }
+  .t2  .tag-dot { background: #3FB883; }
+  .t3  { color: #E05565; border-color: rgba(224,85,101,0.35); background: rgba(224,85,101,0.08); }
+  .t3  .tag-dot { background: #E05565; }
+  .t4  { color: #E0B24C; border-color: rgba(224,178,76,0.35); background: rgba(224,178,76,0.08); }
+  .t4  .tag-dot { background: #E0B24C; }
+  .t5  { color: #4CB8E0; border-color: rgba(76,184,224,0.35); background: rgba(76,184,224,0.08); }
+  .t5  .tag-dot { background: #4CB8E0; }
+  .t6  { color: #E084C8; border-color: rgba(224,132,200,0.35); background: rgba(224,132,200,0.08); }
+  .t6  .tag-dot { background: #E084C8; }
+  .t7  { color: #84E0A0; border-color: rgba(132,224,160,0.35); background: rgba(132,224,160,0.08); }
+  .t7  .tag-dot { background: #84E0A0; }
+  .t8  { color: #F2A05A; border-color: rgba(242,160,90,0.35); background: rgba(242,160,90,0.08); }
+  .t8  .tag-dot { background: #F2A05A; }
+  .t9  { color: #7AB8F5; border-color: rgba(122,184,245,0.35); background: rgba(122,184,245,0.08); }
+  .t9  .tag-dot { background: #7AB8F5; }
+  .t10 { color: #C8A0F0; border-color: rgba(200,160,240,0.35); background: rgba(200,160,240,0.08); }
+  .t10 .tag-dot { background: #C8A0F0; }
+  .t11 { color: #F07878; border-color: rgba(240,120,120,0.35); background: rgba(240,120,120,0.08); }
+  .t11 .tag-dot { background: #F07878; }
+  .t12 { color: #78D4F0; border-color: rgba(120,212,240,0.35); background: rgba(120,212,240,0.08); }
+  .t12 .tag-dot { background: #78D4F0; }
+
+  /* File list mini */
+  .file-list {
+    position: absolute;
+    top: 650px; left: 80px; right: 80px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .fl-item {
+    background: #14141C;
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px;
+    padding: 12px 18px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .fl-icon { font-size: 16px; }
+  .fl-name { font-size: 14px; font-weight: 600; color: #F2F2F5; flex: 1; }
+  .fl-tags { display: flex; gap: 6px; }
+  .fl-tag { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 100px; }
+
+  /* Bottom */
+  .bottom { position: absolute; bottom: 72px; left: 80px; right: 80px; }
+  .headline { font-size: 46px; font-weight: 800; color: #F2F2F5; line-height: 1.1; margin-bottom: 12px; }
+  .headline em { color: #8B6FD1; font-style: normal; }
+  .sub-caption { font-size: 16px; color: #60607A; }
+</style>
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <div class="frame"></div>
+  <div class="logo-small"><img src="../../assets/maniac_logo.png" alt=""><span>MANIAC</span></div>
+  <div class="top-label">Feature #7</div>
+
+  <div class="tag-area">
+    <div class="tag-area-header">
+      <div class="tah-title">I tuoi tag</div>
+      <div class="tah-count">32 colori · 847 file taggati</div>
+    </div>
+    <div class="tags-grid">
+      <div class="tag-pill t1"><div class="tag-dot"></div>Cinema <span class="tag-count">142</span></div>
+      <div class="tag-pill t2"><div class="tag-dot"></div>Da rivedere <span class="tag-count">38</span></div>
+      <div class="tag-pill t3"><div class="tag-dot"></div>Preferiti <span class="tag-count">91</span></div>
+      <div class="tag-pill t4"><div class="tag-dot"></div>Tutorial <span class="tag-count">55</span></div>
+      <div class="tag-pill t5"><div class="tag-dot"></div>Musica <span class="tag-count">203</span></div>
+      <div class="tag-pill t6"><div class="tag-dot"></div>Ricette <span class="tag-count">17</span></div>
+      <div class="tag-pill t7"><div class="tag-dot"></div>Natura <span class="tag-count">44</span></div>
+      <div class="tag-pill t8"><div class="tag-dot"></div>Viaggi <span class="tag-count">29</span></div>
+      <div class="tag-pill t9"><div class="tag-dot"></div>Sport <span class="tag-count">66</span></div>
+      <div class="tag-pill t10"><div class="tag-dot"></div>Importanti <span class="tag-count">12</span></div>
+      <div class="tag-pill t11"><div class="tag-dot"></div>Archivio <span class="tag-count">180</span></div>
+      <div class="tag-pill t12"><div class="tag-dot"></div>Documentari <span class="tag-count">76</span></div>
+      <div class="tag-pill t4" style="opacity:0.6"><div class="tag-dot"></div>Lavoro <span class="tag-count">23</span></div>
+      <div class="tag-pill t1" style="opacity:0.5"><div class="tag-dot"></div>Serie TV <span class="tag-count">119</span></div>
+      <div class="tag-pill t2" style="opacity:0.5"><div class="tag-dot"></div>Fitness <span class="tag-count">31</span></div>
+    </div>
+  </div>
+
+  <div class="file-list">
+    <div class="fl-item">
+      <div class="fl-icon">🎬</div>
+      <div class="fl-name">Inception.2010.2160p.mkv</div>
+      <div class="fl-tags">
+        <div class="fl-tag t1">Cinema</div>
+        <div class="fl-tag t3">Preferiti</div>
+      </div>
+    </div>
+    <div class="fl-item">
+      <div class="fl-icon">🎵</div>
+      <div class="fl-name">Daft Punk - Random Access Memories.flac</div>
+      <div class="fl-tags">
+        <div class="fl-tag t5">Musica</div>
+        <div class="fl-tag t3">Preferiti</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="headline"><em>Organizza</em> tutto.<br>Trova subito.</div>
+    <div class="sub-caption">32 colori · tag persistenti · export M3U / JSON · bulk tag</div>
+  </div>
+</body>
+</html>

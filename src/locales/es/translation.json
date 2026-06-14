@@ -1,0 +1,65 @@
+{
+  "app": { "name": "Maniac" },
+  "menu": {
+    "file": "Archivo", "edit": "Editar", "view": "Ver", "tools": "Herramientas", "help": "?",
+    "open_file": "Abrir archivo…", "open_folder": "Abrir carpeta…",
+    "import_playlist": "Importar lista", "export_playlist": "Exportar lista",
+    "settings": "Ajustes", "exit": "Salir"
+  },
+  "common": {
+    "ok": "OK", "cancel": "Cancelar", "close": "Cerrar", "save": "Guardar",
+    "delete": "Eliminar", "back": "Atrás", "next": "Siguiente", "apply": "Aplicar",
+    "loading": "Cargando…", "search": "Buscar", "all": "Todos", "none": "Ninguno",
+    "yes": "Sí", "no": "No", "error": "Error", "retry": "Reintentar"
+  },
+  "player": {
+    "play": "Reproducir", "pause": "Pausa", "stop": "Detener",
+    "next": "Siguiente", "prev": "Anterior", "volume": "Volumen", "mute": "Silenciar",
+    "fullscreen": "Pantalla completa", "speed": "Velocidad",
+    "subtitles": "Subtítulos", "tracks": "Pistas de audio", "cinema": "Modo cine"
+  },
+  "panels": {
+    "playlist": "Lista", "tags": "Etiquetas", "settings": "Ajustes",
+    "downloads": "Descargas", "ai_history": "Historial IA"
+  },
+  "settings": {
+    "general": "General", "language": "Idioma", "theme": "Tema",
+    "theme_dark": "Oscuro", "theme_light": "Claro", "shortcuts": "Atajos",
+    "audio": "Audio", "video": "Vídeo", "ai": "IA", "advanced": "Avanzado"
+  },
+  "ai": {
+    "wizard_title": "Análisis IA", "select_modes": "Selecciona modos",
+    "mode_face": "Caras", "mode_object": "Objetos", "mode_animal": "Animales",
+    "mode_place": "Lugares", "mode_genre": "Géneros", "mode_category": "Categorías",
+    "analyze": "Analizar", "summary_title": "Resumen del análisis",
+    "auto_suggestions": "Sugerencias automáticas", "select_manually": "Seleccionar manualmente",
+    "accept": "Aceptar", "reject": "Rechazar", "apply_all": "Aplicar todo",
+    "no_results": "Sin resultados", "preparing": "Preparando…",
+    "venv_check": "Comprobando entorno IA…", "venv_recheck": "Reintentar"
+  },
+  "subs": {
+    "title": "Subtítulos", "generate": "Generar subtítulos", "translate": "Traducir",
+    "language_source": "Idioma origen", "language_target": "Idioma destino",
+    "auto_detect": "Detección automática", "model": "Modelo",
+    "import": "Importar SRT/VTT", "install_pack": "Instalar paquete"
+  },
+  "organizer": {
+    "title": "Organizador", "step_sources": "Carpetas origen",
+    "step_preferences": "Preferencias", "step_analyze": "Análisis",
+    "step_preview": "Vista previa", "step_confirm": "Confirmar",
+    "by_year": "Por año", "by_genre": "Por género", "by_actor": "Por actor",
+    "by_type": "Por tipo", "snapshots": "Historial de snapshots",
+    "restore": "Restaurar", "moved_count": "{{n}} archivos movidos",
+    "destination": "Destino"
+  },
+  "downloads": {
+    "title": "Descargas", "url": "URL directa", "vibravid": "VibraVid",
+    "quality": "Calidad", "queue": "Cola", "pause": "Pausar",
+    "resume": "Reanudar", "cancel": "Cancelar", "open_folder": "Abrir carpeta"
+  },
+  "spectrum": {
+    "title": "Espectro", "fft": "FFT",
+    "lufs_momentary": "LUFS M", "lufs_short": "LUFS S", "lufs_integrated": "LUFS I",
+    "true_peak": "True Peak", "stereo_width": "Anchura estéreo", "phase": "Fase"
+  }
+}
