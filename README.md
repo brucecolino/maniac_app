@@ -90,7 +90,7 @@ maniac-app/
 - Sottotitoli .srt/.vtt import/export + traduttore auto
 - Webcam + IP Cam
 - Registrazione con pausa
-- Formato export: WebM/MP4/MKV/MOV (native via MediaRecorder, non-native via ffmpeg TODO)
+- Formato export: WebM/MP4/MKV/MOV (WebM nativo via MediaRecorder, gli altri convertiti con ffmpeg)
 - Cartella export configurabile
 
 ### UI
@@ -103,10 +103,27 @@ maniac-app/
 - Assegna tag per-player o ALL (applica a tutti i file visibili)
 - Preferiti ★
 
+### AI e riconoscimento
+- Riconoscimento persone da volto, verificato foto-vs-foto su più scatti
+- Fonti: StashDB (adult), Wikidata e Wikipedia (attori, musicisti, sportivi,
+  volti pubblici), TMDB con chiave utente
+- Riconoscimento oggetti, animali e luoghi (YOLOv8n + Places365)
+- Sottotitoli automatici (faster-whisper) e traduzione (Argos, OpenAI)
+- Identificazione musica (AcoustID, Shazam)
+- Organizer libreria e auto-tag da scraper multi-fonte
+
+### Download
+- yt-dlp: YouTube, link diretti mp4/mkv/mov, cattura da appunti
+- Torrent e magnet via WebTorrent
+- StreamingCommunity
+
 ### Sistema
 - Save/Load config persistente (`%APPDATA%/maniac-player/`)
 - Modelli AI scaricati on-demand in cartella scrivibile
 - Log viewer in tab Info
+- Aggiornamenti in-app da GitHub Releases, con barra di download e note di versione
+
+Il dettaglio delle versioni è in [CHANGELOG.md](CHANGELOG.md).
 
 ## Changelog
 
