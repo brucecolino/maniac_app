@@ -13208,8 +13208,12 @@ function _updRender(){
     foot = `<button class="mdl-btn" data-act="close">Chiudi</button>`;
   }
   else if(st.stage === 'current'){
+    // Si mostra anche la versione LETTA dal server, non solo quella
+    // installata: se le due coincidono si vede che il controllo è avvenuto
+    // davvero, invece di dover credere sulla parola.
     body = `<div class="upd-badge ok">Sei aggiornato</div>
-      <div class="upd-msg">Maniac <b>${esc(cur)}</b> è l'ultima versione disponibile.</div>`;
+      <div class="upd-msg">Maniac <b>${esc(cur)}</b> è l'ultima versione disponibile.</div>
+      <div class="upd-hint">Ultima pubblicata: ${esc(inf.version || cur)}${inf.date ? ' · ' + esc(String(inf.date).slice(0,10)) : ''}</div>`;
     foot = `<button class="mdl-btn primary" data-act="close">Chiudi</button>`;
   }
   else if(st.stage === 'dev'){

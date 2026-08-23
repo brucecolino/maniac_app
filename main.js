@@ -1957,6 +1957,10 @@ function _getUpdater() {
   let autoUpdater;
   try { ({ autoUpdater } = require('electron-updater')); }
   catch (e) { return null; }
+  // Una richiesta di controllo deve interrogare davvero il server: senza
+  // questo, dopo il primo controllo la risposta può arrivare dalla cache HTTP
+  // e una versione appena pubblicata resta invisibile per minuti.
+  autoUpdater.requestHeaders = { 'Cache-Control': 'no-cache', Pragma: 'no-cache' };
   autoUpdater.autoDownload = false;          // scarica solo su richiesta
   autoUpdater.autoInstallOnAppQuit = false;  // installa solo su richiesta
   autoUpdater.allowDowngrade = false;
@@ -1991,7 +1995,18 @@ ipcMain.handle('update:check', async () => {
     const r = await up.checkForUpdates();
     const remote = r?.updateInfo?.version || null;
     const current = app.getVersion();
-    const available = !!(remote && remote !== current);
+
+    // Se non si è riusciti a leggere la versione pubblicata, NON si dice che
+    // l'utente è aggiornato: sarebbe una bugia identica a quella del vecchio
+    // pulsante, solo più difficile da scoprire. Meglio ammettere che il
+    // controllo non è riuscito.
+    if (!remote) {
+      return { ok: false, current,
+               error: 'Non sono riuscito a leggere la versione pubblicata. '
+                    + 'Controlla la connessione e riprova.' };
+    }
+
+    const available = remote !== current;
     _updateInfo = available ? r.updateInfo : null;
     return {
       ok: true, available, current, version: remote,
