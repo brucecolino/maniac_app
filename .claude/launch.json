@@ -4,14 +4,29 @@
     {
       "name": "electron-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 0
     },
     {
       "name": "electron-start",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "start"],
+      "runtimeArgs": [
+        "run",
+        "start"
+      ],
       "port": 0
+    },
+    {
+      "name": "maniac-site",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "C:\\Users\\markt\\Desktop\\APICE PROJECTS\\maniac-app\\.claude\\worktrees\\stashdb-performer-recognition-96029d\\.claude\\run-site.cmd"
+      ],
+      "port": 3000
     }
   ]
 }

@@ -271,6 +271,7 @@ SCREEN_BATCH      = 4      # foto del primo giro di screening
 SCREEN_MIN_MAX    = 0.40   # se dopo lo screening il max è sotto → performer scartato
 MAX_OPTIONS       = 3      # alternative proposte all'utente a fine processo
 LOCAL_ONLY_MATCH  = 0.80   # soglia per fidarsi della sola cache locale
+GENERIC_RATIO     = 0.40   # oltre questa quota di volti attratti, la voce non discrimina
 FEW_PHOTOS_MATCH  = 0.70   # score richiesto quando le foto sono meno di 3
 FEW_PHOTOS_LIMIT  = 3      # sotto questo numero il quorum non e' applicabile
 OPTION_MARGIN     = 0.10   # quanto sotto confirm_threshold può stare un'opzione
@@ -297,7 +298,38 @@ def _db_matrix(db_rows):
     _DB_MATRIX_CACHE.clear(); _DB_MATRIX_CACHE[key] = (db_rows, res)
     return res
 
-def early_facedb_candidates(centroid, db_rows, threshold, top_k=5):
+def generic_entries(db_rows, threshold=0.35):
+    """Nomi la cui impronta somiglia a troppi volti diversi.
+
+    Si confronta ogni voce con tutte le altre di nome diverso: se ne attrae
+    più di GENERIC_RATIO, quella voce non sta descrivendo una persona in
+    particolare — di solito è nata da un ritaglio sfocato o parziale — e
+    proporla significa dare sempre la stessa risposta sbagliata.
+
+    Il calcolo è O(n²) ma il database locale conta decine di voci, non
+    migliaia, e il risultato viene riusato per tutti i cluster della sessione.
+    """
+    rows = [r for r in (db_rows or []) if r.get('name') and r.get('embedding')]
+    names = {r['name'] for r in rows}
+    if len(names) < 4:
+        return set()   # troppo pochi nomi perché la statistica dica qualcosa
+
+    attracts = {}
+    for i, a in enumerate(rows):
+        for b in rows[i + 1:]:
+            if a['name'] == b['name']:
+                continue
+            if len(a['embedding']) != len(b['embedding']):
+                continue
+            if _cosine(a['embedding'], b['embedding']) >= threshold:
+                attracts[a['name']] = attracts.get(a['name'], 0) + 1
+                attracts[b['name']] = attracts.get(b['name'], 0) + 1
+
+    others = len(names) - 1
+    return {n for n, hits in attracts.items() if hits / max(1, others) > GENERIC_RATIO}
+
+
+def early_facedb_candidates(centroid, db_rows, threshold, top_k=5, skip_names=None):
     """Restituisce i top-K performer unici nel DB locale ordinati per similarità.
     Dedup per (external_id|name). Match vettoriale numpy (fallback puro-Python)."""
     by_perf = {}  # key=(external_id|name) → (best_score, row)
@@ -311,6 +343,7 @@ def early_facedb_candidates(centroid, db_rows, threshold, top_k=5):
                 s = float(sims[k])
                 if s < threshold: continue
                 r = db_rows[ri]
+                if skip_names and r.get('name') in skip_names: continue
                 key = str(r.get('external_id')) if r.get('external_id') else (r['name'] or '').strip().lower()
                 if not key: continue
                 prev = by_perf.get(key)
@@ -322,6 +355,7 @@ def early_facedb_candidates(centroid, db_rows, threshold, top_k=5):
         for r in db_rows:
             if not r.get('name') or not r.get('embedding'):
                 continue
+            if skip_names and r.get('name') in skip_names: continue
             s = _cosine(centroid, r['embedding'])
             if s < threshold: continue
             key = str(r.get('external_id')) if r.get('external_id') else (r['name'] or '').strip().lower()
@@ -985,7 +1019,18 @@ def resolve_one(cluster, candidates, gql_cache, photo_emb_cache,
         # `verified` = ha superato consenso E quorum. È il flag che la UI usa
         # per distinguere una proposta accertata da una da controllare.
         e['verified'] = _passes(e, confirm_threshold, min_votes)
-        if e['score'] >= opt_floor and e.get('votes', 0) >= 1:
+        # Un solo voto non basta per finire fra le proposte. Con gallerie
+        # piccole il punteggio è il migliore di pochi tentativi, quindi un
+        # valore medio-alto capita facilmente per caso: misurato, un
+        # performer con 2 sole foto segna in media 0.31 contro volti
+        # estranei, uno con 49 foto si ferma a 0.13. Serve o una conferma
+        # ripetuta, o una somiglianza netta su quelle poche foto.
+        enough = (
+            e.get('votes', 0) >= 2
+            or (int(e.get('photos') or 0) < FEW_PHOTOS_LIMIT
+                and e['score'] >= FEW_PHOTOS_MATCH)
+        )
+        if e['score'] >= opt_floor and enough:
             plausible.append(e)       # evidenza fotografica, forte o debole
         elif e.get('inTitle'):
             from_title.append(e)      # solo il nome nel file lo sostiene
@@ -1034,6 +1079,12 @@ def cmd_resolve(args):
 
     # Stage C: precarica righe facedb per early-hit
     db_rows = load_facedb_rows(args.facedb) if args.facedb else []
+    # Voci che somigliano a tutto: vanno escluse prima di iniziare, altrimenti
+    # tornerebbero come suggerimento su ogni volto incerto.
+    generic = generic_entries(db_rows, float(args.early_hit_threshold))
+    if generic:
+        _emit({'event': 'progress', 'stage': 'generic-skip', 'cluster': 0,
+               'total': len(clusters), 'names': sorted(generic)})
 
     # API key StashDB obbligatoria per query (l'early-hit funziona comunque
     # senza key, perché legge solo cache locale).
@@ -1087,7 +1138,8 @@ def cmd_resolve(args):
         # nello Stage E. Unica eccezione: le voci senza external_id StashDB,
         # cioè i volti che l'utente ha nominato a mano — lì il nome è suo e
         # non c'è nulla da verificare contro StashDB.
-        early_cands = early_facedb_candidates(cl['embedding'], db_rows, early_thr, top_k=5)
+        early_cands = early_facedb_candidates(cl['embedding'], db_rows, early_thr,
+                                              top_k=5, skip_names=generic)
         early = None
         early_options = []     # alternative verificate, per la scelta manuale
         local_suggestions = [] # nomi dalla sola libreria locale, non verificati
