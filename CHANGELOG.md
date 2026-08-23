@@ -57,7 +57,7 @@ scheda **Info → Controlla aggiornamenti**.
   decidi tu: nessun riavvio a sorpresa mentre stai guardando qualcosa.
 
 ### Interfaccia
-- La scheda Info mostra la firma **Apice** con collegamento ad apice.site.
+- La scheda Info mostra la firma **Apice** con collegamento ad apicesite.com.
 - Il numero di versione è letto dall'app, non più scritto a mano: non può
   più mostrare una versione diversa da quella installata.
 

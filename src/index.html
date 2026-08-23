@@ -13257,7 +13257,7 @@ function _updRender(){
 
   const close = () => { ov.classList.remove('show'); setTimeout(() => ov.remove(), 160); };
   ov.querySelectorAll('[data-act="close"]').forEach(b => b.onclick = close);
-  ov.querySelectorAll('[data-act="site"]').forEach(b => b.onclick = () => openExt('https://apice.site'));
+  ov.querySelectorAll('[data-act="site"]').forEach(b => b.onclick = () => openExt('https://www.apicesite.com/'));
   const dl = ov.querySelector('[data-act="download"]');
   if(dl) dl.onclick = async () => {
     _updState.stage = 'downloading'; _updState.percent = 0; _updRender();
@@ -13284,7 +13284,7 @@ function renderInfo(){
       <div class="sub">${t('version')}</div>
       <div class="apice-credit">
         <span>${t('madeBy')||'Un progetto'}</span>
-        <button type="button" onclick="openExt('https://apice.site')" title="apice.site">
+        <button type="button" onclick="openExt('https://www.apicesite.com/')" title="apicesite.com">
           <img src="../assets/apice_logo.png" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='inline'" alt="Apice">
           <span style="display:none">Apice</span>
         </button>
