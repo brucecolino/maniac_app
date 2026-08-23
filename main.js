@@ -1937,6 +1937,121 @@ function _httpsFetchText(url, maxRedirects=6){
     go(url);
   });
 }
+
+// ═══════════════════════════════════════════════
+// AGGIORNAMENTI (electron-updater · GitHub Releases)
+// ═══════════════════════════════════════════════
+// Il flusso è in tre passi espliciti, mai automatico: l'utente controlla,
+// decide se scaricare, e installa quando gli fa comodo. Un aggiornamento che
+// parte da solo mentre si guarda un video è la cosa peggiore per un player.
+let _updater = null;
+let _updateInfo = null;      // ultima versione trovata
+let _updateDownloaded = false;
+
+function _upSend(payload) {
+  try { mainWindow?.webContents.send('update:progress', payload); } catch (_) {}
+}
+
+function _getUpdater() {
+  if (_updater) return _updater;
+  let autoUpdater;
+  try { ({ autoUpdater } = require('electron-updater')); }
+  catch (e) { return null; }
+  autoUpdater.autoDownload = false;          // scarica solo su richiesta
+  autoUpdater.autoInstallOnAppQuit = false;  // installa solo su richiesta
+  autoUpdater.allowDowngrade = false;
+  autoUpdater.on('download-progress', p => _upSend({
+    stage: 'downloading',
+    percent: Math.max(0, Math.min(100, Math.round(p.percent || 0))),
+    transferred: p.transferred || 0,
+    total: p.total || 0,
+    bytesPerSecond: p.bytesPerSecond || 0,
+  }));
+  autoUpdater.on('update-downloaded', info => {
+    _updateDownloaded = true;
+    _upSend({ stage: 'ready', version: info?.version || null });
+  });
+  autoUpdater.on('error', err => _upSend({
+    stage: 'error', error: String((err && err.message) || err).slice(0, 300),
+  }));
+  _updater = autoUpdater;
+  return _updater;
+}
+
+ipcMain.handle('update:check', async () => {
+  const up = _getUpdater();
+  if (!up) return { ok: false, error: 'modulo aggiornamenti non disponibile' };
+  // In sviluppo electron-updater rifiuta di lavorare: senza questo controllo
+  // l'utente vedrebbe un errore criptico invece di una spiegazione.
+  if (!app.isPackaged) {
+    return { ok: false, dev: true,
+             error: 'Gli aggiornamenti funzionano solo nell\'app installata.' };
+  }
+  try {
+    const r = await up.checkForUpdates();
+    const remote = r?.updateInfo?.version || null;
+    const current = app.getVersion();
+    const available = !!(remote && remote !== current);
+    _updateInfo = available ? r.updateInfo : null;
+    return {
+      ok: true, available, current, version: remote,
+      notes: _stripNotes(r?.updateInfo?.releaseNotes),
+      date: r?.updateInfo?.releaseDate || null,
+      size: (r?.updateInfo?.files || [])[0]?.size || null,
+    };
+  } catch (e) {
+    return { ok: false, error: String(e.message || e).slice(0, 300) };
+  }
+});
+
+// Le note di rilascio arrivano in HTML da GitHub: le riduciamo a testo, così
+// la finestra le mostra senza rischiare di iniettare markup.
+function _stripNotes(notes) {
+  if (!notes) return '';
+  let t = Array.isArray(notes)
+    ? notes.map(n => (n && n.note) || '').join('\n')
+    : String(notes);
+  t = t.replace(/<br\s*\/?>/gi, '\n')
+       .replace(/<\/(p|li|h\d)>/gi, '\n')
+       .replace(/<li>/gi, '· ')
+       .replace(/<[^>]+>/g, '')
+       .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+       .replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  return t.replace(/\n{3,}/g, '\n\n').trim().slice(0, 4000);
+}
+
+ipcMain.handle('update:download', async () => {
+  const up = _getUpdater();
+  if (!up) return { ok: false, error: 'modulo aggiornamenti non disponibile' };
+  if (!_updateInfo) return { ok: false, error: 'nessun aggiornamento da scaricare' };
+  try {
+    _upSend({ stage: 'downloading', percent: 0 });
+    await up.downloadUpdate();
+    return { ok: true };
+  } catch (e) {
+    const msg = String(e.message || e).slice(0, 300);
+    _upSend({ stage: 'error', error: msg });
+    return { ok: false, error: msg };
+  }
+});
+
+ipcMain.handle('update:install', () => {
+  const up = _getUpdater();
+  if (!up || !_updateDownloaded) {
+    return { ok: false, error: 'aggiornamento non ancora scaricato' };
+  }
+  // isSilent=false mostra l'installer; isForceRunAfter riapre Maniac al termine.
+  setTimeout(() => { try { up.quitAndInstall(false, true); } catch (_) {} }, 200);
+  return { ok: true };
+});
+
+// Versione dell'app: unica fonte è package.json, così l'interfaccia non può
+// mostrare un numero diverso da quello effettivamente installato.
+ipcMain.handle('app:version', () => {
+  try { return { ok: true, version: app.getVersion() }; }
+  catch (e) { return { ok: false, version: null }; }
+});
+
 ipcMain.handle('clipboard:scanPage', async (_e, url) => {
   try {
     if (!url || !/^https?:\/\//i.test(url)) return { ok:false, error:'invalid url' };
@@ -2497,7 +2612,8 @@ ipcMain.handle('stashdb:hasKey', () => {
 const _actorResolveJobs = new Map();
 ipcMain.handle('ai:actor-resolve', async (_e, opts) => {
   const { jobId, clusters, mergeThreshold, confirmThreshold, topk,
-          maxPhotosPerPerformer, maxPerformersPerQuery } = opts || {};
+          maxPhotosPerPerformer, maxPerformersPerQuery, photoVotes,
+          tmdbKey, useWikidata, useWikipedia, noStashdb } = opts || {};
   if (!Array.isArray(clusters) || !clusters.length) return { ok:false, error:'no_clusters' };
   const id = jobId || ('actorres_' + Date.now() + '_' + Math.random().toString(36).slice(2,6));
   const tmpFile = path.join(userDataPath, 'tmp-actor-clusters-' + id + '.json');
@@ -2510,9 +2626,16 @@ ipcMain.handle('ai:actor-resolve', async (_e, opts) => {
     '--merge-threshold', String(mergeThreshold || 0.62),
     '--confirm-threshold', String(confirmThreshold || 0.55),
     '--topk', String(topk || 5),
-    '--max-photos-per-performer', String(maxPhotosPerPerformer || 4),
+    '--max-photos-per-performer', String(maxPhotosPerPerformer || 10),
     '--max-performers-per-query', String(maxPerformersPerQuery || 5),
+    '--photo-votes', String(photoVotes || 2),
   ];
+  // Fonti oltre StashDB: coprono attori, musicisti, sportivi e volti pubblici,
+  // che nessun database adult può contenere.
+  if (tmdbKey) args.push('--tmdb-key', String(tmdbKey));
+  if (useWikidata)  args.push('--use-wikidata');
+  if (useWikipedia) args.push('--use-wikipedia');
+  if (noStashdb)    args.push('--no-stashdb');
   const proc = _streamWorker('face_actor_resolver.py', args, 'ai:actor-resolve:progress', id);
   if (!proc) { try { fs.unlinkSync(tmpFile); } catch(_){}; return { ok:false, error:'spawn failed' }; }
   _actorResolveJobs.set(id, proc);

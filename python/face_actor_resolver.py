@@ -5,21 +5,37 @@ verifica foto-vs-foto. NON usa più nomi da TMDB/AdultColony/OMDB/Wikidata.
 
 Flusso (per cluster passato in input):
   1. Auto-merge cross-cluster (cosine ≥ merge_threshold)
-  2. Early-hit: se il centroide matcha già una riga in faces.db con
-     source='stashdb' AND external_id presente → riusa il nome senza chiamate.
-  3. Tokenizza i basename dei file del cluster → top-K candidati nome
-     (1-/2-/3-gram puliti da noise codec/site/explicit).
-  4. Per ogni candidato → stashdb.search_performer → per ogni performer
-     scarica fino a max_photos_per_performer immagini → calcola
-     cosine(cluster_centroid, photo_embedding) tramite analyze.verify_match_photo.
-  5. Ritiene il match con score più alto se ≥ confirm_threshold; altrimenti null.
+  2. Early-hit: le righe simili in faces.db PROPONGONO candidati, non nomi.
+     Anche un hit fortissimo deve superare la stessa verifica foto del punto 5
+     (una riga di cache è un volto in una sola condizione: su DB grandi trova
+     sempre qualcuno che somiglia). Unica eccezione: le voci senza external_id,
+     cioè i volti nominati a mano dall'utente.
+  3. Costruisce i termini di ricerca dai file del cluster (build_search_terms):
+       a) full-text del filename ripulito — strategia PRIMARIA: il ranking di
+          StashDB isola il performer meglio di qualsiasi euristica locale;
+       b) n-gram 1-3 parole filtrati per plausibilità-nome — copre i file con
+          più performer, dove il full-text restituisce solo il primo.
+  4. Per ogni termine → stashdb.search_performer → per ogni performer
+     confronta il volto con max_photos_per_performer foto SPARSE sulla galleria
+     (scene, epoche e luci diverse) via analyze.verify_match_photo.
+  5. Verdetto consensuale — tre condizioni, tutte necessarie:
+       · score  = media delle 3 similarità migliori ≥ confirm_threshold
+       · quorum = almeno `photo_votes` foto distinte sopra soglia da sole
+       · margine dal 2° performer ≥ ACTOR_SAFE_MARGIN
+     Il massimo su N foto NON basta: più foto guardi, più è probabile che una
+     somigli per caso. Altrimenti → null, nessun nome esposto.
+  6. L'embedding della foto confermata viene salvato in faces.db
+     (entities, source='stashdb-photo') → le run successive lo riusano in early-hit.
+
+Il nome nel filename non è mai una prova: serve solo a proporre chi cercare.
+Se il volto non regge il confronto fotografico, il nome viene scartato.
 
 CLI:
   python face_actor_resolver.py resolve \\
     --clusters <path>/clusters.json \\
     --facedb   <userData>/faces.db \\
-    [--merge-threshold 0.62] [--confirm-threshold 0.62] \\
-    [--topk 5] [--max-photos-per-performer 4] [--max-performers-per-query 5]
+    [--merge-threshold 0.62] [--confirm-threshold 0.55] [--photo-votes 2] \\
+    [--topk 5] [--max-photos-per-performer 10] [--max-performers-per-query 5]
 
 Output: JSONL su stdout
   {"event":"start","clusters":N}
@@ -82,7 +98,20 @@ _FN_NOISE_PATTERNS = [
     re.compile(r'\b(19|20)\d{2}\b'),                  # anni
     re.compile(r'\bhttps?://\S+', re.I),              # URL
     re.compile(r'\b\d{2,4}p\b', re.I),                # 1080p ecc.
+    # Dominio del sito (EPORNER.COM, www.brazzers.net…). Il lookbehind su `.`
+    # è essenziale: senza, in "Riley.Reid.XXX.1080p" il pattern mangerebbe
+    # "Reid.XXX" cancellando il cognome.
+    re.compile(r'(?<![\w.])(?:www\.)?[a-z0-9][a-z0-9-]{1,30}'
+               r'\.(?:com|net|org|tv|xxx|cc|io)(?!\w)', re.I),
 ]
+
+# Estensioni video/contenitore: rimosse ovunque nel nome, non solo in coda
+# (i download producono spesso doppie estensioni: "clip.mp4 (720).mp4").
+_EXT_RX = re.compile(
+    r'\.(?:mp4|mkv|avi|mov|wmv|flv|m4v|ts|m2ts|webm|mpg|mpeg|vob|rmvb|divx|asf|ogv)\b',
+    re.I)
+
+_VOWELS = set('aeiouyàèéìòù')
 
 
 def _emit(obj):
@@ -237,6 +266,14 @@ except Exception:
     _HAVE_NP_RES = False
 
 ACTOR_SAFE_MARGIN = 0.05   # stacco minimo dal 2° performer per un match "sicuro"
+EARLY_STOP_SCORE  = 0.70   # oltre questo score consensuale si smette di cercare
+SCREEN_BATCH      = 4      # foto del primo giro di screening
+SCREEN_MIN_MAX    = 0.40   # se dopo lo screening il max è sotto → performer scartato
+MAX_OPTIONS       = 3      # alternative proposte all'utente a fine processo
+LOCAL_ONLY_MATCH  = 0.80   # soglia per fidarsi della sola cache locale
+FEW_PHOTOS_MATCH  = 0.70   # score richiesto quando le foto sono meno di 3
+FEW_PHOTOS_LIMIT  = 3      # sotto questo numero il quorum non e' applicabile
+OPTION_MARGIN     = 0.10   # quanto sotto confirm_threshold può stare un'opzione
 _DB_MATRIX_CACHE = {}
 
 def _db_matrix(db_rows):
@@ -355,64 +392,152 @@ def _save_photo_ref_to_db(facedb_path, name, photo_emb, external_id, photo_url):
 # ────────────────────────────────────────────────────────────────────
 # Stage D: top-K candidati nome dai filename
 # ────────────────────────────────────────────────────────────────────
-def _strip_filename(path):
-    # Include up to 2 parent dir components so paths like /performers/Summer Vixen/video.mp4
-    # contribute "summer vixen" as a candidate even if the filename has no name.
-    norm = (path or '').replace('\\', '/')
-    parts = [p for p in norm.split('/') if p]
-    # Take last 3 parts: [parent2, parent1, filename]
-    chunk = parts[-3:] if len(parts) >= 3 else parts
-    text_parts = []
-    for i, p in enumerate(chunk):
-        text_parts.append(os.path.splitext(p)[0] if i == len(chunk) - 1 else p)
-    s = ' '.join(text_parts).lower()
+def _clean_text(s):
+    """Normalizza un frammento di path: lowercase, via estensioni, pattern di
+    noise (siti, risoluzioni, anni, URL) e punteggiatura → parole separate."""
+    s = (s or '').lower()
+    s = _EXT_RX.sub(' ', s)
     for rx in _FN_NOISE_PATTERNS:
         s = rx.sub(' ', s)
-    s = re.sub(r"[._\-\(\)\[\]\{\}#@!\?,;:+=]+", ' ', s)
-    s = re.sub(r'\s+', ' ', s).strip()
-    return s
+    s = re.sub(r"[._\-\(\)\[\]\{\}#@!\?,;:+=&'\"/\\]+", ' ', s)
+    return re.sub(r'\s+', ' ', s).strip()
+
+
+def _is_hashish(tok):
+    """True per token che sembrano ID/hash di sito (pjvgTNi8MLs, 5e3f9a2b…).
+    Un nome umano non mescola mai cifre e lettere né vive senza vocali."""
+    if len(tok) < 5:
+        return False
+    if any(c.isdigit() for c in tok) and any(c.isalpha() for c in tok):
+        return True
+    if len(tok) >= 9 and not (set(tok) & _VOWELS):
+        return True
+    return False
 
 
 def _is_noise_token(tok):
     if not tok or len(tok) < 2: return True
     if tok.isdigit(): return True
     if tok in EXPLICIT_NOISE: return True
+    if _is_hashish(tok): return True
     return False
 
 
-def tokenize_filenames(files, topk=5):
-    # Frequenza n-gram (1-3 parole) su file_count distinti
-    ngram_files = {}
+def _looks_like_name(gram):
+    """Plausibilità che un n-gram sia un nome di persona ∈ [0,1]. 0 = scarta."""
+    toks = gram.split(' ')
+    if not toks:
+        return 0.0
+    for t in toks:
+        if len(t) < 2 or not t.isalpha():
+            return 0.0
+        if not (set(t) & _VOWELS):
+            return 0.0
+        if t in EXPLICIT_NOISE:
+            return 0.0
+    # Nome+cognome è la forma di gran lunga più probabile.
+    return {1: 0.45, 2: 1.0, 3: 0.7}.get(len(toks), 0.3)
+
+
+def _split_path(path):
+    """(basename, [max 2 cartelle padre]) senza lettera di drive."""
+    norm = (path or '').replace('\\', '/')
+    parts = [p for p in norm.split('/') if p and not re.match(r'^[a-z]:$', p, re.I)]
+    if not parts:
+        return '', []
+    return parts[-1], (parts[-3:-1] if len(parts) >= 2 else [])
+
+
+def _path_streams(path):
+    """Spezza un path in (token_del_filename, token_delle_2_cartelle_padre),
+    già ripuliti dal rumore lessicale. Usato per la generazione n-gram.
+    I token di cartella pesano meno: "Nuova cartella\\pornpad" non è un nome."""
+    base, dirs = _split_path(path)
+    fn_toks = [t for t in _clean_text(base).split(' ') if not _is_noise_token(t)]
+    dir_toks = [t for t in _clean_text(' '.join(dirs)).split(' ') if not _is_noise_token(t)]
+    return fn_toks, dir_toks
+
+
+def _strip_filename(path):
+    """Compat: stringa unica (cartelle + filename) ripulita."""
+    fn, dirs = _path_streams(path)
+    return ' '.join(dirs + fn)
+
+
+def fulltext_terms(files, max_terms=2):
+    """Stringa completa del solo filename ripulito, da passare tale e quale a
+    `searchPerformer`. È la strategia primaria: il ranking full-text di StashDB
+    isola il performer molto meglio di qualunque euristica n-gram locale
+    (verificato: nome corretto in posizione 1 anche con filename molto sporchi).
+    Le cartelle padre sono escluse: introducono solo rumore.
+
+    NB: qui la EXPLICIT_NOISE NON viene applicata. Serve a ripulire gli n-gram,
+    ma su un termine full-text sarebbe controproducente — contiene parole che
+    sono anche cognomi reali ("white", "black", "danger"): togliendole
+    "brazzers - angela white pov" diventa "angela" e il match si perde.
+    Il ranking di StashDB tollera benissimo le parole di contorno."""
+    out, seen = [], set()
     for fp in (files or []):
-        s = _strip_filename(fp)
-        if not s: continue
-        toks = [t for t in s.split(' ') if not _is_noise_token(t)]
-        seen_in_this = set()
-        for size in (1, 2, 3):
-            if len(toks) < size: continue
-            for i in range(len(toks) - size + 1):
-                gram = ' '.join(toks[i:i + size])
-                if gram in seen_in_this: continue
-                seen_in_this.add(gram)
-                ngram_files.setdefault(gram, set()).add(fp)
+        base, _dirs = _split_path(fp)
+        fn = [t for t in _clean_text(base).split(' ')
+              if t and not t.isdigit() and not _is_hashish(t)]
+        if not fn:
+            continue
+        q = ' '.join(fn)[:120].strip()
+        key = q.lower()
+        if not q or key in seen:
+            continue
+        seen.add(key)
+        out.append({'name': q, 'score': 100.0, 'fileCount': 1, 'kind': 'fulltext'})
+        if len(out) >= max_terms:
+            break
+    return out
+
+
+def tokenize_filenames(files, topk=5):
+    """Candidati n-gram (1-3 parole) dai path. Serve a coprire i file con più
+    performer, dove il full-text restituisce solo il primo."""
+    ngram_files = {}
+    ngram_dironly = {}
+    for fp in (files or []):
+        fn_toks, dir_toks = _path_streams(fp)
+        if not fn_toks and not dir_toks:
+            continue
+        for toks, from_dir in ((fn_toks, False), (dir_toks, True)):
+            seen_in_this = set()
+            for size in (1, 2, 3):
+                if len(toks) < size: continue
+                for i in range(len(toks) - size + 1):
+                    gram = ' '.join(toks[i:i + size])
+                    if gram in seen_in_this: continue
+                    seen_in_this.add(gram)
+                    ngram_files.setdefault(gram, set()).add(fp)
+                    # Un gram è "solo cartella" finché non compare in un filename.
+                    if not from_dir:
+                        ngram_dironly[gram] = False
+                    else:
+                        ngram_dironly.setdefault(gram, True)
     if not ngram_files: return []
 
-    # Score: file-frequency × bonus lunghezza (preferisci 2-3 parole, plausibili nomi-cognome)
+    # Score = frequenza × plausibilità-nome × penalità-cartella.
+    # La plausibilità è il fattore decisivo: senza, con un solo file tutti i
+    # 2-gram pareggiano e vince quello con la stringa più lunga (di solito un
+    # hash o un nome di cartella).
     def score(g, fs):
-        words = g.count(' ') + 1
-        length_bonus = {1: 0.6, 2: 1.4, 3: 1.0}[words]
-        return len(fs) * length_bonus
+        pl = _looks_like_name(g)
+        if pl <= 0:
+            return 0.0
+        return len(fs) * pl * (0.35 if ngram_dironly.get(g) else 1.0)
 
-    ranked = sorted(
-        ngram_files.items(),
-        key=lambda kv: (-score(kv[0], kv[1]), -len(kv[0]))
-    )
+    scored = [(g, fs, score(g, fs)) for g, fs in ngram_files.items()]
+    scored = [x for x in scored if x[2] > 0]
+    scored.sort(key=lambda x: (-x[2], -len(x[0])))
+
     out = []
-    for g, fs in ranked[:topk * 4]:  # filtra ulteriormente per evitare grossi sovrapposti
-        # capitalizza: "anna ralph" → "Anna Ralph"
+    for g, fs, sc in scored[:topk * 4]:
         pretty = ' '.join(w.capitalize() for w in g.split(' '))
-        out.append({'name': pretty, 'score': float(score(g, fs)), 'fileCount': len(fs)})
-    # Dedup: se "anna ralph" presente, scarta "anna" e "ralph" sub-string
+        out.append({'name': pretty, 'score': float(sc), 'fileCount': len(fs)})
+    # Dedup: se "anna ralph" è presente, scarta i singoli "anna" / "ralph"
     final = []
     taken_words = set()
     for c in out:
@@ -426,9 +551,162 @@ def tokenize_filenames(files, topk=5):
     return final
 
 
+def _squash(s):
+    """Riduce un nome alla sola sequenza di lettere minuscole: rende
+    equivalenti "Anna De Ville", "Anna DeVille", "anna.de.ville", "ANNA-DEVILLE"."""
+    return re.sub(r'[^a-z]', '', (s or '').lower())
+
+
+def title_blob(files):
+    """Testo compattato di tutti i filename del cluster, per il confronto nomi."""
+    parts = []
+    for fp in (files or []):
+        base, dirs = _split_path(fp)
+        parts.append(_clean_text(base))
+        parts.extend(_clean_text(d) for d in dirs)
+    return _squash(' '.join(parts))
+
+
+def name_in_title(performer, blob):
+    """True se il nome del performer (o un suo alias) compare nel titolo.
+
+    È una evidenza INDIPENDENTE dal volto: quando concorda con la verifica
+    fotografica il match è molto più solido, e serve a dirimere fra due
+    performer con punteggi fotografici quasi identici. Da sola non basta mai —
+    in una scena con più persone il volto inquadrato può benissimo non essere
+    quello citato nel titolo."""
+    if not blob:
+        return False
+    names = [performer.get('name')] + list(performer.get('aliases') or [])
+    for nm in names:
+        sq = _squash(nm)
+        # Almeno 6 lettere: sotto quella soglia i falsi positivi esplodono
+        # ("Mia", "Sky" comparirebbero ovunque).
+        if len(sq) >= 6 and sq in blob:
+            return True
+    return False
+
+
+def build_search_terms(files, topk=5):
+    """Lista ordinata di termini da interrogare su StashDB:
+    prima il full-text del filename, poi gli n-gram plausibili."""
+    terms = fulltext_terms(files)
+    seen = {t['name'].lower() for t in terms}
+    for c in tokenize_filenames(files, topk=topk):
+        k = c['name'].lower()
+        if k in seen: continue
+        seen.add(k)
+        terms.append(c)
+    return terms
+
+
 # ────────────────────────────────────────────────────────────────────
 # Stage E: lookup StashDB + verifica foto-vs-foto
 # ────────────────────────────────────────────────────────────────────
+def _wikidata_people(name, limit=4, timeout=8):
+    """Wikidata: persone reali con una foto (P18). Copre attori, musicisti,
+    sportivi, politici — chiunque abbia una voce. Nessuna chiave richiesta."""
+    j = analyze._safe_request('GET', "https://www.wikidata.org/w/api.php",
+        params={"action": "wbsearchentities", "format": "json", "language": "en",
+                "uselang": "en", "type": "item", "search": name, "limit": limit},
+        timeout=timeout)
+    out = []
+    for ent in (j or {}).get('search', [])[:limit]:
+        qid = ent.get('id')
+        if not qid:
+            continue
+        desc = (ent.get('description') or '').lower()
+        # Prima si scartano le OPERE: una filmografia o una discografia ha una
+        # descrizione che cita il mestiere della persona ("list of movies with
+        # actor X") e supererebbe il filtro sotto.
+        if any(k in desc for k in ('list of', 'filmography', 'discography',
+                                   'album', 'song by', 'video game', 'episode',
+                                   'film series', 'awards and nominations')):
+            continue
+        # Poi si tiene solo ciò che è una persona: senza questo filtro un
+        # titolo di film o un comune omonimo entrerebbe fra i candidati.
+        if desc and not any(k in desc for k in (
+                'actor', 'actress', 'singer', 'musician', 'rapper', 'artist',
+                'player', 'athlete', 'footballer', 'director', 'model',
+                'presenter', 'comedian', 'dancer', 'writer', 'politician',
+                'person', 'born', 'youtuber', 'streamer', 'wrestler', 'boxer',
+                'driver', 'coach', 'producer', 'dj')):
+            continue
+        c = analyze._safe_request('GET', "https://www.wikidata.org/w/api.php",
+            params={"action": "wbgetclaims", "format": "json",
+                    "entity": qid, "property": "P18"}, timeout=timeout)
+        imgs = []
+        try:
+            for claim in (((c or {}).get('claims') or {}).get('P18') or [])[:4]:
+                fn = claim['mainsnak']['datavalue']['value']
+                if fn:
+                    imgs.append("https://commons.wikimedia.org/wiki/Special:FilePath/"
+                                + fn.replace(' ', '_'))
+        except Exception:
+            pass
+        if not imgs:
+            continue
+        out.append({'id': qid, 'name': ent.get('label') or name, 'images': imgs,
+                    'gender': None, 'source': 'wikidata',
+                    'disambiguation': ent.get('description'), 'aliases': []})
+    return out
+
+
+def _wikipedia_people(name, timeout=8):
+    """Wikipedia: una foto dal riassunto della voce. Fallback per i nomi che
+    Wikidata non indicizza con P18."""
+    try:
+        import urllib.parse
+        slug = urllib.parse.quote(name.replace(' ', '_'), safe='')
+    except Exception:
+        slug = name.replace(' ', '_')
+    j = analyze._safe_request('GET',
+        "https://en.wikipedia.org/api/rest_v1/page/summary/" + slug, timeout=timeout)
+    if not j or j.get('type') == 'disambiguation' or not j.get('title'):
+        return []
+    photo = None
+    if j.get('originalimage'):
+        photo = j['originalimage'].get('source')
+    elif j.get('thumbnail'):
+        photo = j['thumbnail'].get('source')
+    if not photo:
+        return []
+    return [{'id': str(j.get('pageid')), 'name': j.get('title'), 'images': [photo],
+             'gender': None, 'source': 'wikipedia',
+             'disambiguation': j.get('description'), 'aliases': []}]
+
+
+def _tmdb_people(name, tmdb_key, limit=4, timeout=8):
+    """TMDB: cinema e TV. Richiede la chiave dell'utente. Prende più scatti
+    per persona (/person/{id}/images) così il quorum resta applicabile."""
+    if not tmdb_key:
+        return []
+    j = analyze._safe_request('GET', "https://api.themoviedb.org/3/search/person",
+        params={"api_key": tmdb_key, "query": name}, timeout=timeout)
+    out = []
+    for hit in (j or {}).get('results', [])[:limit]:
+        pid = hit.get('id')
+        if not pid:
+            continue
+        imgs = []
+        det = analyze._safe_request('GET',
+            "https://api.themoviedb.org/3/person/%s/images" % pid,
+            params={"api_key": tmdb_key}, timeout=timeout)
+        for pr in ((det or {}).get('profiles') or [])[:8]:
+            if pr.get('file_path'):
+                imgs.append("https://image.tmdb.org/t/p/w342" + pr['file_path'])
+        if not imgs and hit.get('profile_path'):
+            imgs.append("https://image.tmdb.org/t/p/w342" + hit['profile_path'])
+        if not imgs:
+            continue
+        g = hit.get('gender')
+        out.append({'id': str(pid), 'name': hit.get('name'), 'images': imgs,
+                    'gender': {1: 'FEMALE', 2: 'MALE'}.get(g),
+                    'source': 'tmdb',
+                    'disambiguation': hit.get('known_for_department'), 'aliases': []})
+    return out
+
+
 def lookup_performer(name, gql_cache, max_performers_per_query):
     key = (name or '').lower().strip()
     if not key: return []
@@ -450,79 +728,291 @@ def lookup_performer(name, gql_cache, max_performers_per_query):
     return items
 
 
-def verify_cluster_against_performer(cluster_emb, performer, photo_emb_cache,
-                                     confirm_threshold, max_photos_per_performer):
-    best = -1.0
-    best_url = None
-    imgs = (performer.get('images') or [])[:int(max_photos_per_performer)]
-    for url in imgs:
-        sim = analyze.verify_match_photo(url, cluster_emb,
-                                          photo_emb_cache=photo_emb_cache)
-        if sim is None:
+def spread_photos(urls, k):
+    """Campiona k foto distribuite su TUTTA la galleria del performer invece
+    delle prime k. Le immagini StashDB sono ordinate per scena/shooting: uno
+    stride uniforme copre epoche, acconciature e luci diverse, che è proprio
+    ciò che rende la conferma robusta."""
+    urls = [u for u in (urls or []) if u]
+    k = max(1, int(k))
+    if len(urls) <= k:
+        return urls
+    step = len(urls) / float(k)
+    out, seen = [], set()
+    for i in range(k):
+        u = urls[int(i * step)]
+        if u not in seen:
+            seen.add(u); out.append(u)
+    return out
+
+
+def lookup_all_sources(name, gql_cache, max_per_query, sources):
+    """Cerca il nome su tutte le fonti abilitate e restituisce un'unica lista
+    di candidati, ciascuno con le sue foto. StashDB per primo quando c'è: è
+    l'unico con molte foto per persona, quindi il più solido da verificare."""
+    key = (name or '').lower().strip()
+    if not key:
+        return []
+    cached = gql_cache.get(('all', key))
+    if cached is not None:
+        return cached
+    items = []
+    if sources.get('stashdb'):
+        items.extend(lookup_performer(name, gql_cache, max_per_query))
+    if sources.get('tmdb'):
+        try: items.extend(_tmdb_people(name, sources.get('tmdb_key'), max_per_query))
+        except Exception: pass
+    if sources.get('wikidata'):
+        try: items.extend(_wikidata_people(name, max_per_query))
+        except Exception: pass
+    if sources.get('wikipedia'):
+        try: items.extend(_wikipedia_people(name))
+        except Exception: pass
+    # Dedup per nome: la stessa persona può comparire su più fonti.
+    seen, out = set(), []
+    for it in items:
+        k = (it.get('name') or '').strip().lower()
+        if not k or k in seen:
             continue
-        if sim > best:
-            best = sim; best_url = url
-        # Early-exit se ben sopra soglia
-        if sim >= max(confirm_threshold + 0.10, 0.85):
-            break
-    if best < 0:
+        seen.add(k)
+        out.append(it)
+    gql_cache[('all', key)] = out
+    return out
+
+
+def verify_cluster_against_performer(cluster_emb, performer, photo_emb_cache,
+                                     confirm_threshold, max_photos_per_performer,
+                                     min_votes=2):
+    """Confronta il cluster con più foto dello stesso performer, prese da scene
+    diverse, e ritorna un verdetto CONSENSUALE — non il massimo singolo.
+
+    Il massimo su N foto è una statistica fragile: più foto guardi, più è
+    probabile che una somigli per caso. Serve invece corroborazione:
+      · votes     = quante foto superano da sole confirm_threshold
+      · score     = media delle 3 migliori (una foto fortunata non basta)
+    Misurato sui dati reali: il performer giusto fa 8 voti su 12 foto e
+    top3mean 0.77; i performer sbagliati fanno 0 voti e non superano 0.33.
+
+    Screening progressivo: valuta prima SCREEN_BATCH foto; se nessuna vota e il
+    massimo resta sotto SCREEN_MIN_MAX il performer è senza speranza e si
+    interrompe subito — così il costo pieno lo pagano solo i candidati veri.
+
+    Ritorna None se nessuna foto è valutabile (download/volto non rilevato)."""
+    imgs = spread_photos(performer.get('images'), max_photos_per_performer)
+    if not imgs:
         return None
-    return {'score': float(best), 'thumbUrl': best_url}
+    sims, best, best_url = [], -1.0, None
+
+    def _eval(batch):
+        nonlocal best, best_url
+        for url in batch:
+            sim = analyze.verify_match_photo(url, cluster_emb,
+                                             photo_emb_cache=photo_emb_cache)
+            if sim is None:
+                continue
+            sims.append(float(sim))
+            if sim > best:
+                best, best_url = float(sim), url
+
+    _eval(imgs[:SCREEN_BATCH])
+    promising = (best >= SCREEN_MIN_MAX) or any(s >= confirm_threshold for s in sims)
+    if promising:
+        _eval(imgs[SCREEN_BATCH:])
+
+    if not sims:
+        return None
+    ordered = sorted(sims, reverse=True)
+    top3 = ordered[:3]
+    votes = sum(1 for s in sims if s >= confirm_threshold)
+    # Con una galleria ampia lo score è il consenso: media delle 3 migliori,
+    # così una singola somiglianza fortunata non basta. Con meno di
+    # FEW_PHOTOS_LIMIT foto il consenso non è calcolabile — Wikidata e
+    # Wikipedia pubblicano spesso uno o due ritratti, magari in epoche molto
+    # diverse — e mediare significherebbe far affossare un riconoscimento
+    # perfetto da uno scatto poco utilizzabile. Lì si guarda la prova
+    # migliore, ma _passes pretende che superi FEW_PHOTOS_MATCH.
+    consensus = (float(sum(top3) / len(top3)) if len(sims) >= FEW_PHOTOS_LIMIT
+                 else float(ordered[0]))
+    return {
+        'score': consensus,
+        'max': float(ordered[0]),
+        'votes': int(votes),
+        'photos': len(sims),
+        'screened': len(sims) < len(imgs),
+        'thumbUrl': best_url,
+    }
+
+
+def _passes(e, confirm_threshold, min_votes):
+    """Il candidato è confermato?
+
+    Con almeno FEW_PHOTOS_LIMIT foto vale il quorum: più scatti indipendenti
+    devono superare la soglia. Sotto quel numero il quorum è inapplicabile —
+    Wikidata e Wikipedia pubblicano spesso un solo ritratto — e allora si
+    chiede una somiglianza nettamente più alta su quell'unica foto.
+    """
+    if e.get('score', 0) < confirm_threshold:
+        return False
+    photos = int(e.get('photos') or 0)
+    if photos >= FEW_PHOTOS_LIMIT:
+        return e.get('votes', 0) >= int(min_votes)
+    return e.get('score', 0) >= FEW_PHOTOS_MATCH and e.get('votes', 0) >= 1
+
+
+def _merge_options(verified_opts, local_opts):
+    """Unisce le alternative verificate con le proposte dalla libreria locale.
+    Le verificate vengono prima: hanno prove fotografiche, le altre no."""
+    out, seen = [], set()
+    for e in list(verified_opts or []) + list(local_opts or []):
+        key = str(e.get('performerId') or '') or (e.get('name') or '').strip().lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        out.append(e)
+        if len(out) >= MAX_OPTIONS:
+            break
+    return out
 
 
 def resolve_one(cluster, candidates, gql_cache, photo_emb_cache,
                 confirm_threshold, max_performers_per_query,
-                max_photos_per_performer, on_progress=None):
-    """Itera candidati → performer → foto. Ritorna il match migliore o None.
+                max_photos_per_performer, on_progress=None, min_votes=2,
+                sources=None):
+    """Itera candidati → performer → foto. Ritorna (match|None, termini, opzioni).
+
+    `opzioni` sono i migliori MAX_OPTIONS performer verificati, ordinati per
+    score: servono alla UI per far scegliere l'utente quando l'automatismo
+    sbaglia. Il primo elemento coincide col match quando questo è accettato.
     Dedupa performer per id (uno stesso performer può tornare da candidati diversi)."""
     seen_ids = set()
-    best = None; best_score = -1.0; second_score = -1.0
+    evaluated = []          # tutti i performer effettivamente confrontati
     cands_scored = []
+    blob = title_blob(cluster.get('files'))
     for ci, cand in enumerate(candidates or []):
         name = cand.get('name') if isinstance(cand, dict) else cand
         if not name: continue
+        # Early-stop. Due condizioni sufficienti:
+        #  · uno score fotografico molto alto, già conferma robusta di per sé;
+        #  · un performer citato nel titolo che supera anche il quorum foto —
+        #    le due evidenze indipendenti concordano, cercare oltre è sprecato.
+        #    È qui che il nome nel file fa risparmiare davvero tempo.
+        if evaluated and (
+                max(e['score'] for e in evaluated) >= EARLY_STOP_SCORE
+                or any(e.get('inTitle') and _passes(e, confirm_threshold, min_votes)
+                       for e in evaluated)):
+            break
         if on_progress:
-            on_progress({'stage': 'query', 'detail': name, 'candidate_idx': ci})
-        performers = lookup_performer(name, gql_cache, max_performers_per_query)
+            # NB: nessun nome nel progress. Mostrare i candidati mentre vengono
+            # scartati confonde — l'utente vedrebbe scorrere nomi che non sono
+            # il risultato. Si comunica solo l'avanzamento.
+            on_progress({'stage': 'query', 'candidate_idx': ci})
+        performers = lookup_all_sources(name, gql_cache, max_performers_per_query,
+                                        sources or {'stashdb': True})
         cand_best = -1.0
         for p in performers:
             pid = p.get('id')
             if pid in seen_ids: continue
             seen_ids.add(pid)
             if on_progress:
-                on_progress({'stage': 'verify', 'detail': p.get('name'),
-                             'candidate_idx': ci})
+                on_progress({'stage': 'verify', 'candidate_idx': ci})
             res = verify_cluster_against_performer(
                 cluster['embedding'], p, photo_emb_cache,
-                confirm_threshold, max_photos_per_performer)
+                confirm_threshold, max_photos_per_performer,
+                min_votes=min_votes)
             if res is None: continue
             score = res['score']
             if score > cand_best: cand_best = score
-            if score > best_score:
-                second_score = best_score        # il vecchio migliore diventa secondo
-                best_score = score
-                best = {
-                    'performerId': pid,
-                    'name': p.get('name'),
-                    'score': score,
-                    'source': 'stashdb',
-                    'thumbUrl': res['thumbUrl'] or p.get('image'),
-                    'aliases': p.get('aliases') or [],
-                    'gender': p.get('gender'),
-                }
-            elif score > second_score:
-                second_score = score
+            evaluated.append({
+                'performerId': pid,
+                'name': p.get('name'),
+                'score': score,
+                'source': p.get('source') or 'stashdb',
+                'thumbUrl': res['thumbUrl'] or p.get('image'),
+                'aliases': p.get('aliases') or [],
+                'gender': p.get('gender'),
+                'votes': res['votes'],
+                'photos': res['photos'],
+                'maxScore': res['max'],
+                'inTitle': name_in_title(p, blob),
+            })
         cands_scored.append({'name': name, 'score': float(cand_best) if cand_best >= 0 else None})
 
-    if best and best_score >= confirm_threshold:
-        # Match SICURO solo se stacca il 2° performer di ACTOR_SAFE_MARGIN: evita
-        # conferme ambigue fra due performer somiglianti.
-        gap = (best_score - second_score) if second_score >= 0 else best_score
-        best['margin'] = round(gap, 4)
-        best['safe'] = bool(gap >= ACTOR_SAFE_MARGIN)
-        best['confidence'] = 'confirmed' if best['safe'] else 'ambiguous'
-        return best, cands_scored
-    return None, cands_scored
+    if not evaluated:
+        return None, cands_scored, []
+    evaluated.sort(key=lambda e: -e['score'])
+    best = evaluated[0]
+
+    # ── Triangolazione volto + titolo ────────────────────────────────────
+    # Due evidenze indipendenti che concordano battono una sola evidenza più
+    # alta ma isolata: è il caso di due performer somiglianti in cui il
+    # punteggio fotografico è quasi un pareggio, e quello di un nome pescato
+    # da una parola qualsiasi del titolo che segna alto per caso.
+    # Il titolo da solo NON promuove mai nessuno: senza quorum fotografico il
+    # volto inquadrato potrebbe essere di un'altra persona presente in scena.
+    titled = [e for e in evaluated
+              if e.get('inTitle') and _passes(e, confirm_threshold, min_votes)]
+    promoted = False
+    if titled:
+        # Chi è citato nel titolo E supera consenso e quorum fotografico ha
+        # DUE evidenze indipendenti che concordano; il rivale col punteggio
+        # più alto ne ha una sola. Non si confrontano numeri omogenei, quindi
+        # non c'è una tolleranza da rispettare: vince la concordanza.
+        #
+        # Misurato su un caso reale: il titolo conteneva "Pee on each other
+        # Veronica Leal", StashDB restituiva anche "Pee Player Ariel" che
+        # segnava 0.787 contro 0.580 di Veronica Leal — e vinceva, pur essendo
+        # emerso solo da una parola del titolo presa alla lettera.
+        t = titled[0]        # evaluated è già ordinato per score
+        promoted = t is not best
+        best = t
+        evaluated = [t] + [e for e in evaluated if e is not t]
+
+    best_score = best['score']
+    second_score = evaluated[1]['score'] if len(evaluated) > 1 else -1.0
+
+    # ── Opzioni da proporre all'utente ───────────────────────────────────
+    # Due categorie, entrambe utili, tenute ben distinte:
+    #  · verificate → hanno superato consenso e quorum fotografico;
+    #  · dal titolo → il nome compare nel file e corrisponde a un performer
+    #    reale su StashDB, ma il volto non lo conferma. Non si accettano da
+    #    sole, però vanno MOSTRATE: quando il video offre un solo volto, di
+    #    profilo o mosso, il confronto fotografico non può concludere nulla e
+    #    il nome nel titolo resta l'informazione migliore che abbiamo. Meglio
+    #    proporlo con l'etichetta giusta che lasciare l'utente a mani vuote.
+    opt_floor = max(0.0, confirm_threshold - OPTION_MARGIN)
+    plausible, from_title = [], []
+    for e in evaluated:
+        # `verified` = ha superato consenso E quorum. È il flag che la UI usa
+        # per distinguere una proposta accertata da una da controllare.
+        e['verified'] = _passes(e, confirm_threshold, min_votes)
+        if e['score'] >= opt_floor and e.get('votes', 0) >= 1:
+            plausible.append(e)       # evidenza fotografica, forte o debole
+        elif e.get('inTitle'):
+            from_title.append(e)      # solo il nome nel file lo sostiene
+    verified_first = [e for e in plausible if e['verified']]
+    rest = [e for e in plausible if not e['verified']]
+    # fra le non confermate, prima chi e' citato nel titolo
+    rest.sort(key=lambda e: (0 if e.get('inTitle') else 1, -e['score']))
+    from_title.sort(key=lambda e: -e['score'])
+    options = (verified_first + from_title + rest)[:MAX_OPTIONS] if not verified_first               else (verified_first + rest + from_title)[:MAX_OPTIONS]
+
+    # Tre condizioni indipendenti, tutte necessarie:
+    #  1. consenso   → la media delle 3 foto migliori supera la soglia
+    #  2. quorum     → almeno min_votes foto DIVERSE lo confermano da sole
+    #  3. distacco   → stacca il 2° performer, per non confondere due somiglianti
+    if not _passes(best, confirm_threshold, min_votes):
+        return None, cands_scored, options
+    gap = (best_score - second_score) if second_score >= 0 else best_score
+    # Dopo una promozione da titolo il 2° può avere score più alto: il distacco
+    # fotografico non è più la metrica giusta, la decisione l'ha presa la
+    # concordanza delle due evidenze. Niente margini negativi in uscita.
+    best['margin'] = round(max(0.0, gap), 4)
+    best['promotedByTitle'] = promoted
+    # Il nome nel titolo è la seconda evidenza: con entrambe che concordano il
+    # distacco fotografico dal 2° non serve più come unica garanzia.
+    best['safe'] = bool(gap >= ACTOR_SAFE_MARGIN or best.get('inTitle'))
+    best['confidence'] = 'confirmed' if best['safe'] else 'ambiguous'
+    return best, cands_scored, options
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -556,6 +1046,19 @@ def cmd_resolve(args):
 
     confirm_thr = float(args.confirm_threshold)
     early_thr = float(args.early_hit_threshold)
+    min_votes = max(1, int(args.photo_votes))
+    # Fonti attive per questa esecuzione. StashDB copre l'adult; Wikidata,
+    # Wikipedia e TMDB coprono attori, musicisti, sportivi e volti pubblici.
+    sources = {
+        'stashdb': (not args.no_stashdb) and has_key,
+        'wikidata': bool(args.use_wikidata),
+        'wikipedia': bool(args.use_wikipedia),
+        'tmdb': bool(args.tmdb_key),
+        'tmdb_key': args.tmdb_key,
+    }
+    _emit({'event': 'progress', 'stage': 'sources', 'cluster': 0, 'total': n,
+           'detail': ','.join(k for k in ('stashdb', 'wikidata', 'wikipedia', 'tmdb')
+                              if sources.get(k)) or 'nessuna'})
 
     for idx, cl in enumerate(clusters):
         cluster_obj = {
@@ -568,80 +1071,117 @@ def cmd_resolve(args):
             'mergedFrom': cl.get('_mergedFrom') or [],
             'match': None,
             'candidates': [],
+            'options': [],      # max MAX_OPTIONS alternative fra cui scegliere
         }
 
-        # Stage C: early-hit con verifica foto per borderline.
-        # Top-K candidati dal DB locale: i match forti (≥ confirm_thr) auto-confermano,
-        # i borderline (< confirm_thr) richiedono verifica foto-vs-foto contro StashDB
-        # → evita falsi positivi a soglia 0.35 con DB grandi.
+        # Stage C: early-hit dalla cache locale.
+        #
+        # La cache NON è mai una prova sufficiente. Un embedding salvato è il
+        # centroide di un volto ripreso in UNA condizione: su un DB grande
+        # trova sempre "qualcuno" che somiglia. Misurato: un volto otteneva
+        # 0.597 contro la riga cache di un performer le cui foto reali non
+        # superano 0.286 — nome sbagliato, accettato senza guardare una foto.
+        #
+        # Quindi: la cache serve solo a PROPORRE candidati; il nome esce
+        # unicamente dopo lo stesso test consensuale su più foto/scene usato
+        # nello Stage E. Unica eccezione: le voci senza external_id StashDB,
+        # cioè i volti che l'utente ha nominato a mano — lì il nome è suo e
+        # non c'è nulla da verificare contro StashDB.
         early_cands = early_facedb_candidates(cl['embedding'], db_rows, early_thr, top_k=5)
         early = None
-        # Soglia foto-verifica più permissiva del confirm globale: l'evidenza locale
-        # del DB è già un primo segnale, basta confermare con cosine foto >= 0.45.
-        photo_verify_thr = max(early_thr, confirm_thr - 0.10)
+        early_options = []     # alternative verificate, per la scelta manuale
+        local_suggestions = [] # nomi dalla sola libreria locale, non verificati
         for cand in early_cands:
-            # Match forte: auto-confirm senza verifica
-            if cand['score'] >= confirm_thr:
-                early = cand
-                break
-            # Borderline: verifica via foto StashDB se abbiamo ext_id + key.
+            ext_id = cand.get('performerId')
+            if not ext_id or not has_key:
+                # Voce locale senza controparte StashDB (volto nominato a mano
+                # dall'utente): non esiste nessuna foto contro cui verificarla.
+                # Diventa un nome solo con evidenza schiacciante; altrimenti
+                # resta una proposta, perché su un DB grande un cosine appena
+                # sopra soglia trova sempre qualcuno che somiglia.
+                if not ext_id:
+                    if cand['score'] >= LOCAL_ONLY_MATCH:
+                        early = dict(cand)
+                        early['source'] = cand.get('source') or 'facedb'
+                        early['confidence'] = 'local'
+                        early['safe'] = False
+                        break
+                    if cand['score'] >= confirm_thr and len(local_suggestions) < 2:
+                        sug = dict(cand)
+                        sug['source'] = cand.get('source') or 'facedb'
+                        sug['verified'] = False
+                        sug['fromLibrary'] = True
+                        sug['votes'] = 0
+                        sug['photos'] = 0
+                        local_suggestions.append(sug)
+                continue
+            # Nessun nome nel progress: i candidati in esame non sono risultati.
+            _emit({'event': 'progress', 'stage': 'verify',
+                   'cluster': idx + 1, 'total': n})
+            p_data, _err = stashdb._gql(stashdb.Q_PERFORMER_INFO, {'id': ext_id})
+            photos = []
+            p_gender = None
+            if p_data and p_data.get('findPerformer'):
+                _pf = p_data['findPerformer']
+                photos = [i.get('url') for i in (_pf.get('images') or [])
+                          if i and i.get('url')]
+                # Il genere dichiarato da StashDB viaggia col match: serve al
+                # wizard per non far scartare il performer dal filtro genere,
+                # la cui stima locale è molto meno affidabile.
+                p_gender = _pf.get('gender')
+            # Fallback: se thumbUrl è già una URL http (raro), usalo.
             # NB: il thumbnail locale può essere base64 (face crop): ignoralo,
             # usa SEMPRE l'API StashDB per ottenere le foto vere.
-            ext_id = cand.get('performerId')
-            if ext_id and has_key:
-                _emit({'event': 'progress', 'stage': 'verify',
-                       'cluster': idx + 1, 'total': n,
-                       'detail': cand.get('name')})
-                p_data, _err = stashdb._gql(stashdb.Q_PERFORMER_INFO, {'id': ext_id})
-                photos = []
-                if p_data and p_data.get('findPerformer'):
-                    photos = [i.get('url') for i in
-                              ((p_data['findPerformer'].get('images')) or [])
-                              if i and i.get('url')]
-                # Fallback: se thumbUrl è già una URL http (raro), usalo
-                thumb = cand.get('thumbUrl')
-                if not photos and isinstance(thumb, str) and thumb.startswith('http'):
-                    photos = [thumb]
-                best_sim = -1.0
-                best_url = None
-                for url in photos[:int(args.max_photos_per_performer)]:
-                    sim = analyze.verify_match_photo(url, cl['embedding'],
-                                                     photo_emb_cache=photo_emb_cache)
-                    if sim is None: continue
-                    if sim > best_sim:
-                        best_sim, best_url = sim, url
-                    if sim >= max(confirm_thr + 0.10, 0.85):
-                        break
-                if best_sim >= photo_verify_thr:
-                    early = dict(cand)
-                    early['score'] = float(best_sim)
-                    early['thumbUrl'] = best_url or thumb
-                    early['source'] = (cand.get('source') or 'facedb') + '+photo'
+            thumb = cand.get('thumbUrl')
+            if not photos and isinstance(thumb, str) and thumb.startswith('http'):
+                photos = [thumb]
+            res = verify_cluster_against_performer(
+                cl['embedding'], {'images': photos}, photo_emb_cache,
+                confirm_thr, int(args.max_photos_per_performer),
+                min_votes=min_votes)
+            if res:
+                # Ogni candidato con evidenza fotografica reale entra fra le
+                # alternative, anche se non vince: è il materiale con cui
+                # l'utente corregge un match sbagliato.
+                if res['score'] >= max(0.0, confirm_thr - OPTION_MARGIN) and res['votes'] >= 1:
+                    opt = dict(cand)
+                    opt.update({'score': float(res['score']), 'maxScore': res['max'],
+                                'votes': res['votes'], 'photos': res['photos'],
+                                'thumbUrl': res['thumbUrl'] or thumb,
+                                'gender': p_gender,
+                                'source': (cand.get('source') or 'facedb') + '+photo'})
+                    early_options.append(opt)
+                if res['score'] >= confirm_thr and res['votes'] >= min_votes:
+                    early = dict(early_options[-1]) if early_options else dict(cand)
+                    early['confidence'] = 'confirmed'
+                    early['safe'] = True
                     # Salva embedding foto come ref stabile (auto-bootstrap)
-                    photo_emb = photo_emb_cache.get(best_url) if best_url else None
+                    photo_emb = photo_emb_cache.get(res['thumbUrl']) if res['thumbUrl'] else None
                     if photo_emb and args.facedb:
                         _save_photo_ref_to_db(args.facedb, early['name'], photo_emb,
-                                              ext_id, best_url)
+                                              ext_id, res['thumbUrl'])
                     break
-                # Verifica fallita: prova prossimo candidato
+            # Verifica fallita: prova prossimo candidato
         if early:
             _emit({'event': 'progress', 'stage': 'cache',
-                   'cluster': idx + 1, 'total': n, 'detail': early.get('name')})
+                   'cluster': idx + 1, 'total': n})
+            early_options.sort(key=lambda e: -e.get('score', 0))
             cluster_obj['match'] = early
+            cluster_obj['options'] = _merge_options(early_options, local_suggestions)
             out.append(cluster_obj)
             _emit(cluster_obj)
             matched += 1
             continue
 
-        # Stage D: candidati
-        cands = tokenize_filenames(cl['files'], topk=int(args.topk))
+        # Stage D: candidati (full-text del filename + n-gram plausibili)
+        cands = build_search_terms(cl['files'], topk=int(args.topk))
 
-        if not has_key or not cands:
+        any_source = any(sources.get(k) for k in ('stashdb', 'wikidata', 'wikipedia', 'tmdb'))
+        if not any_source or not cands:
             cluster_obj['candidates'] = cands
             _emit({'event': 'progress',
-                   'stage': 'skipped' if not has_key else 'no-candidates',
-                   'cluster': idx + 1, 'total': n,
-                   'detail': 'no_api_key' if not has_key else 'no_candidates'})
+                   'stage': 'skipped' if not any_source else 'no-candidates',
+                   'cluster': idx + 1, 'total': n})
             out.append(cluster_obj)
             _emit(cluster_obj)
             continue
@@ -652,12 +1192,14 @@ def cmd_resolve(args):
             ev.update({'event': 'progress', 'cluster': idx + 1, 'total': n})
             _emit(ev)
 
-        match, cands_scored = resolve_one(
+        match, cands_scored, options = resolve_one(
             cl, cands, gql_cache, photo_emb_cache,
             confirm_thr,
             int(args.max_performers_per_query),
             int(args.max_photos_per_performer),
             on_progress=on_progress,
+            min_votes=min_votes,
+            sources=sources,
         )
         # Salva embedding foto del match come ref stabile per future early-hit
         if match and match.get('performerId') and match.get('thumbUrl') and args.facedb:
@@ -667,6 +1209,7 @@ def cmd_resolve(args):
                                       match['performerId'], match['thumbUrl'])
         cluster_obj['match'] = match
         cluster_obj['candidates'] = cands_scored
+        cluster_obj['options'] = _merge_options(options, local_suggestions)
         if match: matched += 1
         out.append(cluster_obj)
         _emit(cluster_obj)
@@ -698,8 +1241,21 @@ def main():
     p.add_argument('--confirm-threshold', default='0.55')
     p.add_argument('--early-hit-threshold', default='0.35')
     p.add_argument('--topk', default='5')
-    p.add_argument('--max-photos-per-performer', default='4')
+    # 10 foto sparse sulla galleria = scene/epoche diverse. Lo screening
+    # progressivo fa sì che i performer sbagliati ne costino comunque solo 4.
+    p.add_argument('--max-photos-per-performer', default='10')
     p.add_argument('--max-performers-per-query', default='5')
+    p.add_argument('--tmdb-key', default=None,
+                   help='chiave TMDB: abilita cinema e TV')
+    p.add_argument('--use-wikidata', action='store_true',
+                   help='abilita Wikidata (gratis): attori, musicisti, sportivi')
+    p.add_argument('--use-wikipedia', action='store_true',
+                   help='abilita Wikipedia (gratis) come fallback')
+    p.add_argument('--no-stashdb', action='store_true',
+                   help='disabilita StashDB')
+    p.add_argument('--photo-votes', default='2',
+                   help='foto distinte che devono superare da sole la soglia '
+                        'perché il nome venga accettato (quorum)')
     args = ap.parse_args()
     if args.cmd == 'resolve':
         return cmd_resolve(args)

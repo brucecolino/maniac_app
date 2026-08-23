@@ -1,6 +1,6 @@
 {
   "name": "maniac-player",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Maniac - AI-Powered Media Player",
   "main": "main.js",
   "scripts": {
@@ -15,19 +15,36 @@
     "electron-builder": "^25.1.8"
   },
   "dependencies": {
+    "electron-updater": "^6.8.9",
     "webtorrent": "^2.4.1"
   },
   "build": {
     "appId": "com.maniac.player",
     "productName": "Maniac",
     "protocols": [
-      { "name": "Magnet Link", "schemes": ["magnet"] },
-      { "name": "Maniac Download", "schemes": ["maniac"] }
+      {
+        "name": "Magnet Link",
+        "schemes": [
+          "magnet"
+        ]
+      },
+      {
+        "name": "Maniac Download",
+        "schemes": [
+          "maniac"
+        ]
+      }
     ],
     "directories": {
       "output": "dist"
     },
-    "publish": null,
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "brucecolino",
+        "repo": "maniac_app"
+      }
+    ],
     "win": {
       "target": [
         {
@@ -47,15 +64,63 @@
       "installerIcon": "assets/maniac_logo.ico",
       "uninstallerIcon": "assets/maniac_logo.ico",
       "installerHeaderIcon": "assets/maniac_logo.ico",
-      "artifactName": "Maniac-1.0-1-Setup.${ext}"
+      "artifactName": "Maniac-Setup-${version}.${ext}"
     },
     "extraResources": [
-      { "from": "models/scrapers/", "to": "models/scrapers/", "filter": ["**/*", "!**/.git/**"] },
-      { "from": "tools/", "to": "tools/" },
-      { "from": "python/", "to": "python/", "filter": ["**/*", "!__pycache__/**", "!*.pyc"] },
-      { "from": "StreamingCommunity_api-main/", "to": "StreamingCommunity_api-main/", "filter": ["**/*", "!**/.git/**", "!**/__pycache__/**", "!**/*.pyc"] },
-      { "from": "ai-sub-main/", "to": "ai-sub-main/", "filter": ["**/*", "!**/.git/**", "!**/__pycache__/**", "!**/*.pyc", "!**/test/**", "!**/tests/**"] },
-      { "from": "venv311/", "to": "venv311/", "filter": ["**/*", "!**/__pycache__/**", "!**/*.pyc", "!**/test/**", "!**/tests/**"] }
+      {
+        "from": "models/scrapers/",
+        "to": "models/scrapers/",
+        "filter": [
+          "**/*",
+          "!**/.git/**"
+        ]
+      },
+      {
+        "from": "tools/",
+        "to": "tools/"
+      },
+      {
+        "from": "python/",
+        "to": "python/",
+        "filter": [
+          "**/*",
+          "!__pycache__/**",
+          "!*.pyc"
+        ]
+      },
+      {
+        "from": "StreamingCommunity_api-main/",
+        "to": "StreamingCommunity_api-main/",
+        "filter": [
+          "**/*",
+          "!**/.git/**",
+          "!**/__pycache__/**",
+          "!**/*.pyc"
+        ]
+      },
+      {
+        "from": "ai-sub-main/",
+        "to": "ai-sub-main/",
+        "filter": [
+          "**/*",
+          "!**/.git/**",
+          "!**/__pycache__/**",
+          "!**/*.pyc",
+          "!**/test/**",
+          "!**/tests/**"
+        ]
+      },
+      {
+        "from": "venv311/",
+        "to": "venv311/",
+        "filter": [
+          "**/*",
+          "!**/__pycache__/**",
+          "!**/*.pyc",
+          "!**/test/**",
+          "!**/tests/**"
+        ]
+      }
     ],
     "files": [
       "main.js",

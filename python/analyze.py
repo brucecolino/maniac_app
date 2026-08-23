@@ -87,9 +87,14 @@ def _adaptive_sampling(duration_sec, every_sec, max_frames):
     spacing = duration_sec / max(1, max_frames)
     return max(every_sec, spacing), max_frames
 
-def iter_video_frames(path, every_sec=2.0, max_frames=20, on_frame=None, adaptive=True):
+def iter_video_frames(path, every_sec=2.0, max_frames=20, on_frame=None, adaptive=True,
+                      phase=0.0):
     """Yields (timestamp, frame_bgr). Se adaptive=True, scala in base alla durata.
-    `on_frame(grabbed_index, planned_total)` chiamato dopo ogni frame letto."""
+    `on_frame(grabbed_index, planned_total)` chiamato dopo ogni frame letto.
+
+    `phase` ∈ [0,1) sposta la griglia di campionamento di una frazione di passo:
+    serve per una seconda passata che guardi fotogrammi DIVERSI dalla prima
+    invece di ripetere gli stessi."""
     import cv2
     cap = cv2.VideoCapture(path)
     if not cap.isOpened(): return
@@ -101,7 +106,7 @@ def iter_video_frames(path, every_sec=2.0, max_frames=20, on_frame=None, adaptiv
             every_sec, max_frames = _adaptive_sampling(duration, every_sec, max_frames)
         step = max(1, int(fps * every_sec))
         planned = max_frames if not total else min(max_frames, max(1, total // step))
-        grabbed = 0; idx = 0
+        grabbed = 0; idx = int(step * max(0.0, min(0.99, phase)))
         while grabbed < max_frames:
             cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
             ok, fr = cap.read()
@@ -114,6 +119,44 @@ def iter_video_frames(path, every_sec=2.0, max_frames=20, on_frame=None, adaptiv
             if total and idx >= total: break
     finally:
         cap.release()
+
+# ─────────────────────────────────────────────────────────────────────
+# Validazione dei rilevamenti volto
+# ─────────────────────────────────────────────────────────────────────
+MIN_FACE_CONF = 0.55   # sotto questa confidence non e' un volto
+MAX_FACE_AREA = 0.60   # un "volto" grande quanto il fotogramma e' il fallback
+
+def is_real_face(f, img_shape=None):
+    """True se il rilevamento e' un volto vero e non il ripiego di DeepFace.
+
+    Due segnali indipendenti:
+      · confidence del detector sotto soglia;
+      · box che copre quasi tutto il fotogramma — e' l'immagine intera
+        restituita quando enforce_detection=False e nulla e' stato trovato.
+    Senza questo filtro entravano nei cluster ritagli che non contengono
+    volti, e il confronto con foto altrettanto generiche produceva
+    similarita' alte del tutto prive di significato.
+    """
+    if not isinstance(f, dict):
+        return True
+    conf = f.get('confidence')
+    if conf is not None:
+        try:
+            if float(conf) < MIN_FACE_CONF:
+                return False
+        except (TypeError, ValueError):
+            pass
+    fa = f.get('facial_area') or {}
+    try:
+        w = float(fa.get('w') or 0); h = float(fa.get('h') or 0)
+    except (TypeError, ValueError):
+        w = h = 0
+    if w > 0 and h > 0 and img_shape:
+        tot = float((img_shape[0] or 0) * (img_shape[1] or 0))
+        if tot > 0 and (w * h) / tot > MAX_FACE_AREA:
+            return False
+    return True
+
 
 def cosine(a, b):
     na = math.sqrt(sum(x*x for x in a)) or 1.0
@@ -221,13 +264,22 @@ def extract_name_candidates(files, blocklist=None, top=3):
 # ─────────────────────────────────────────────────────────────────────
 # Lookup API esterne — TMDB / StashDB / AdultColony / Wikidata / Wikipedia / OMDB
 # ─────────────────────────────────────────────────────────────────────
+# Wikimedia rifiuta con 403 le richieste prive di User-Agent identificativo
+# (policy in vigore dal 2025). Senza questa intestazione Wikidata e Wikipedia
+# restituiscono sempre errore, ed è il motivo per cui quei provider
+# risultavano "non funzionanti" e vennero disattivati.
+UA = "Maniac/1.0 (media player; https://github.com/maniac-player)"
+
 def _safe_request(method, url, *, params=None, json_payload=None, headers=None, timeout=8):
     try:
         import requests
+        h = {"User-Agent": UA, "Accept": "application/json"}
+        if headers:
+            h.update(headers)
         if method == 'GET':
-            r = requests.get(url, params=params, headers=headers, timeout=timeout)
+            r = requests.get(url, params=params, headers=h, timeout=timeout)
         else:
-            r = requests.post(url, json=json_payload, headers=headers, timeout=timeout)
+            r = requests.post(url, json=json_payload, headers=h, timeout=timeout)
         if r.status_code != 200: return None
         return r.json()
     except Exception:
@@ -429,7 +481,10 @@ def verify_match_photo(photo_url, cluster_embedding, timeout=8, photo_emb_cache=
         return float(max(0.0, min(1.0, sim)))
     try:
         import requests
-        r = requests.get(photo_url, timeout=timeout, stream=True)
+        # Anche il download della foto vuole lo User-Agent: Wikimedia Commons
+        # risponde 403 senza, e il candidato risulterebbe "senza foto valide".
+        r = requests.get(photo_url, timeout=timeout, stream=True,
+                         headers={"User-Agent": UA})
         if r.status_code != 200:
             if photo_emb_cache is not None: photo_emb_cache[photo_url] = None
             return None
@@ -452,11 +507,37 @@ def verify_match_photo(photo_url, cluster_embedding, timeout=8, photo_emb_cache=
         return None
     try:
         from deepface import DeepFace
-        faces = DeepFace.extract_faces(img_path=img, detector_backend='opencv',
-                                       enforce_detection=False, align=True)
+        # Stesso rilevatore usato per i fotogrammi del video. Con 'opencv'
+        # (Haar) i ritratti grandi o affollati venivano ritagliati male o
+        # scartati: una foto identica al volto cercato segnava 0.31, e
+        # performer con molte foto ne avevano poche di valutabili. Confrontare
+        # ritagli prodotti da rilevatori diversi falsa la similarità.
+        faces = []
+        for backend in ('retinaface', 'opencv'):
+            try:
+                faces = DeepFace.extract_faces(img_path=img, detector_backend=backend,
+                                               enforce_detection=False, align=True)
+            except Exception:
+                faces = []
+            good = [f for f in (faces or []) if is_real_face(f, img.shape[:2])]
+            if good:
+                faces = good
+                break
+            faces = []
+        # Nessun volto valido in nessuno dei due rilevatori: la foto non è
+        # utilizzabile (scena, corpo intero, volto troppo piccolo). Ridurla a
+        # un embedding generico la renderebbe simile a qualunque altra.
         if not faces:
             if photo_emb_cache is not None: photo_emb_cache[photo_url] = None
             return None
+        # Il soggetto del ritratto è il volto più grande, non il primo che il
+        # rilevatore restituisce: nelle foto dal vivo il pubblico sullo sfondo
+        # veniva scelto al posto della persona cercata.
+        def _area(f):
+            fa = f.get('facial_area') or {}
+            try: return float(fa.get('w') or 0) * float(fa.get('h') or 0)
+            except (TypeError, ValueError): return 0.0
+        faces = sorted(faces, key=_area, reverse=True)
         face_img = faces[0].get('face')
         if face_img is None:
             if photo_emb_cache is not None: photo_emb_cache[photo_url] = None
@@ -518,9 +599,34 @@ def run_face(files, face_db_path=None, match_threshold=0.50,
     # 960px (era 640): più recall sui volti piccoli (4K/gruppi). retinaface/ssd
     # reggono comunque < 1s/frame su questa dimensione.
     MAX_DIM   = 960 if DETECTOR != 'opencv' else 640
-    FILE_TIMEOUT = 18.0 if DETECTOR != 'opencv' else 12.0
     THRESH    = 0.35
     MIN_VAR   = 30.0
+
+    # ── Budget di campionamento ──────────────────────────────────────────
+    # Con 6 frame per video (il vecchio default) un film di 40 minuti veniva
+    # visto una volta ogni ~7 minuti: se nessuno di quei 6 fotogrammi inquadra
+    # un viso frontale il risultato è "nessun volto", in modo del tutto
+    # casuale. Il budget ora è guidato dal RISULTATO, non da un numero fisso:
+    # si campiona molto più a fondo, ma ci si ferma appena si è raccolto
+    # abbastanza — quindi i video "facili" non costano più di prima.
+    FRAMES_MAX = 48 if DETECTOR != 'opencv' else 28
+    # Volti sufficienti per chiudere il file in anticipo: servono almeno
+    # ENOUGH_FACES rilevazioni E un volto visto almeno due volte (cioè un
+    # cluster stabile, non un falso positivo isolato del detector).
+    ENOUGH_FACES = 10
+    # Sotto questa soglia il materiale è troppo povero per un confronto
+    # fotografico affidabile → scatta la seconda passata sfalsata.
+    MIN_FACES_OK = 4
+    # Analizzare 1-3 file è un'azione interattiva: l'utente aspetta quel
+    # risultato e vale la pena spenderci tempo. Su una cartella grande il
+    # tetto per-file resta stretto, altrimenti la scansione non finisce più.
+    _n_files = len(files)
+    if _n_files <= 3:
+        FILE_TIMEOUT = 150.0 if DETECTOR != 'opencv' else 90.0
+    elif _n_files <= 20:
+        FILE_TIMEOUT = 45.0 if DETECTOR != 'opencv' else 30.0
+    else:
+        FILE_TIMEOUT = 18.0 if DETECTOR != 'opencv' else 12.0
 
     # Pre-carica il modello Facenet una volta sola per evitare 2-3s di latenza al primo file
     try:
@@ -578,7 +684,11 @@ def run_face(files, face_db_path=None, match_threshold=0.50,
     _early_db = _load_face_db_entries(face_db_path) if face_db_path else []
     _early_confirmed = [e for e in _early_db if e.get('name')]
 
-    def _file_matches_known(emb, threshold=0.55):
+    # 0.75 e non 0.55: la seconda e' la soglia con cui quasi ogni volto trova
+    # "qualcuno che somiglia" in un DB grande, e serviva solo a fermare la
+    # scansione in anticipo. Per interrompere l'analisi di un file vogliamo
+    # una somiglianza che non lasci dubbi.
+    def _file_matches_known(emb, threshold=0.75):
         for e in _early_confirmed:
             if cosine(emb, e['embedding']) >= threshold:
                 return True
@@ -590,70 +700,109 @@ def run_face(files, face_db_path=None, match_threshold=0.50,
                "file": os.path.basename(path)})
         try:
             ext = os.path.splitext(path)[1].lower()
-            frames = []
-            if ext in IMAGE_EXT:
-                img = cv2.imread(path)
-                if img is not None: frames.append((0.0, img))
-            else:
-                # 4s spacing × 6 frame max: ~24s di copertura tipica (performer visibile
-                # quasi sempre nei primi 20-30s). L'adaptive_sampling distribuisce i frame
-                # uniformemente sulla durata reale del video.
-                for t, fr in iter_video_frames(path, every_sec=4.0, max_frames=6):
-                    frames.append((t, fr))
+            is_img = ext in IMAGE_EXT
             _matched_known_in_file = False
             _file_t0 = time.time()
-            for t, fr in frames:
-                if time.time() - _file_t0 > FILE_TIMEOUT:
-                    break  # Supera timeout → salta frame restanti, vai al file successivo
-                if _matched_known_in_file:
-                    break
-                # Ridimensiona frame a max MAX_DIM px: 4-9x speedup su video HD/4K
-                _h, _w = fr.shape[:2]
-                if max(_h, _w) > MAX_DIM:
-                    _scale = MAX_DIM / max(_h, _w)
-                    fr = cv2.resize(fr, (int(_w * _scale), int(_h * _scale)),
-                                    interpolation=cv2.INTER_AREA)
-                try:
-                    faces = DeepFace.extract_faces(
-                        img_path=fr, detector_backend=DETECTOR,
-                        enforce_detection=False, align=True)
-                except Exception:
-                    faces = []
-                for f in (faces or []):
-                    face_img = f.get('face')
-                    if face_img is None: continue
-                    import numpy as np
-                    fa = (face_img * 255).astype('uint8') if face_img.dtype != 'uint8' else face_img
-                    fa_bgr = cv2.cvtColor(fa, cv2.COLOR_RGB2BGR)
-                    # Embedding
-                    try:
-                        rep = DeepFace.represent(
-                            img_path=fa_bgr, model_name='Facenet',
-                            detector_backend='skip', enforce_detection=False)
-                        emb = rep[0]['embedding'] if rep else None
-                    except Exception:
-                        emb = None
-                    if not emb: continue
-                    # Gender (best-effort)
-                    g_hint = None
-                    if do_gender:
-                        try:
-                            an = DeepFace.analyze(
-                                img_path=fa_bgr, actions=['gender'],
-                                detector_backend='skip', enforce_detection=False, silent=True)
-                            an = an[0] if isinstance(an, list) else an
-                            g_hint = (an.get('dominant_gender') or '').lower()
-                            if g_hint == 'man': g_hint = 'male'
-                            elif g_hint == 'woman': g_hint = 'female'
-                        except Exception:
-                            g_hint = None
-                    assign(emb, fa_bgr, path, gender_hint=g_hint)
-                    # Speed-up: se l'embedding matcha un performer già confermato
-                    # in faces.db, segnamo il file come "noto" → terminiamo l'analisi
-                    # delle frame restanti (2-3 conferme bastano).
-                    if _early_confirmed and _file_matches_known(emb):
-                        _matched_known_in_file = True
+            _faces_here = 0          # rilevazioni valide in questo file
+            _repeat_here = False     # almeno un volto rivisto → cluster stabile
+            _passes_done = 0
+
+            # Due passate sfalsate. Un volto solo, magari di profilo o mosso,
+            # produce un embedding troppo fragile perché il confronto con le
+            # foto di StashDB possa concludere alcunché: se la prima passata
+            # raccoglie poco, la seconda guarda fotogrammi DIVERSI (phase=0.5)
+            # invece di arrendersi. Sui video "facili" non parte mai.
+            for _pi, _phase_off in enumerate((0.0, 0.5)):
+                if _pi > 0:
+                    if is_img or _matched_known_in_file: break
+                    if _faces_here >= MIN_FACES_OK: break
+                    if (time.time() - _file_t0) > FILE_TIMEOUT * 0.6: break
+                    _emit({"type": "phase",
+                           "text": "Pochi volti trovati: seconda passata…"})
+                if is_img:
+                    img = cv2.imread(path)
+                    frames = [(0.0, img)] if img is not None else []
+                else:
+                    # FRAMES_MAX frame distribuiti uniformemente sulla durata.
+                    # Il generatore è pigro: i frame vengono letti man mano,
+                    # quindi lo stop anticipato evita davvero il lavoro residuo.
+                    frames = iter_video_frames(path, every_sec=4.0,
+                                               max_frames=FRAMES_MAX,
+                                               phase=_phase_off)
+                _passes_done = _pi + 1
+                for t, fr in frames:
+                    if time.time() - _file_t0 > FILE_TIMEOUT:
+                        break  # Supera timeout → vai al file successivo
+                    if _matched_known_in_file:
                         break
+                    # Abbastanza materiale: un volto ricorrente più un minimo di
+                    # rilevazioni. Continuare significherebbe solo rallentare.
+                    if _repeat_here and _faces_here >= ENOUGH_FACES:
+                        break
+                    # Ridimensiona a max MAX_DIM px: 4-9x speedup su HD/4K
+                    _h, _w = fr.shape[:2]
+                    if max(_h, _w) > MAX_DIM:
+                        _scale = MAX_DIM / max(_h, _w)
+                        fr = cv2.resize(fr, (int(_w * _scale), int(_h * _scale)),
+                                        interpolation=cv2.INTER_AREA)
+                    try:
+                        faces = DeepFace.extract_faces(
+                            img_path=fr, detector_backend=DETECTOR,
+                            enforce_detection=False, align=True)
+                    except Exception:
+                        faces = []
+                    for f in (faces or []):
+                        face_img = f.get('face')
+                        if face_img is None: continue
+                        # Non e' un volto: non deve entrare in nessun cluster.
+                        if not is_real_face(f, fr.shape[:2]): continue
+                        import numpy as np
+                        fa = (face_img * 255).astype('uint8') if face_img.dtype != 'uint8' else face_img
+                        fa_bgr = cv2.cvtColor(fa, cv2.COLOR_RGB2BGR)
+                        # Embedding
+                        try:
+                            rep = DeepFace.represent(
+                                img_path=fa_bgr, model_name='Facenet',
+                                detector_backend='skip', enforce_detection=False)
+                            emb = rep[0]['embedding'] if rep else None
+                        except Exception:
+                            emb = None
+                        if not emb: continue
+                        # Gender (best-effort)
+                        g_hint = None
+                        if do_gender:
+                            try:
+                                an = DeepFace.analyze(
+                                    img_path=fa_bgr, actions=['gender'],
+                                    detector_backend='skip', enforce_detection=False, silent=True)
+                                an = an[0] if isinstance(an, list) else an
+                                g_hint = (an.get('dominant_gender') or '').lower()
+                                if g_hint == 'man': g_hint = 'male'
+                                elif g_hint == 'woman': g_hint = 'female'
+                            except Exception:
+                                g_hint = None
+                        _c = assign(emb, fa_bgr, path, gender_hint=g_hint)
+                        _faces_here += 1
+                        if _c and _c.get('count', 0) >= 2:
+                            _repeat_here = True
+                        # Speed-up: se l'embedding matcha un volto già confermato
+                        # in faces.db chiudiamo il file in anticipo — ma solo dopo
+                        # aver raccolto un cluster stabile. Uscire alla PRIMA
+                        # somiglianza su un DB grande significa fermarsi al primo
+                        # frame utile e consegnare al resolver embedding ricavati
+                        # da un solo fotogramma, i più fragili che ci siano.
+                        if (_early_confirmed and _repeat_here
+                                and _faces_here >= ENOUGH_FACES
+                                and _file_matches_known(emb)):
+                            _matched_known_in_file = True
+                            break
+            _emit({"type": "scan-stat", "file": os.path.basename(path),
+                   "faces": _faces_here, "passes": _passes_done,
+                   "stop": ("known" if _matched_known_in_file else
+                            "enough" if (_repeat_here and _faces_here >= ENOUGH_FACES) else
+                            "timeout" if (time.time() - _file_t0) > FILE_TIMEOUT else
+                            "frames"),
+                   "secs": round(time.time() - _file_t0, 1)})
         except Exception as e:
             _emit({"type": "warn", "file": os.path.basename(path), "error": str(e)[:160]})
 
@@ -681,17 +830,24 @@ def run_face(files, face_db_path=None, match_threshold=0.50,
         if not gs: return None
         return max(gs.items(), key=lambda kv: kv[1])[0]
 
-    # Costruisci risultati ordinati. Quando l'utente ha richiesto un genere
-    # specifico (male/female), scartiamo i cluster del genere opposto: non
-    # vanno mostrati nemmeno tra i "Non riconosciuti".
+    # Costruisci risultati ordinati.
+    #
+    # Il filtro genere MARCA, non elimina. Il classificatore di genere di
+    # DeepFace lavora su un crop parziale, spesso di 3/4 o in penombra, e
+    # sbaglia con facilità: eliminando i cluster "del genere sbagliato" un solo
+    # errore di classificazione svuotava l'intera analisi, e l'utente vedeva
+    # "nessun risultato" senza modo di capire perché. Ora i cluster fuori
+    # filtro arrivano comunque al wizard con genderMatch=False: finiscono fra
+    # i "Non riconosciuti", da dove possono essere recuperati con un clic.
     results = []
     requested_gender = (gender or 'both').lower()
     skipped_wrong_gender = 0
     for c in sorted(clusters, key=lambda x: -x['count']):
         cg = cluster_gender(c)
-        if requested_gender != 'both' and cg is not None and cg != requested_gender:
+        gender_ok = not (requested_gender != 'both' and cg is not None
+                         and cg != requested_gender)
+        if not gender_ok:
             skipped_wrong_gender += 1
-            continue
         local = match_local(c['embedding']) if db_entries else None
         results.append({
             "id": c['id'],
@@ -701,14 +857,21 @@ def run_face(files, face_db_path=None, match_threshold=0.50,
             "count": c['count'],
             "type": "face",
             "gender": cg,
-            "genderMatch": True,
+            "genderMatch": gender_ok,
             "avgEmbedding": [round(float(x), 6) for x in c['embedding']],
             "localMatch": local,
             "apiMatch": None,
             "nameCandidates": [],
         })
     if skipped_wrong_gender:
-        _phase(f"Esclusi {skipped_wrong_gender} cluster per filtro genere ({requested_gender}).")
+        _phase(f"{skipped_wrong_gender} cluster fuori dal filtro genere "
+               f"({requested_gender}): spostati fra i non riconosciuti.")
+    # Telemetria del passaggio cluster → risultati: è qui che un'analisi può
+    # perdere per strada tutto quello che aveva trovato.
+    _emit({"type": "filter-stat", "clusters": len(clusters),
+           "kept": len(results), "skippedGender": skipped_wrong_gender,
+           "requestedGender": requested_gender,
+           "genders": [cluster_gender(c) for c in clusters]})
 
     # Estrazione candidati nome dai filename per cluster non già matchati localmente
     _phase("Analisi titoli file per nomi…")

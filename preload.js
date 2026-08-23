@@ -90,6 +90,14 @@ contextBridge.exposeInMainWorld('maniac', {
   unspokenFacesLoad: () => ipcRenderer.invoke('unspoken-faces-load'),
 
   // Storico elementi analizzati
+  appVersion: () => ipcRenderer.invoke('app:version'),
+  // Aggiornamenti: controllo, download con avanzamento, installazione.
+  update: {
+    check:      () => ipcRenderer.invoke('update:check'),
+    download:   () => ipcRenderer.invoke('update:download'),
+    install:    () => ipcRenderer.invoke('update:install'),
+    onProgress: (cb) => ipcRenderer.on('update:progress', (_e, d) => cb(d)),
+  },
   analysisLoad: () => ipcRenderer.invoke('analysis:load'),
   analysisSave: (data) => ipcRenderer.invoke('analysis:save', data),
 

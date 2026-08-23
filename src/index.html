@@ -262,7 +262,64 @@ body.downloader-mode .sp.open{width:100%!important;max-width:100%!important;righ
 .vc-progress:hover .vc-pthumb{opacity:1}
 .vc-tip{position:absolute;bottom:10px;transform:translateX(-50%);background:rgba(0,0,0,.92);border:1px solid rgba(255,255,255,.22);padding:0;border-radius:6px;opacity:0;pointer-events:none;transition:opacity .1s;z-index:20;overflow:hidden;line-height:0}
 .vc-tip canvas{display:block;width:140px;height:80px;background:#000}
+/* Finestra aggiornamenti */
+.upd-mdl{max-width:440px;width:94%}
+.upd-body{display:flex;flex-direction:column;gap:11px;margin:12px 0 4px}
+.upd-badge{align-self:flex-start;font:600 10px/1 'Inter',sans-serif;letter-spacing:.08em;
+  text-transform:uppercase;padding:5px 9px;border-radius:3px}
+.upd-badge.ok{background:rgba(63,184,131,.14);color:#3FB883}
+.upd-badge.new{background:var(--pd);color:var(--pl,#A685D8)}
+.upd-badge.warn{background:rgba(224,178,76,.14);color:#E0B24C}
+.upd-badge.err{background:rgba(224,85,101,.14);color:#E05565}
+.upd-msg{font:400 13px/1.6 'Inter',sans-serif;color:var(--t2)}
+.upd-msg b{color:var(--t1);font-weight:600}
+.upd-hint{font:400 11px/1.5 'Inter',sans-serif;color:var(--t3)}
+.upd-vers{display:flex;align-items:baseline;gap:10px;font:700 20px/1 'Inter',sans-serif;color:var(--t1)}
+.upd-vers span{color:var(--t3);font-weight:500;font-size:15px}
+.upd-vers i{font-style:normal;color:var(--t3);font-size:14px}
+.upd-notes{max-height:190px;overflow-y:auto;white-space:pre-wrap;background:var(--s2);
+  border:1px solid var(--bd);border-radius:6px;padding:11px 13px;
+  font:400 12px/1.65 'Inter',sans-serif;color:var(--t2)}
+.upd-bar{height:8px;background:var(--s3);border-radius:4px;overflow:hidden}
+.upd-fill{height:100%;background:linear-gradient(90deg,var(--p),var(--pl,#A685D8));
+  transition:width .25s ease}
+.upd-stats{display:flex;justify-content:space-between;gap:10px;
+  font:500 11px/1 'JetBrains Mono',monospace;color:var(--t3);font-variant-numeric:tabular-nums}
+.upd-foot{display:flex;justify-content:flex-end;gap:6px;margin-top:14px}
+[data-theme="light"] .upd-notes{background:#F4F2F8}
+/* Firma Apice nella scheda Info: il logo è bianco, quindi in tema chiaro va
+   invertito o sparirebbe sul fondo chiaro. */
+.apice-credit{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:16px}
+.apice-credit>span{font:500 11px/1 'Inter',sans-serif;color:var(--t3);letter-spacing:.02em}
+.apice-credit button{background:0;border:0;padding:2px 4px;cursor:pointer;display:inline-flex;
+  align-items:center;border-radius:4px;transition:opacity .15s,transform .15s;opacity:.85}
+.apice-credit button:hover{opacity:1;transform:translateY(-1px)}
+.apice-credit button:focus-visible{outline:2px solid var(--p);outline-offset:2px}
+.apice-credit img{height:19px;width:auto;display:block}
+.apice-credit button>span{font:700 13px/1 'Inter',sans-serif;color:var(--t1);letter-spacing:.06em}
+[data-theme="light"] .apice-credit img{filter:invert(1)}
 .vc-tip-t{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font:600 10px/1 'JetBrains Mono',monospace;color:#fff;padding:2px 6px;background:rgba(0,0,0,.55);border-radius:3px;line-height:1.2}
+/* Performer assegnato al file in riproduzione: anteprima in basso a destra,
+   clic → scheda info StashDB. Discreta di default, si apre in hover. */
+.vc-perf{position:absolute;right:10px;bottom:10px;z-index:14;display:flex;align-items:center;gap:7px;
+  padding:4px 10px 4px 4px;border-radius:20px;cursor:pointer;max-width:62%;
+  background:rgba(18,16,26,.72);border:1px solid rgba(255,255,255,.14);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  opacity:.55;transition:opacity .16s,transform .16s,background .16s}
+.vc-perf:hover{opacity:1;transform:translateY(-1px);background:rgba(18,16,26,.9)}
+.vc-perf img{width:28px;height:28px;border-radius:50%;object-fit:cover;flex:0 0 28px;background:#000;
+  box-shadow:0 0 0 1.5px rgba(255,255,255,.28)}
+.vc-perf .vc-perf-ph{width:28px;height:28px;border-radius:50%;flex:0 0 28px;background:rgba(255,255,255,.14)}
+.vc-perf span{font:600 11px/1.2 'Inter',sans-serif;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vc-perf .vc-perf-more{font:600 10px/1.2 'Inter',sans-serif;color:rgba(255,255,255,.6);flex:0 0 auto}
+.vc.multi .vc-perf{right:6px;bottom:6px;padding:3px 8px 3px 3px}
+.vc.multi .vc-perf img,.vc.multi .vc-perf .vc-perf-ph{width:22px;height:22px;flex-basis:22px}
+.vc.multi .vc-perf span{font-size:10px}
+[data-theme="light"] .vc-perf{background:rgba(255,255,255,.86);border-color:rgba(0,0,0,.14)}
+[data-theme="light"] .vc-perf:hover{background:rgba(255,255,255,.97)}
+[data-theme="light"] .vc-perf span{color:#1A1A22}
+[data-theme="light"] .vc-perf .vc-perf-more{color:rgba(0,0,0,.45)}
+[data-theme="light"] .vc-perf img{box-shadow:0 0 0 1.5px rgba(0,0,0,.18)}
 
 .vol-overlay{position:fixed;background:var(--s1);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;z-index:9999;pointer-events:none;opacity:0;transition:opacity .2s;box-shadow:0 4px 16px rgba(0,0,0,.3)}
 .vol-overlay.show{opacity:1}
@@ -1805,6 +1862,7 @@ const S={
   vol:80, muted:false, prevVol:80,
   showEq:false, voice:false,
   autoStart:true, defaultPlayer:false, hideCtrl:true, showTitle:true, scrubPreview:true,
+  showPerformerBadge:true,
   lang:'it', thumbs:false, histThumbs:true,
   hideThumbs:{recent:false,history:false,downloader:false,playlist:false},
   dlFilter:'all', dlSort:'new', dlHideThumbs:false,
@@ -2344,7 +2402,7 @@ const LANGS={
     dragDrop:'Trascina qui un file\no apri dal menu File',howItWorks:'Come funziona',
     aiDesc:'L\'AI analizza titolo, metadati e i primi 200 frame per identificare il contenuto.',
     scanFolder:'Analizza cartella...',results:'Risultati analisi',
-    version:'Versione',checkUpdates:'Controlla aggiornamenti',donate:'Supporta lo sviluppo',contactUs:'Contattaci',alreadyUpdated:'Maniac \u00e8 aggiornato all\'ultima versione.',
+    version:'Versione',madeBy:'Un progetto',checkUpdates:'Controlla aggiornamenti',donate:'Supporta lo sviluppo',contactUs:'Contattaci',alreadyUpdated:'Maniac \u00e8 aggiornato all\'ultima versione.',
     paymentMethod:'Metodo di pagamento',firstName:'Nome',lastName:'Cognome',email:'Email',subject:'Oggetto',message:'Messaggio',send:'Invia',requiredFields:'Nome, email e messaggio obbligatori',messageSent:'\u2713 Messaggio pronto all\'invio',
     play:'Riproduci',queue:'Metti in coda',addTag:'Aggiungi tag',newTag:'Nuovo Tag',otherTags:'Altri tag',favTags:'Tag preferiti',editFavs:'Modifica preferiti',editTag:'Modifica tag',deleteTag:'Elimina tag',tagName:'Nome',tagColor:'Colore',saveTag:'Salva',
     thumbPreview:'Anteprime',noFiles:'Nessun file in playlist',remove:'Rimuovi',reveal:'Apri nella cartella',
@@ -2383,7 +2441,7 @@ const LANGS={
     dragDrop:'Drop a file here\nor open from File menu',howItWorks:'How it works',
     aiDesc:'AI analyzes title, metadata and first 200 frames to identify content.',
     scanFolder:'Scan folder...',results:'Analysis results',
-    version:'Version',checkUpdates:'Check for updates',donate:'Support development',contactUs:'Contact us',alreadyUpdated:'Maniac is up to date.',
+    version:'Version',madeBy:'A project by',checkUpdates:'Check for updates',donate:'Support development',contactUs:'Contact us',alreadyUpdated:'Maniac is up to date.',
     paymentMethod:'Payment method',firstName:'First name',lastName:'Last name',email:'Email',subject:'Subject',message:'Message',send:'Send',requiredFields:'Name, email and message are required',messageSent:'\u2713 Message ready to send',
     play:'Play',queue:'Add to queue',addTag:'Add tag',newTag:'New Tag',otherTags:'Other tags',favTags:'Favorite tags',editFavs:'Edit favorites',editTag:'Edit tag',deleteTag:'Delete tag',tagName:'Name',tagColor:'Color',saveTag:'Save',
     thumbPreview:'Thumbnails',noFiles:'No files in playlist',remove:'Remove',reveal:'Show in folder',
@@ -3607,8 +3665,8 @@ async function _autoLoadSiblingSubs(pid,videoPath){
 
 // Diagnostica errori <video>: codec non supportato, file spostato/cancellato, ecc.
 // Mostra toast con dettaglio e bottone "Apri esternamente" per delegare al player di sistema.
-function _handleMediaError(p,pid){
-  const v=p&&p.vidEl; if(!v||!v.error)return;
+function _handleMediaError(p,pid,videoEl){
+  const v=videoEl||(p&&p.vidEl); if(!v||!v.error)return;
   const f=p.playlist[p.idx]; if(!f)return;
   const code=v.error.code; // 1=ABORTED 2=NETWORK 3=DECODE 4=SRC_NOT_SUPPORTED
   const codeMsg={1:'Caricamento interrotto',2:'Errore di rete',3:'Errore di decodifica',4:'Formato/codec non supportato'}[code]||('Errore '+code);
@@ -4417,7 +4475,6 @@ function createCell(pid){
       if(isLive)return;
       if(!vid.src||!f.url)return;
       const errCode=vid.error?vid.error.code:null;
-      const errMsg=vid.error?(vid.error.message||''):'';
       // Anti-spam: stessa entry+code negli ultimi 1.5s → silenzia (load() può
       // emettere error transitorio durante il replace di src in restoreHistory).
       const ek=pid+'|'+(f.path||f.url)+'|'+errCode;
@@ -4425,14 +4482,17 @@ function createCell(pid){
       window._vidErrLast=window._vidErrLast||{};
       if(window._vidErrLast[ek]&&now-window._vidErrLast[ek]<1500)return;
       window._vidErrLast[ek]=now;
-      logError('Errore riproduzione: '+f.name,'code='+errCode+' msg='+errMsg+' path='+(f.path||f.url||''));
-      toast('Errore: '+f.name+(errMsg?' — '+errMsg.slice(0,100):(errCode?' (code '+errCode+')':'')));
       try{vid.pause();}catch(e){}
+      // Un solo percorso di gestione: _handleMediaError logga, prova la
+      // transcodifica ffmpeg sui codec che Chromium non sa leggere (HEVC,
+      // AC3/DTS, container MKV) e solo in ultima istanza mostra l'errore.
+      // Qui l'elemento va passato esplicitamente: p.vidEl potrebbe non
+      // puntare ancora a questo nodo, appena creato.
       // NON rimuoviamo l'entry dalla playlist: una rimozione automatica
       // scatenerebbe renderGrid che ricrea i <video> degli altri player in
       // multi, perdendo i loro caricamenti pendenti (cascata di fallimenti).
-      // Lasciamo la entry: l'utente può riprovare, eliminarla manualmente,
-      // o aprire esternamente.
+      try{ _handleMediaError(p,pid,vid); }
+      catch(e){ toast('Errore: '+f.name); }
     });
 
     cell.appendChild(area);
@@ -4457,6 +4517,7 @@ function createCell(pid){
   }
 
   updateBadge(cell,pid);
+  try{ updatePerformerBadge(cell,pid); }catch(e){}
 
   // Wheel: deltaY=vol, deltaX=seek con lerp animato (6 scroll = full duration).
   // Tooltip floating: durante lo scroll mostra "00:12:34" + thumbnail vicino al cursore
@@ -6820,6 +6881,7 @@ function renderTab(){
       <div class="sg-row"><span class="sg-txt">${t('hideFullscreen')}</span><div class="sw ${S.hideCtrl?'on':''}" onclick="S.hideCtrl=!S.hideCtrl;this.classList.toggle('on');saveConfig()"><div class="dot"></div></div></div>
       <div class="sg-row"><span class="sg-txt">${t('showTitlePlayer')}</span><div class="sw ${S.showTitle?'on':''}" onclick="S.showTitle=!S.showTitle;this.classList.toggle('on');saveConfig()"><div class="dot"></div></div></div>
       <div class="sg-row"><span class="sg-txt">Mostra anteprima sulla barra (hover scrub)</span><div class="sw ${S.scrubPreview?'on':''}" onclick="S.scrubPreview=!S.scrubPreview;this.classList.toggle('on',S.scrubPreview);saveConfig()"><div class="dot"></div></div></div>
+      <div class="sg-row"><span class="sg-txt">Mostra il performer nel video (in basso a destra)</span><div class="sw ${S.showPerformerBadge?'on':''}" onclick="S.showPerformerBadge=!S.showPerformerBadge;this.classList.toggle('on',S.showPerformerBadge);saveConfig();try{refreshPerformerBadges();}catch(e){}"><div class="dot"></div></div></div>
       <div class="sg-row"><span class="sg-txt">${t('showThumbs')||'Mostra miniature nella cronologia'}</span><div class="sw ${S.thumbs?'on':''}" onclick="S.thumbs=!S.thumbs;this.classList.toggle('on',S.thumbs);saveConfig();if(S.panel==='history')renderPanel()"><div class="dot"></div></div></div>
     </div>
     <div class="sg"><div class="sg-lbl">Suggerimenti per l'utente</div>
@@ -9704,7 +9766,7 @@ function wizardRestoreFromBackground(){
   setAILoader(false);
   const ov=document.getElementById('wizOv');
   if(ov){ov.style.display='';requestAnimationFrame(()=>ov.classList.add('show'));}
-  if(S._wizard.results&&S._wizard.results.length)renderWizardSummary();
+  if(S._wizard.results&&S._wizard.results.length)showWizardOutcome();
 }
 
 function showWizardCompleteNotification(){
@@ -9749,6 +9811,10 @@ async function runWizardAnalysis(){
   const jobId='ai_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
   W.jobId=jobId;
   W._cancelled=false; W._background=false;
+  // Diagnostica per-run: senza reset il messaggio finale mostrerebbe i dati
+  // dell'analisi precedente.
+  window._wizScanStats=[]; window._wizLastStderr=''; window._wizLastError='';
+  window._wizFilterStat=null;
   const logEl=()=>document.getElementById('wizLog');
   const appendLog=s=>{const el=logEl();if(!el)return;const d=document.createElement('div');d.textContent=s;el.appendChild(d);el.scrollTop=el.scrollHeight;};
   const cancelBtn=document.getElementById('wizCancelBtn');
@@ -9762,7 +9828,7 @@ async function runWizardAnalysis(){
       if(!S._wizard.results||!S._wizard.results.length){
         S._wizard.results=[]; S._wizard.selected=new Set();
       }
-      try{renderWizardSummary();}catch(e){closeWizard();}
+      try{showWizardOutcome();}catch(e){closeWizard();}
     },4000);
     // Mostra messaggio immediato "annullamento in corso, attendo risultati parziali…"
     const wf=document.getElementById('wizProgFile'); if(wf)wf.textContent='Annullamento — recupero risultati parziali…';
@@ -9788,9 +9854,38 @@ async function runWizardAnalysis(){
           fn.textContent=base||'…';
         }
       }
+      else if(evt.type==='filter-stat'){
+        // Quanti cluster sopravvivono al passaggio verso i risultati: è il
+        // punto in cui un'analisi riuscita può perdere tutto quello che ha trovato.
+        window._wizFilterStat=evt;
+        console.debug('[analisi:filtro]','cluster='+evt.clusters,'tenuti='+evt.kept,
+                      'fuoriGenere='+evt.skippedGender,'richiesto='+evt.requestedGender,
+                      'generi='+JSON.stringify(evt.genders));
+      }
+      else if(evt.type==='scan-stat'){
+        // Telemetria per file: quanti volti rilevati e perché la scansione si
+        // è fermata. È ciò che spiega un'analisi finita a zero.
+        (window._wizScanStats=window._wizScanStats||[]).push(evt);
+        console.debug('[analisi:scan]',evt.file,'volti='+evt.faces,'stop='+evt.stop,evt.secs+'s');
+      }
       else if(evt.type==='phase' || evt.type==='warn' || evt.type==='stderr' || evt.type==='error'){
-        // Silenziati nella UI utente (resta in console per debug)
-        if(evt.type==='error')console.warn('[analisi]',evt.error);
+        // Silenziati nella UI utente (restano in console per debug), ma lo
+        // stderr va SEMPRE accumulato: è l'unica fonte per spiegare un'analisi
+        // finita a vuoto. Senza questo ramo il messaggio finale era sempre
+        // quello generico "non ha trovato volti", anche a fronte di un crash.
+        if(evt.type==='stderr'){
+          const line=evt.line||evt.text||evt.data||'';
+          if(line){
+            window._wizLastStderr=(window._wizLastStderr||'')+line;
+            if(window._wizLastStderr.length>8000)
+              window._wizLastStderr=window._wizLastStderr.slice(-4000);
+          }
+          console.debug('[analisi:stderr]',line);
+        }
+        if(evt.type==='error'){
+          window._wizLastError=evt.error||'';
+          console.warn('[analisi]',evt.error);
+        }
       }
       else if(evt.type==='done'){
         const raw=evt.results||[];
@@ -9823,22 +9918,50 @@ async function runWizardAnalysis(){
         if(S._wizard._background){
           showWizardCompleteNotification();
         } else {
-          renderWizardSummary();
+          showWizardOutcome();
         }
       }else if(evt.type==='exit'){
         if(!S._wizard.results||!S._wizard.results.length){
           const w=document.querySelector('#wizOv .wiz');
           // Diagnostica più utile: distingue "nessun volto trovato" da errore Python.
           const lastErr=window._wizLastStderr||'';
-          const isImportErr=/ImportError|ModuleNotFoundError|deepface/i.test(lastErr);
-          const msg=isImportErr
-            ? `L'analisi è terminata con un errore Python:<br><code style="display:block;background:var(--s2);padding:6px;border-radius:4px;margin-top:6px;font-size:10px;white-space:pre-wrap">${(lastErr||'').slice(-300).replace(/</g,'&lt;')}</code><br>Verifica le dipendenze con <code>python/bootstrap.py --check</code>.`
-            : `L'analisi è terminata ma non ha trovato volti (o nessuno ha superato la soglia di confidence). Possibili cause:<ul style="margin:6px 0 0;padding-left:20px;font-size:11px;line-height:1.6"><li>Il video non contiene volti riconoscibili</li><li>Risoluzione/illuminazione troppo bassa per il rilevatore</li><li>Soglia <code>match-threshold</code> troppo alta nelle impostazioni avanzate</li></ul>`;
+          const hardErr=window._wizLastError||'';
+          // Righe di stderr davvero utili: scarta il rumore di TensorFlow/absl
+          // che riempie l'output a ogni avvio e nasconde l'errore vero.
+          const noise=/oneDNN|absl::InitializeLog|TF_ENABLE_ONEDNN|tf\.losses|deprecated|WARNING:tensorflow|^\s*$/i;
+          const signal=lastErr.split(/\r?\n/).filter(l=>l.trim()&&!noise.test(l)).slice(-12).join('\n');
+          const isCrash=/Traceback|ImportError|ModuleNotFoundError|Error:/i.test(signal)||hardErr;
+          const box=t=>`<code style="display:block;background:var(--s2);padding:6px;border-radius:4px;margin-top:6px;font-size:10px;white-space:pre-wrap;max-height:180px;overflow:auto">${t.replace(/</g,'&lt;')}</code>`;
+          let msg;
+          if(isCrash){
+            msg=`L'analisi è terminata con un errore Python:${box((hardErr?hardErr+'\n':'')+signal.slice(-1200))}<br>Verifica le dipendenze con <code>python/bootstrap.py --check</code>.`;
+          } else {
+            const stats=window._wizScanStats||[];
+            const tot=stats.reduce((s,x)=>s+(x.faces||0),0);
+            if(stats.length && tot===0){
+              // Il rilevatore ha davvero guardato e non ha visto nessun viso.
+              msg=`Il rilevatore ha analizzato ${stats.length===1?'il file':stats.length+' file'} ma <b>non ha rilevato alcun volto</b>.<ul style="margin:6px 0 0;padding-left:20px;font-size:11px;line-height:1.6"><li>Nessuna inquadratura campionata mostra un viso frontale</li><li>Risoluzione o illuminazione troppo basse per il rilevatore</li><li>Video molto lungo con pochi primi piani: riprova su uno spezzone</li></ul>`;
+            } else if(tot>0){
+              // Volti trovati ma scartati a valle. Con la telemetria del filtro
+              // possiamo dire quale passaggio li ha persi, invece di elencare ipotesi.
+              const fs=window._wizFilterStat;
+              if(fs&&fs.skippedGender>0){
+                msg=`Rilevati <b>${tot} volti</b>: <b>${fs.skippedGender}</b> ${fs.skippedGender===1?'è stato escluso':'sono stati esclusi'} dal filtro <b>Genere viso</b> impostato su "${fs.requestedGender==='female'?'Donna':(fs.requestedGender==='male'?'Uomo':fs.requestedGender)}".<div style="font-size:11px;color:var(--t2);margin-top:6px;line-height:1.5">Il rilevatore di genere lavora su un ritaglio parziale del viso e sbaglia spesso. Rilancia l'analisi con <b>Entrambi</b>.</div>`;
+              } else {
+                msg=`Sono stati rilevati <b>${tot} volti</b>, ma nessuno è arrivato ai risultati.<ul style="margin:6px 0 0;padding-left:20px;font-size:11px;line-height:1.6"><li>La soglia <code>match-threshold</code> potrebbe essere troppo alta nelle impostazioni avanzate</li><li>Riprova con il filtro <b>Genere viso</b> su "Entrambi"</li></ul>`;
+              }
+            } else {
+              msg=`L'analisi è terminata ma non ha prodotto volti. Possibili cause:<ul style="margin:6px 0 0;padding-left:20px;font-size:11px;line-height:1.6"><li>Il video non contiene volti riconoscibili</li><li>Risoluzione/illuminazione troppo bassa per il rilevatore</li><li>Soglia <code>match-threshold</code> troppo alta nelle impostazioni avanzate</li></ul>`;
+            }
+            if(stats.length){
+              msg+=`<div style="font-size:10px;color:var(--t3);margin-top:8px">Dettaglio scansione:</div>${box(stats.slice(0,8).map(s=>`${s.file} → ${s.faces} volti · stop=${s.stop} · ${s.secs}s`).join('\n'))}`;
+            }
+            // Anche senza crash, mostra l'ultimo stderr: quasi sempre spiega
+            // perché il worker si è fermato (ffmpeg, permessi, codec).
+            if(signal) msg+=`<div style="font-size:10px;color:var(--t3);margin-top:8px">Ultimo output del worker:</div>${box(signal.slice(-800))}`;
+          }
           if(w)w.innerHTML=`<div class="wiz-head"><h3 style="margin:0">Nessun risultato</h3></div><div class="wiz-body"><p style="font-size:12px;color:var(--t2);line-height:1.5">${msg}</p></div><div class="wiz-foot" style="justify-content:flex-end"><button class="mdl-btn primary" onclick="closeWizard()">OK</button></div>`;
         }
-      } else if(evt.type==='stderr' && evt.line){
-        window._wizLastStderr=(window._wizLastStderr||'')+evt.line;
-        if((window._wizLastStderr||'').length>4000) window._wizLastStderr=window._wizLastStderr.slice(-2000);
       }
     });
     W._aiBound=true;
@@ -9854,12 +9977,14 @@ async function runWizardAnalysis(){
       modes:[...W.modes],
       gender:W.gender||'both',
       maxFiles:200,
-      tmdbKey:null,
+      tmdbKey:(S.wizardCfg&&S.wizardCfg.tmdbKey)||null,
       omdbKey:null,
       adultColonyBase:null,
       stashdbKey:null,
-      useWikidata:false,
-      useWikipedia:false,
+      // Wikidata e Wikipedia sono gratis e coprono attori, musicisti,
+      // sportivi e personaggi pubblici: attive salvo diniego esplicito.
+      useWikidata:(S.wizardCfg&&S.wizardCfg.useWikidata)!==false,
+      useWikipedia:(S.wizardCfg&&S.wizardCfg.useWikipedia)!==false,
       verifyPhoto:false,
       acoustidKey:ACOUSTID_KEY||null,
       musicWriteMode:ac.musicTagMode||'tag',
@@ -9904,8 +10029,12 @@ async function _runActorResolver(faceClusters){
     id:r.id, avgEmbedding:r.avgEmbedding,
     files:r.files||[], thumb:r.thumb||'', count:r.count||1
   }));
-  const stageLbl={merge:'Clustering volti…',cache:'Cache locale…',query:'Ricerca StashDB…',
-                  verify:'Verifica foto…','no-candidates':'Nessun candidato',skipped:'Saltato'};
+  // Etichette di stato senza nomi: durante la verifica scorrono candidati che
+  // per lo più verranno scartati; mostrarli fa credere all'utente che siano
+  // risultati. Le proposte si vedono solo alla fine, al massimo 3.
+  const stageLbl={merge:'Clustering volti…',cache:'Confronto con la cache locale…',
+                  query:'Ricerca su StashDB…',verify:'Verifica fotografica…',
+                  'no-candidates':'Nessun candidato dal nome file',skipped:'Saltato'};
   return await new Promise((resolve)=>{
     let resolved=false;
     const finish=()=>{ if(!resolved){resolved=true;resolve();} };
@@ -9929,6 +10058,7 @@ async function _runActorResolver(faceClusters){
             const curM=r.match;
             if(newM&&(!curM||(newM.score||0)>=(curM.score||0))) r.match=newM;
             r.candidates=evt.candidates||[];
+            r.options=evt.options||[];
             r.files=evt.files||r.files;
             r.count=evt.count||r.count;
             if(evt.thumb)r.thumb=evt.thumb;
@@ -9948,13 +10078,18 @@ async function _runActorResolver(faceClusters){
               ?resolverM:localM;
             return {
               ...orig,
-              id:c.id, type:'performer',
+              // Il tipo resta 'face': tutta la UI a valle (review card, conteggi
+              // per modalità, salvataggio faces.db) filtra su type==='face'.
+              // La natura "performer" è espressa da match.source==='stashdb'
+              // e viene derivata in applyWizardReview (kindForTag).
+              id:c.id, type:'face',
               avgEmbedding:c.avgEmbedding||orig.avgEmbedding,
               files:c.files||orig.files||[],
               count:c.count||orig.count||1,
               thumb:c.thumb||orig.thumb||null,
               match:bestM,
               candidates:c.candidates||[],
+              options:c.options||[],
               _mergedFrom:c.mergedFrom||[]
             };
           });
@@ -9968,7 +10103,10 @@ async function _runActorResolver(faceClusters){
       });
       W._actorBound=true;
     }
-    api.actorResolve({clusters, mergeThreshold:0.62, confirmThreshold:0.55, topk:5})
+    api.actorResolve({clusters, mergeThreshold:0.62, confirmThreshold:0.55, topk:5,
+      tmdbKey:(S.wizardCfg&&S.wizardCfg.tmdbKey)||null,
+      useWikidata:(S.wizardCfg&&S.wizardCfg.useWikidata)!==false,
+      useWikipedia:(S.wizardCfg&&S.wizardCfg.useWikipedia)!==false})
       .then(r=>{
         if(!r||!r.ok){
           if(wiz){wiz.innerHTML=`<h3>Resolver non disponibile</h3><div class="ai-box" style="margin-bottom:16px"><p style="font-size:12px;color:var(--t2)">${(r&&r.error||'errore').replace(/</g,'&lt;')}</p></div><div style="display:flex;justify-content:flex-end"><button class="mdl-btn primary" onclick="closeWizard()">OK</button></div>`;}
@@ -10020,6 +10158,198 @@ async function _saveAnalysisHistory(){
   if(!window.maniac||!window.maniac.analysisSave)return;
   try{await window.maniac.analysisSave({elements:S.analysisElements||[]});}catch(_){}
 }
+// ═══ Performer assegnati al file in riproduzione ═══
+// Fonte: la cronologia elementi analizzati, scritta da applyWizardReview.
+function performersForFile(fpath){
+  if(!fpath)return [];
+  const out=[];
+  (S.analysisElements||[]).forEach(el=>{
+    if(el.hidden)return;
+    const t=el.type||'face';
+    if(t!=='performer'&&t!=='face')return;
+    if(!(el.files||[]).includes(fpath))return;
+    out.push({name:el.name,photo:el.photoUrl||el.thumb||'',
+              external_id:el.external_id||null,source:el.source||null});
+  });
+  // Con foto ufficiale prima: è quella che si riconosce a colpo d'occhio.
+  out.sort((a,b)=>(b.photo?1:0)-(a.photo?1:0));
+  return out;
+}
+
+// Disegna/aggiorna l'anteprima nella cella. Idempotente: rimuove la precedente.
+function updatePerformerBadge(cell,pid){
+  if(!cell)return;
+  const old=cell.querySelector('.vc-perf'); if(old)old.remove();
+  if(!S.showPerformerBadge)return;
+  const p=P(pid); if(!p)return;
+  const f=p.playlist[p.idx]; if(!f||!f.path)return;
+  const perfs=performersForFile(f.path);
+  if(!perfs.length)return;
+  const area=cell.querySelector('.video-area'); if(!area)return;
+  const main=perfs[0];
+  const el=document.createElement('div');
+  el.className='vc-perf';
+  el.title=perfs.map(x=>x.name).join(' · ')+' — clic per scheda, modifica o rimozione';
+  const esc=s=>String(s||'').replace(/[<>"&]/g,c=>({'<':'&lt;','>':'&gt;','"':'&quot;','&':'&amp;'}[c]));
+  el.innerHTML=(main.photo
+      ?`<img src="${esc(main.photo)}" onerror="this.outerHTML='<div class=\\'vc-perf-ph\\'></div>'">`
+      :`<div class="vc-perf-ph"></div>`)
+    +`<span>${esc(main.name)}</span>`
+    +(perfs.length>1?`<span class="vc-perf-more">+${perfs.length-1}</span>`:'');
+  el.onclick=ev=>{ ev.stopPropagation(); openPerformerManager(f.path); };
+  area.appendChild(el);
+}
+
+// Apre la scheda: per id StashDB va diretta, altrimenti cerca per nome.
+function openPerformerCard(perf){
+  if(!perf)return;
+  try{ showPerformerInfoStashDB(perf.external_id||perf.name); }
+  catch(e){ toast('Scheda non disponibile'); }
+}
+
+// ═══ Gestione performer del file ═══
+// Aprire il badge non serve solo a leggere: da qui si controlla la scheda
+// StashDB prima di fidarsi, si toglie chi non c'entra e si aggiunge chi manca.
+function openPerformerManager(fpath){
+  if(!fpath) return;
+  document.querySelectorAll('.perf-mgr').forEach(el=>el.remove());
+  const esc=s=>String(s||'').replace(/[<>"&]/g,c=>({'<':'&lt;','>':'&gt;','"':'&quot;','&':'&amp;'}[c]));
+  const ov=document.createElement('div');
+  ov.className='mdl-ov perf-mgr';
+  const close=()=>{ov.classList.remove('show');setTimeout(()=>ov.remove(),160);};
+
+  const rowHtml=(x,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:7px 8px;border:1px solid var(--bd);border-radius:8px;background:var(--s2)">
+    ${x.photo?`<img src="${esc(x.photo)}" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex:0 0 34px;background:#000" onerror="this.style.visibility='hidden'">`
+             :`<div style="width:34px;height:34px;border-radius:50%;flex:0 0 34px;background:var(--s3)"></div>`}
+    <span style="flex:1;min-width:0;font:600 12px/1.3 'Inter';color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.name)}</span>
+    <button class="mdl-btn" data-info="${i}" title="Apri la scheda su StashDB" style="padding:4px 10px;font-size:11px">Scheda</button>
+    <button class="mdl-btn" data-del="${i}" title="Non è presente in questo video: rimuovilo" style="padding:4px 9px;font-size:11px;color:#E05565;border-color:rgba(224,85,101,.45)">Rimuovi</button>
+  </div>`;
+
+  const render=()=>{
+    const perfs=performersForFile(fpath);
+    const fname=(fpath||'').split(/[\\/]/).pop();
+    ov.innerHTML=`<div class="mdl" style="max-width:460px;width:94%">
+      <div class="mdl-ttl">Performer nel video</div>
+      <div style="font-size:10px;color:var(--t3);margin:2px 0 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(fname)}</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${perfs.length?perfs.map(rowHtml).join('')
+          :`<div style="text-align:center;padding:14px;color:var(--t3);font-size:12px">Nessun performer assegnato a questo video.</div>`}
+      </div>
+      <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:12px">
+        <div style="font:600 10px/1 'Inter';color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px">Aggiungi performer</div>
+        <div style="display:flex;gap:6px">
+          <input id="pmQ" placeholder="Cerca su StashDB…" autocomplete="off" style="flex:1;padding:6px 9px;font-size:12px;border-radius:6px;border:1px solid var(--bd);background:var(--s1);color:var(--t1)">
+          <button class="mdl-btn" id="pmGo" style="padding:5px 12px;font-size:11px">Cerca</button>
+        </div>
+        <div id="pmRes" style="display:flex;flex-direction:column;gap:5px;margin-top:8px"></div>
+      </div>
+      <div class="mdl-btns" style="margin-top:14px"><button class="mdl-btn primary" data-act="cancel">Chiudi</button></div>
+    </div>`;
+    wire(perfs);
+  };
+
+  const wire=(perfs)=>{
+    ov.querySelectorAll('[data-act="cancel"]').forEach(b=>b.onclick=close);
+    ov.querySelectorAll('[data-info]').forEach(b=>b.onclick=()=>{
+      openPerformerCard(perfs[+b.getAttribute('data-info')]);
+    });
+    ov.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+      const x=perfs[+b.getAttribute('data-del')];
+      removePerformerFromFile(x.name, fpath);
+      toast(x.name+' rimosso da questo video');
+      render();
+    });
+    const q=ov.querySelector('#pmQ'), go=ov.querySelector('#pmGo'), res=ov.querySelector('#pmRes');
+    const search=async()=>{
+      const term=(q.value||'').trim();
+      if(!term){res.innerHTML='';return;}
+      res.innerHTML=`<div style="font-size:11px;color:var(--t3);padding:4px">Ricerca…</div>`;
+      let items=[];
+      try{
+        const api=window.maniac&&window.maniac.stashdb;
+        const r=api&&api.searchPerformer?await api.searchPerformer(term,6):null;
+        items=(r&&r.ok&&r.items)?r.items:[];
+      }catch(e){}
+      if(!items.length){res.innerHTML=`<div style="font-size:11px;color:var(--t3);padding:4px">Nessun risultato su StashDB.</div>`;return;}
+      res.innerHTML=items.map((it,i)=>`<div style="display:flex;align-items:center;gap:9px;padding:5px 7px;border:1px solid var(--bd);border-radius:7px;background:var(--s1)">
+        ${it.image?`<img src="${esc(it.image)}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex:0 0 28px;background:#000" onerror="this.style.visibility='hidden'">`
+                  :`<div style="width:28px;height:28px;border-radius:50%;flex:0 0 28px;background:var(--s3)"></div>`}
+        <span style="flex:1;min-width:0;font:600 11px/1.3 'Inter';color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.name)}${it.disambiguation?` <span style="color:var(--t3);font-weight:500">(${esc(it.disambiguation)})</span>`:''}</span>
+        <button class="mdl-btn" data-add="${i}" style="padding:3px 9px;font-size:10px">Aggiungi</button>
+      </div>`).join('');
+      res.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{
+        const it=items[+b.getAttribute('data-add')];
+        addPerformerToFile({name:it.name,photo:it.image||'',external_id:it.id||null,source:'stashdb'},fpath);
+        toast(it.name+' aggiunto');
+        render();
+      });
+    };
+    if(go)go.onclick=search;
+    if(q)q.onkeydown=e=>{ if(e.key==='Enter'){e.preventDefault();search();} };
+  };
+
+  render();
+  document.body.appendChild(ov);
+  requestAnimationFrame(()=>ov.classList.add('show'));
+  ov.addEventListener('click',e=>{ if(e.target===ov)close(); });
+}
+
+// Toglie il performer da QUESTO file: sparisce il tag e il file esce dalla
+// lista dell'elemento in cronologia. L'elemento resta, così il performer
+// continua a valere per gli altri video in cui è stato riconosciuto.
+function removePerformerFromFile(name,fpath){
+  if(!name||!fpath) return;
+  (S.analysisElements||[]).forEach(el=>{
+    if(el.name!==name) return;
+    const t=el.type||'face';
+    if(t!=='performer'&&t!=='face') return;
+    el.files=(el.files||[]).filter(f=>f!==fpath);
+    el.updatedAt=Date.now();
+  });
+  S._fileTags=S._fileTags||{};
+  if(S._fileTags[fpath]) S._fileTags[fpath]=S._fileTags[fpath].filter(t=>t.label!==name);
+  S.players.forEach(p=>p&&p.playlist.forEach(f=>{
+    if(f.path===fpath&&f.tags) f.tags=f.tags.filter(t=>t.label!==name);
+  }));
+  try{persistFileTags();}catch(e){}
+  try{_saveAnalysisHistory();}catch(e){}
+  try{saveConfig();}catch(e){}
+  try{refreshPerformerBadges();renderPanel();}catch(e){}
+}
+
+// Aggiunge un performer scelto a mano: stesso percorso di un match accettato
+// nel wizard, così tag e cronologia restano coerenti.
+function addPerformerToFile(perf,fpath){
+  if(!perf||!perf.name||!fpath) return;
+  const tc=ensureKindTag(perf.name,'performer');
+  S._fileTags=S._fileTags||{};
+  const cur=S._fileTags[fpath]||[];
+  if(!cur.some(t=>t.label===tc.label)) cur.push({color:tc.color,label:tc.label});
+  S._fileTags[fpath]=cur;
+  S.players.forEach(p=>p&&p.playlist.forEach(f=>{
+    if(f.path===fpath){ f.tags=f.tags||[]; if(!f.tags.some(t=>t.label===tc.label)) f.tags.push({color:tc.color,label:tc.label}); }
+  }));
+  pushAnalysisElement({
+    type:'performer',name:perf.name,
+    thumb:perf.photo||'',photoUrl:perf.photo||null,
+    files:[fpath],source:perf.source||'manual',
+    external_id:perf.external_id||null,
+    tags:[{color:tc.color,label:tc.label}]
+  });
+  try{persistFileTags();}catch(e){}
+  try{saveConfig();}catch(e){}
+  try{refreshPerformerBadges();renderPanel();}catch(e){}
+}
+
+// Ridisegna il badge su tutte le celle (dopo un'analisi o un cambio tag).
+function refreshPerformerBadges(){
+  document.querySelectorAll('.vc[data-pid]').forEach(c=>{
+    const pid=+c.getAttribute('data-pid');
+    try{ updatePerformerBadge(c,pid); }catch(e){}
+  });
+}
+
 function pushAnalysisElement(el){
   S.analysisElements=S.analysisElements||[];
   if(!el||!el.name)return;
@@ -10091,6 +10421,15 @@ function _cosineSim(a,b){
   if(na<=0||nb<=0)return -1;
   return s/(Math.sqrt(na)*Math.sqrt(nb));
 }
+// Sbocco unico dopo l'analisi. Niente bivio "Suggerimenti / Seleziona
+// manualmente": si va dritti ai risultati con i nomi. Il riepilogo resta solo
+// per il caso in cui non ci sia nulla da mostrare.
+function showWizardOutcome(){
+  const W=S._wizard; if(!W) return;
+  if(W.results && W.results.length) renderWizardReview();
+  else renderWizardSummary();
+}
+
 function renderWizardSummary(){
   const W=S._wizard;if(!W)return;
   const ov=document.getElementById('wizOv');if(!ov)return;
@@ -10099,7 +10438,7 @@ function renderWizardSummary(){
   const topNames=[];
   W.results.slice(0,5).forEach(r=>{
     if(r.match&&r.match.name){
-      const tag=r.match.source==='facedb-cache'?' <span style="color:var(--t3);font-size:10px">(cache locale)</span>':' <span style="color:var(--t3);font-size:10px">(StashDB)</span>';
+      const tag=/^facedb/.test(String(r.match.source||''))?' <span style="color:var(--t3);font-size:10px">(cache locale)</span>':' <span style="color:var(--t3);font-size:10px">(StashDB)</span>';
       topNames.push(r.match.name+tag);
     }
   });
@@ -10132,12 +10471,29 @@ function renderWizardSummary(){
         </div>
       `:`
         <div style="display:flex;flex-direction:column;gap:8px">
-          <button class="mdl-btn primary" onclick="renderWizardReview()">Suggerimenti Automatici</button>
-          <button class="mdl-btn" onclick="renderWizardResults()">Seleziona manualmente</button>
+          <button class="mdl-btn primary" onclick="renderWizardReview()">Vedi i performer riconosciuti</button>
+          <button class="mdl-btn" onclick="renderWizardResults()" title="Assegna i tag a mano, senza i nomi trovati">Taggatura manuale (avanzato)</button>
         </div>
       `}
     </div>
     <div class="wiz-foot"><button class="mdl-btn" onclick="closeWizard()">Chiudi</button></div>`;
+}
+
+// Il cluster passa il filtro "Genere viso"?
+// Il classificatore locale lavora su un ritaglio parziale del volto e sbaglia
+// spesso — su un caso reale ha letto Veronica Leal come uomo, facendo sparire
+// il match corretto (0.874, 5 foto su 10). Quando il resolver ha confermato un
+// performer, il genere dichiarato da StashDB è la fonte migliore e ha la
+// precedenza sulla stima locale.
+function _wizGenderOk(r){
+  if(!r||r.genderMatch!==false) return true;
+  const W=S._wizard; const want=String((W&&W.gender)||'both').toLowerCase();
+  if(want==='both') return true;
+  const g=r.match&&r.match.gender;
+  if(!g) return false;
+  const s=String(g).toLowerCase();
+  const norm=s.includes('female')?'female':(s.includes('male')?'male':null);
+  return norm===want;
 }
 
 function renderWizardReview(){
@@ -10154,6 +10510,7 @@ function renderWizardReview(){
   W.results.forEach(r=>{
     if(W.reviewState[r.id])return;
     let name='', photoUrl=null, source=null, externalId=null, score=null, autoReject=false;
+    let votes=null, photos=null;
     if(r.type==='face'){
       if(r.match){
         name=r.match.name||'';
@@ -10161,8 +10518,22 @@ function renderWizardReview(){
         source=r.match.source||'stashdb';
         externalId=r.match.performerId||null;
         score=(typeof r.match.score==='number')?r.match.score:null;
+        // Corroborazione: quante foto indipendenti del performer confermano
+        // il volto. È il dato che rende il nome affidabile, non lo score.
+        votes=(typeof r.match.votes==='number')?r.match.votes:null;
+        photos=(typeof r.match.photos==='number')?r.match.photos:null;
+      } else if((r.options||[]).length){
+        // Nessun match automatico ma ci sono proposte (tipicamente il nome
+        // letto dal titolo, che il volto non ha potuto confermare). La card
+        // resta visibile con le sue opzioni: nasconderla fra i "Non
+        // riconosciuti" butterebbe via l'unica informazione utile disponibile.
+        const sug=r.options[0];
+        photoUrl=sug.thumbUrl||null;
+        source=sug.source||'stashdb';
+        // Nome NON precompilato: è un suggerimento da confermare con un clic,
+        // non un risultato. Precompilarlo lo farebbe sembrare accertato.
       } else {
-        // Nessun match: cluster da rivedere manualmente o scartare.
+        // Nessun match e nessuna proposta: da rivedere a mano o scartare.
         autoReject=true;
       }
     } else if(r.className){
@@ -10170,26 +10541,41 @@ function renderWizardReview(){
       name=name.charAt(0).toUpperCase()+name.slice(1);
       source=r.detector?(r.detector.startsWith('yolo')?'yolo':'places365'):'ml';
     }
-    if(r.genderMatch===false) autoReject=true;
+    // Il filtro genere agisce solo sui volti SENZA nome: un performer
+    // riconosciuto non va mai nascosto, altrimenti l'analisi sembra vuota
+    // proprio quando ha funzionato.
+    if(!name && !_wizGenderOk(r)) autoReject=true;
     // Auto-accept: match locale già confermato OPPURE score >= 0.95 OPPURE confidence='confirmed'.
     // L'utente può sempre rifiutare manualmente cliccando X dopo.
     let autoAccept=false;
     if(!autoReject && name){
+      // Auto-accetta SOLO i match corroborati: confidence 'confirmed' significa
+      // consenso su più foto + quorum + distacco dal 2° performer.
+      // 'ambiguous' (due performer troppo simili) e 'local' (nome dalla sola
+      // cache locale, mai verificato contro le foto StashDB) restano in attesa
+      // di un clic dell'utente: è il caso in cui sbagliare costa di più.
       const conf=r.match&&(r.match.confidence||r.match.verdict);
       if(conf==='confirmed') autoAccept=true;
-      else if(typeof score==='number' && score>=0.85) autoAccept=true;
-      else if(source==='locale' || source==='facedb') autoAccept=true;
+      else if(!conf && typeof score==='number' && score>=0.85) autoAccept=true;
     }
     W.reviewState[r.id]={
       name, action:autoReject?'rejected':(autoAccept?'accepted':'pending'),
-      photoUrl, source, external_id:externalId, score
+      photoUrl, source, external_id:externalId, score, votes, photos
     };
   });
   const sortMode=S.wizSort||'occurrences';
-  wiz.innerHTML=`<div class="wiz-head"><h3 style="margin:0">Suggerimenti</h3></div>
+  // Testata parlante: quanti performer sono stati riconosciuti davvero.
+  const _named=W.results.filter(r=>W.reviewState[r.id]&&W.reviewState[r.id].name).length;
+  // Elementi mostrati come card (i rifiutati stanno nel blocco collassato):
+  // sotto i 3 la barra "Ordina" è solo rumore.
+  const _activeCount=W.results.filter(r=>W.reviewState[r.id]&&W.reviewState[r.id].action!=='rejected').length;
+  const _head=_named
+    ? (_named===1?'1 performer riconosciuto':_named+' performer riconosciuti')
+    : 'Nessun performer riconosciuto';
+  wiz.innerHTML=`<div class="wiz-head"><h3 style="margin:0">${_head}</h3></div>
     <div class="wiz-body">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <span style="font-size:11px;color:var(--t3);flex:1">Rivedi ogni cluster: accetta, modifica o rifiuta. Trascina per ordine personalizzato.</span>
+      ${_named?`<div style="font-size:11px;color:var(--t3);margin-bottom:10px;line-height:1.5">Controlla e premi <b style="color:var(--t2)">Applica</b>. Con <b style="color:var(--t2)">X</b> rifiuti, o scegli una delle alternative proposte sotto ogni nome.</div>`:''}
+      ${_activeCount>2?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;justify-content:flex-end">
         <span style="font-size:10px;color:var(--t3);white-space:nowrap">Ordina:</span>
         <select onchange="_wizSort(this.value)" style="height:var(--h-input);padding:0 8px;border-radius:6px;border:1px solid var(--bd);background:var(--s2);color:var(--t1);font-size:11px">
           <option value="occurrences" ${sortMode==='occurrences'?'selected':''}>Occorrenze ↓</option>
@@ -10198,14 +10584,14 @@ function renderWizardReview(){
           <option value="files" ${sortMode==='files'?'selected':''}>File ↓</option>
           <option value="manual" ${sortMode==='manual'?'selected':''}>Manuale</option>
         </select>
-      </div>
+      </div>`:''}
       <div id="wizReviewList" style="display:flex;flex-direction:column;gap:8px"></div>
     </div>
     <div class="wiz-foot" style="justify-content:space-between">
-      <button class="mdl-btn" onclick="renderWizardSummary()">← Indietro</button>
+      <button class="mdl-btn" onclick="renderWizardSummary()" title="Dettagli dell'analisi e selezione manuale">Dettagli</button>
       <div style="display:flex;gap:6px">
         <button class="mdl-btn" onclick="closeWizard()">Annulla</button>
-        <button class="mdl-btn primary" onclick="applyWizardReview()">Applica tutto</button>
+        <button class="mdl-btn primary" id="wizApplyBtn" onclick="applyWizardReview()">Applica</button>
       </div>
     </div>`;
   _renderReviewCards();
@@ -10279,14 +10665,66 @@ function _renderReviewCards(){
       stateLbl=matched.toUpperCase(); stateCol='var(--t2)'; stateBg='var(--s3)';
     }
     src=`<span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;color:${stateCol};background:${stateBg};padding:2px 6px;border-radius:10px;text-transform:uppercase;font-weight:600">${stateLbl}</span>`;
-    const photo=st.photoUrl?`<img src="${st.photoUrl}" style="width:48px;height:48px;border-radius:6px;object-fit:cover" onerror="this.style.display='none'">`:'';
+    const photo=st.photoUrl
+      ?`<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:0 0 auto">
+          <img src="${st.photoUrl}" title="Foto ufficiale su StashDB — confrontala col volto del video" style="width:56px;height:56px;border-radius:6px;object-fit:cover;border:1px solid var(--bd);background:#000" onerror="this.parentNode.style.display='none'">
+          <span style="font:600 8px/1 'Inter';color:var(--t3);letter-spacing:.04em;text-transform:uppercase">StashDB</span>
+        </div>`
+      :'';
     const mergedBadge=(r._mergedFrom&&r._mergedFrom.length)?`<span title="Unione di ${r._mergedFrom.length+1} cluster simili" style="font-size:9px;color:var(--p);background:var(--pd);padding:2px 6px;border-radius:10px;margin-left:4px">×${r._mergedFrom.length+1}</span>`:'';
     // Confidence badge: percentuale dal resolver (cosine foto-vs-foto)
     let confBadge='';
     if(typeof st.score==='number'){
       const conf=Math.round(st.score*100);
       const col=conf>=80?'#3FB883':(conf>=62?'#E0B24C':'#8A8AA0');
-      confBadge=`<span title="Cosine similarity foto-vs-foto" style="font-size:9px;color:#fff;background:${col};padding:2px 6px;border-radius:10px;margin-left:4px;font-weight:700">${conf}%</span>`;
+      confBadge=`<span title="Similarità media sulle 3 foto migliori" style="font-size:9px;color:#fff;background:${col};padding:2px 6px;border-radius:10px;margin-left:4px;font-weight:700">${conf}%</span>`;
+    }
+    // Corroborazione: su quante foto indipendenti (scene diverse) regge il match.
+    let voteBadge='';
+    if(typeof st.votes==='number'&&typeof st.photos==='number'&&st.photos>0){
+      voteBadge=`<span title="Il volto è stato confrontato con ${st.photos} foto del performer prese da scene diverse: ${st.votes} lo confermano" style="font-size:9px;color:var(--t2);background:var(--s3);padding:2px 6px;border-radius:10px;margin-left:4px;font-weight:600">${st.votes}/${st.photos} foto</span>`;
+    }
+    // NB: isFace va dichiarata qui, prima del primo uso. Stava piu' in basso
+    // e il blocco optRow la leggeva in temporal dead zone: cardHtml lanciava
+    // ReferenceError e l'intera lista dei risultati restava vuota.
+    const isFace=(r.type==='face');
+    // Fino a 3 alternative verificate: quando l'automatismo sbaglia — due
+    // performer somiglianti, un volto di spalle — l'utente corregge con un clic
+    // invece di riscrivere il nome a mano.
+    let optRow='';
+    const opts=(r.options||[]).slice(0,3);
+    if(isFace&&opts.length&&(opts.length>1||!st.name)){
+      const anyUnver=opts.some(o=>!o.verified);
+      optRow=`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center">${opts.map((o,oi)=>{
+        const on=(st.external_id&&o.performerId===st.external_id)||(!st.external_id&&st.name===o.name);
+        const pct=Math.round((o.score||0)*100);
+        const ph=o.thumbUrl?`<img src="${o.thumbUrl}" style="width:26px;height:26px;border-radius:4px;object-fit:cover;flex:0 0 26px" onerror="this.style.display='none'">`:'';
+        // ◆ verde = nome presente nel titolo del file.
+        const tit=o.inTitle?`<span title="Il nome compare nel titolo del file" style="color:#3FB883;font-weight:700">◆</span>`:'';
+        // Le proposte non confermate dal volto restano riconoscibili: bordo
+        // tratteggiato e "dal titolo" al posto della percentuale.
+        // Tre stati distinti, etichettati per quello che sono davvero:
+        //  verificata      → consenso + quorum fotografico
+        //  dal titolo      → il nome è nel file, il volto non lo conferma
+        //  non confermata  → qualche somiglianza, sotto il quorum
+        const bd=on?'var(--p)':(o.verified?'var(--bd)':'transparent');
+        const dash=o.verified?'':'border-style:dashed;border-color:#E0B24C;';
+        const tail=o.verified
+          ? `<span style="color:var(--t3);font-weight:500">${pct}%</span>`
+          : (o.fromLibrary
+              ? `<span style="color:#E0B24C;font-weight:600">dalla tua libreria</span>`
+              : (o.inTitle
+                  ? `<span style="color:#E0B24C;font-weight:600">dal titolo</span>`
+                  : `<span style="color:#E0B24C;font-weight:600">${pct}% · da confermare</span>`));
+        const tip=o.verified
+          ? `${(o.votes||0)}/${(o.photos||0)} foto concordi${o.inTitle?' · nome presente nel titolo':''}`
+          : (o.fromLibrary
+              ? `Volto simile a uno gia' presente nella tua libreria (${pct}%). Non esistono foto su StashDB con cui verificarlo: controlla tu prima di accettarlo.`
+              : (o.inTitle
+                  ? `Nome letto dal titolo del file. Il confronto fotografico non lo conferma (${pct}%): guarda la miniatura prima di accettarlo.`
+                  : `Somiglianza ${pct}% ma solo ${(o.votes||0)} foto su ${(o.photos||0)} la confermano: sotto la soglia di sicurezza.`));
+        return `<button onclick="_wizPickOption(${r.id},${oi})" title="${tip}" style="display:inline-flex;align-items:center;gap:5px;padding:3px 7px 3px 3px;border-radius:14px;cursor:pointer;font:600 10px 'Inter';border:1px solid ${bd};${dash}background:${on?'var(--pd)':'var(--s1)'};color:${on?'var(--t1)':'var(--t2)'}">${ph}<span>${(o.name||'?').replace(/</g,'&lt;')}</span>${tit}${tail}</button>`;
+      }).join('')}${anyUnver?`<span style="font-size:9px;color:var(--t3)">tratteggiato = da confermare</span>`:''}</div>`;
     }
     let detBadge='';
     const accCls=st.action==='accepted'?'wiz-act-btn on-acc':'wiz-act-btn';
@@ -10314,10 +10752,14 @@ function _renderReviewCards(){
       var miniMusic='';
     }
     // Sub-categorie persona (kind dropdown). Mostra solo per face; per altri tipi nasconde il select.
-    const isFace=(r.type==='face');
     const kindOpts=isFace?[['auto','Auto'],['actor','Attore'],['performer','Performer'],['musician','Musicista'],['athlete','Sportivo'],['tv','TV'],['youtuber','YouTuber'],['influencer','Influencer'],['artist','Artista'],['historical','Storico'],['other','Altro']]:[];
-    const kindSel=isFace?`<select onchange="_wizSetKind(${r.id},this.value)" title="Sottocategoria persona" style="flex:0 0 88px;padding:3px 4px;font-size:10px;border-radius:4px;border:1px solid var(--bd);background:var(--s1);color:var(--t2);max-width:88px">${kindOpts.map(([v,l])=>`<option value="${v}" ${(st.kindHint||r.kindHint||'auto')===v?'selected':''}>${l}</option>`).join('')}</select>`:'';
-    const infoBtn=(st.metadata||st.external_id)?`<button class="wiz-act-btn" title="Info entità" onclick="_wizShowInfo(${r.id})" style="width:22px;height:22px;font-size:11px;flex:0 0 22px">i</button>`:'';
+    const kindSel=(isFace&&!st.external_id)?`<select onchange="_wizSetKind(${r.id},this.value)" title="Sottocategoria persona" style="flex:0 0 88px;padding:3px 4px;font-size:10px;border-radius:4px;border:1px solid var(--bd);background:var(--s1);color:var(--t2);max-width:88px">${kindOpts.map(([v,l])=>`<option value="${v}" ${(st.kindHint||r.kindHint||'auto')===v?'selected':''}>${l}</option>`).join('')}</select>`:'';
+    // Con un id StashDB si apre la scheda completa (foto, dati, link): e' il
+    // controllo che permette di verificare il performer PRIMA di applicare.
+    // Senza id resta il popover locale sui metadati raccolti.
+    const infoBtn=st.external_id
+      ? `<button class="wiz-act-btn" title="Vedi la scheda su StashDB prima di confermare" onclick="showPerformerInfoStashDB('${String(st.external_id).replace(/'/g,"")}')" style="width:22px;height:22px;font-size:11px;flex:0 0 22px">i</button>`
+      : (st.metadata?`<button class="wiz-act-btn" title="Info entità" onclick="_wizShowInfo(${r.id})" style="width:22px;height:22px;font-size:11px;flex:0 0 22px">i</button>`:'');
     return `<div class="${stateCls}" draggable="true" data-rid="${r.id}" ondragstart="_wizDragStart(event,${r.id})" ondragover="event.preventDefault();this.classList.add('drop-tgt')" ondragleave="this.classList.remove('drop-tgt')" ondrop="this.classList.remove('drop-tgt');_wizDrop(event,${r.id})">
       ${leftCell}
       <div style="flex:1;min-width:0">
@@ -10329,19 +10771,28 @@ function _renderReviewCards(){
           ${infoBtn}
         </div>
         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:4px">
-          ${src}${mergedBadge}${detBadge}${confBadge}
+          ${src}${mergedBadge}${detBadge}${confBadge}${voteBadge}
         </div>
         <div style="font-size:10px;color:var(--t3)">${r.count} ${r.type==='face'?'occorrenze':(r.type==='place'?'apparizioni':(r.type==='music'?'tracce':'occorrenze'))} · ${r.files.length} file</div>
+        ${optRow}
         ${miniMusic}
       </div>
       ${photo}
       <div style="display:flex;flex-direction:column;gap:4px;flex:0 0 32px">
-        <button class="${accCls}" title="Accetta" onclick="_wizSetAction(${r.id},'accepted')">V</button>
-        <button class="${rejCls}" title="Rifiuta" onclick="_wizSetAction(${r.id},'rejected')">X</button>
+        <button class="${accCls}" title="Accetta questo performer" onclick="_wizSetAction(${r.id},'accepted')">&#10003;</button>
+        <button class="${rejCls}" title="Rifiuta: non e' in questo video" onclick="_wizSetAction(${r.id},'rejected')">&#10005;</button>
       </div>
     </div>`;
   };
-  let html=active.map(cardHtml).join('');
+  let html=active.map(r=>{
+    try{ return cardHtml(r); }
+    catch(e){
+      // Una card rotta non deve mai svuotare l'intera schermata.
+      console.error('[wizard] card',r&&r.id,e);
+      const st=(W.reviewState[r.id]||{});
+      return `<div class="wiz-rev-card"><div style="flex:1;font-size:12px;color:var(--t2)">${(st.name||'Elemento '+(r&&r.id)).replace(/</g,'&lt;')}<div style="font-size:10px;color:#E05565;margin-top:3px">Errore di visualizzazione: ${String(e&&e.message||e).replace(/</g,'&lt;').slice(0,120)}</div></div><div style="display:flex;flex-direction:column;gap:4px;flex:0 0 32px"><button class="wiz-act-btn" onclick="_wizSetAction(${r.id},'accepted')">&#10003;</button><button class="wiz-act-btn" onclick="_wizSetAction(${r.id},'rejected')">&#10005;</button></div></div>`;
+    }
+  }).join('');
   if(rejected.length){
     const totalFaces=rejected.reduce((s,r)=>s+(r.count||0),0);
     const totalFiles=new Set(rejected.flatMap(r=>r.files||[])).size;
@@ -10359,6 +10810,18 @@ function _renderReviewCards(){
     </div>`;
   }
   list.innerHTML=html;
+  // Etichetta parlante sul bottone: quanti elementi verranno salvati davvero.
+  try{
+    const btn=document.getElementById('wizApplyBtn');
+    if(btn){
+      const n=W.results.filter(r=>{const s=W.reviewState[r.id];return s&&s.action==='accepted'&&s.name;}).length;
+      btn.textContent=n?('Applica ('+n+')'):'Applica';
+      btn.disabled=!n;
+      btn.style.opacity=n?'':'.45';
+      btn.style.cursor=n?'':'not-allowed';
+      btn.title=n?(n+' elementi verranno salvati'):'Nessun elemento accettato: scrivi un nome o premi la spunta';
+    }
+  }catch(e){}
   // Wiring mini-player audio (musica): play/pause + mute + volume per ogni cluster music
   list.querySelectorAll('audio[data-mini-audio]').forEach(au=>{
     const rid=au.getAttribute('data-mini-audio');
@@ -10427,7 +10890,10 @@ function _wizSetName(id,val){
   }
   // Reset stato match precedente e lancia il resolver universale.
   st.source='__searching__'; st.photoUrl=null; st.external_id=null; st.score=null; st.metadata=null;
-  st.action=st.action==='accepted'?'pending':st.action;
+  // Scrivere un nome E' l'atto di conferma: chi lo digita sta decidendo, e
+  // deve ritrovarlo salvato dopo Applica.
+  st.action='accepted';
+  st.votes=null; st.photos=null;
   _renderReviewCards();
   _wizRelookup(id, newName).catch(()=>{});
 }
@@ -10610,6 +11076,31 @@ function _wizApplyStashSuggestion(id, performer){
 }
 function _wizSetAction(id,act){const W=S._wizard;if(!W||!W.reviewState[id])return;W.reviewState[id].action=act;_renderReviewCards();}
 
+// Scelta manuale fra le alternative verificate dal resolver. Non serve alcuna
+// chiamata di rete: l'opzione porta con sé foto, id StashDB e statistiche.
+function _wizPickOption(id,oi){
+  const W=S._wizard; if(!W)return;
+  const r=(W.results||[]).find(x=>x.id===id); if(!r)return;
+  const o=(r.options||[])[oi]; if(!o)return;
+  const st=W.reviewState[id]; if(!st)return;
+  st.name=o.name||'';
+  st.photoUrl=o.thumbUrl||null;
+  st.source=o.source||'stashdb';
+  st.external_id=o.performerId||null;
+  st.score=(typeof o.score==='number')?o.score:null;
+  st.votes=(typeof o.votes==='number')?o.votes:null;
+  st.photos=(typeof o.photos==='number')?o.photos:null;
+  // Una scelta esplicita dell'utente vale più di qualunque punteggio.
+  st.action='accepted';
+  // Allinea anche r.match: è la fonte che l'overlay del player poi rilegge.
+  r.match=Object.assign({},r.match||{},{
+    name:o.name,performerId:o.performerId,thumbUrl:o.thumbUrl,
+    score:o.score,votes:o.votes,photos:o.photos,
+    source:st.source,confidence:'manual'
+  });
+  _renderReviewCards();
+}
+
 // E3: cambio kind dell'entità → ri-lancia il resolver con il nuovo hint.
 function _wizSetKind(id, kind){
   const W=S._wizard; if(!W||!W.reviewState[id])return;
@@ -10700,7 +11191,12 @@ async function applyWizardReview(){
     const st=W.reviewState[r.id];
     if(!st||st.action!=='accepted'||!st.name)continue;
     // Performer: face match con source StashDB → tipo logico "performer" (icona fiamma).
-    const isPerformer=(r.type==='face') && (st.source==='stashdb' || st.source==='facedb-cache' || st.kindHint==='performer');
+    // Le source del resolver sono composite: 'stashdb', 'stashdb-photo',
+    // 'facedb-cache', 'facedb-cache+photo'. Basta il prefisso per capire
+    // che il nome viene dal circuito StashDB → tipo logico "performer".
+    const _src=String(st.source||'');
+    const isPerformer=(r.type==='face') &&
+      (/^stashdb/.test(_src) || /^facedb/.test(_src) || st.kindHint==='performer');
     const kindForTag=isPerformer?'performer':(r.type||'face');
     const tc=ensureKindTag(st.name,kindForTag);
     S._fileTags=S._fileTags||{};
@@ -10754,6 +11250,8 @@ async function applyWizardReview(){
     });
   }
   persistFileTags();saveConfig();renderPanel();
+  // I performer appena assegnati compaiono subito nel player, senza ricaricare.
+  try{ refreshPerformerBadges(); }catch(e){}
   toast(applied+' file taggati · '+saved+' volti salvati');
   closeWizard();
 }
@@ -12641,6 +13139,140 @@ function toggleFavorite(name){
   if(S.panel==='tags'||S.panel==='playlist')renderPanel();
 }
 
+
+// ═══ Aggiornamenti ═══
+// Tre stati distinti, uno per volta: controllo → download → installazione.
+// Niente aggiornamenti automatici: l'utente decide, anche perché installare
+// significa chiudere l'app, e magari sta guardando qualcosa.
+let _updState = { stage: 'idle', percent: 0, info: null };
+
+function _updFmtBytes(n){
+  if(!n) return '';
+  const u = ['B','KB','MB','GB'];
+  let i = 0, v = n;
+  while(v >= 1024 && i < u.length-1){ v /= 1024; i++; }
+  return v.toFixed(v < 10 && i > 0 ? 1 : 0) + ' ' + u[i];
+}
+
+async function openUpdateDialog(){
+  document.querySelectorAll('.upd-ov').forEach(el => el.remove());
+  const ov = document.createElement('div');
+  ov.className = 'mdl-ov upd-ov';
+  document.body.appendChild(ov);
+  requestAnimationFrame(() => ov.classList.add('show'));
+  const close = () => { ov.classList.remove('show'); setTimeout(() => ov.remove(), 160); };
+
+  // Un solo aggancio agli eventi di avanzamento per tutta la sessione.
+  if(!window._updBound && window.maniac && window.maniac.update){
+    window._updBound = true;
+    window.maniac.update.onProgress(d => {
+      _updState.stage = d.stage || _updState.stage;
+      if(typeof d.percent === 'number') _updState.percent = d.percent;
+      _updState.speed = d.bytesPerSecond || 0;
+      _updState.transferred = d.transferred || 0;
+      _updState.total = d.total || 0;
+      if(d.stage === 'error') _updState.error = d.error;
+      _updRender();
+    });
+  }
+
+  _updState = { stage: 'checking', percent: 0, info: null };
+  _updRender();
+
+  const api = window.maniac && window.maniac.update;
+  if(!api){
+    _updState = { stage: 'error', error: 'Modulo aggiornamenti non disponibile. Riavvia l\'app.' };
+    _updRender(); return;
+  }
+  const r = await api.check();
+  if(!r || !r.ok){
+    _updState = { stage: r && r.dev ? 'dev' : 'error',
+                  error: (r && r.error) || 'controllo fallito' };
+  } else if(!r.available){
+    _updState = { stage: 'current', info: r };
+  } else {
+    _updState = { stage: 'available', info: r, percent: 0 };
+  }
+  _updRender();
+}
+
+function _updRender(){
+  const ov = document.querySelector('.upd-ov'); if(!ov) return;
+  const esc = x => String(x||'').replace(/[<>"&]/g, c => ({'<':'&lt;','>':'&gt;','"':'&quot;','&':'&amp;'}[c]));
+  const st = _updState, inf = st.info || {};
+  const cur = S.appVersion || (inf.current || '—');
+  let body = '', foot = '';
+
+  if(st.stage === 'checking'){
+    body = `<div class="upd-msg">Controllo aggiornamenti…</div>`;
+    foot = `<button class="mdl-btn" data-act="close">Chiudi</button>`;
+  }
+  else if(st.stage === 'current'){
+    body = `<div class="upd-badge ok">Sei aggiornato</div>
+      <div class="upd-msg">Maniac <b>${esc(cur)}</b> è l'ultima versione disponibile.</div>`;
+    foot = `<button class="mdl-btn primary" data-act="close">Chiudi</button>`;
+  }
+  else if(st.stage === 'dev'){
+    body = `<div class="upd-badge warn">Modalità sviluppo</div>
+      <div class="upd-msg">${esc(st.error)}</div>`;
+    foot = `<button class="mdl-btn primary" data-act="close">Chiudi</button>`;
+  }
+  else if(st.stage === 'error'){
+    body = `<div class="upd-badge err">Controllo non riuscito</div>
+      <div class="upd-msg">${esc(st.error)}</div>
+      <div class="upd-hint">Se il problema resta, scarica l'ultima versione dal sito.</div>`;
+    foot = `<button class="mdl-btn" data-act="site">Apri il sito</button>
+            <button class="mdl-btn primary" data-act="close">Chiudi</button>`;
+  }
+  else if(st.stage === 'available'){
+    body = `<div class="upd-badge new">Nuova versione</div>
+      <div class="upd-vers"><span>${esc(cur)}</span><i>→</i><b>${esc(inf.version)}</b></div>
+      ${inf.size ? `<div class="upd-hint">Dimensione ${_updFmtBytes(inf.size)}</div>` : ''}
+      ${inf.notes ? `<div class="upd-notes">${esc(inf.notes)}</div>` : ''}`;
+    foot = `<button class="mdl-btn" data-act="close">Più tardi</button>
+            <button class="mdl-btn primary" data-act="download">Scarica</button>`;
+  }
+  else if(st.stage === 'downloading'){
+    const pct = st.percent || 0;
+    const speed = st.speed ? _updFmtBytes(st.speed) + '/s' : '';
+    const done = st.transferred && st.total
+      ? `${_updFmtBytes(st.transferred)} di ${_updFmtBytes(st.total)}` : '';
+    body = `<div class="upd-badge new">Scaricamento in corso</div>
+      <div class="upd-bar"><div class="upd-fill" style="width:${pct}%"></div></div>
+      <div class="upd-stats"><span>${pct}%</span><span>${esc(done)}</span><span>${esc(speed)}</span></div>`;
+    foot = `<button class="mdl-btn" data-act="close">Continua in background</button>`;
+  }
+  else if(st.stage === 'ready'){
+    body = `<div class="upd-badge ok">Pronto da installare</div>
+      <div class="upd-msg">L'aggiornamento è stato scaricato. Maniac si chiuderà per installarlo e si riaprirà da solo.</div>`;
+    foot = `<button class="mdl-btn" data-act="close">Dopo</button>
+            <button class="mdl-btn primary" data-act="install">Installa e riavvia</button>`;
+  }
+
+  ov.innerHTML = `<div class="mdl upd-mdl">
+    <div class="mdl-ttl">Aggiornamenti</div>
+    <div class="upd-body">${body}</div>
+    <div class="mdl-btns upd-foot">${foot}</div>
+  </div>`;
+
+  const close = () => { ov.classList.remove('show'); setTimeout(() => ov.remove(), 160); };
+  ov.querySelectorAll('[data-act="close"]').forEach(b => b.onclick = close);
+  ov.querySelectorAll('[data-act="site"]').forEach(b => b.onclick = () => openExt('https://apice.site'));
+  const dl = ov.querySelector('[data-act="download"]');
+  if(dl) dl.onclick = async () => {
+    _updState.stage = 'downloading'; _updState.percent = 0; _updRender();
+    const r = await window.maniac.update.download();
+    if(r && !r.ok){ _updState = { stage:'error', error: r.error }; _updRender(); }
+  };
+  const ins = ov.querySelector('[data-act="install"]');
+  if(ins) ins.onclick = async () => {
+    ins.disabled = true; ins.textContent = 'Avvio installazione…';
+    const r = await window.maniac.update.install();
+    if(r && !r.ok){ _updState = { stage:'error', error: r.error }; _updRender(); }
+  };
+  ov.onclick = e => { if(e.target === ov) close(); };
+}
+
 function renderInfo(){
   return `<div class="info-section">
     <div class="info-ver">
@@ -12648,10 +13280,17 @@ function renderInfo(){
         <img src="../assets/maniac_logo.png" onerror="this.onerror=null;this.src='assets/maniac_logo.png'" style="width:100%;height:100%;object-fit:contain;display:block">
       </div>
       <div style="text-align:center;font:800 22px 'Inter',sans-serif;letter-spacing:.08em;color:var(--p);margin-bottom:6px">MANIAC</div>
-      <div class="v">1.0.0</div>
+      <div class="v" id="infoVer">${S.appVersion||'—'}</div>
       <div class="sub">${t('version')}</div>
+      <div class="apice-credit">
+        <span>${t('madeBy')||'Un progetto'}</span>
+        <button type="button" onclick="openExt('https://apice.site')" title="apice.site">
+          <img src="../assets/apice_logo.png" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='inline'" alt="Apice">
+          <span style="display:none">Apice</span>
+        </button>
+      </div>
     </div>
-    <button class="info-btn" onclick="toast(t('alreadyUpdated'))">
+    <button class="info-btn" onclick="openUpdateDialog()">
       <span>${t('checkUpdates')}</span>
     </button>
     <button class="info-btn" onclick="openExt(S.discordUrl||'https://discord.gg/xEykckGac')">
@@ -13449,6 +14088,7 @@ async function _saveConfigNow(){
     theme:S.theme,vol:S.vol,multi:S.multi,
     eqB:S.eqB,eqM:S.eqM,eqH:S.eqH,boost:S.boost,voice:S.voice,
     autoStart:S.autoStart,defaultPlayer:S.defaultPlayer,hideCtrl:S.hideCtrl,showTitle:S.showTitle,scrubPreview:S.scrubPreview,
+    showPerformerBadge:S.showPerformerBadge,
     lang:S.lang,thumbs:S.thumbs,shortcuts:S.shortcuts,
     audioChannels:S.audioChannels,audioBalance:S.audioBalance,
     webcamRes:S.webcamRes,webcamFps:S.webcamFps,webcamMirror:S.webcamMirror,webcamAudioMonitor:S.webcamAudioMonitor,
@@ -13515,6 +14155,7 @@ async function loadConfig(){
   S.eqB=cfg.eqB||0;S.eqM=cfg.eqM||0;S.eqH=cfg.eqH||0;S.boost=cfg.boost||100;S.voice=!!cfg.voice;
   S.autoStart=cfg.autoStart!==false;S.defaultPlayer=!!cfg.defaultPlayer;
   S.hideCtrl=cfg.hideCtrl??true;S.showTitle=cfg.showTitle??true;S.scrubPreview=cfg.scrubPreview??true;
+  S.showPerformerBadge=cfg.showPerformerBadge??true;
   S.lang=cfg.lang||'it';S.thumbs=!!cfg.thumbs;
   try{S.recentHidden=localStorage.getItem('recentHidden')==='1';}catch(e){S.recentHidden=false;}
   S.audioChannels=cfg.audioChannels||'stereo';
@@ -14254,6 +14895,12 @@ window.addEventListener('mouseup',e=>{if(e.button===3||e.button===4)e.preventDef
   // Analizza vedeva 0 elementi anche se erano salvati su disco. Carichiamoli
   // qui all'init così sono pronti per ogni renderPanel('ai').
   try{ await _loadAnalysisHistory(); }catch(_){}
+  // Versione mostrata nella scheda Info: presa dal pacchetto, non scritta a
+  // mano, così non può divergere da quella davvero installata.
+  try{
+    const v = window.maniac && window.maniac.appVersion ? await window.maniac.appVersion() : null;
+    if(v && v.ok && v.version) S.appVersion = v.version;
+  }catch(_){}
   try{ _migrateEntityTypes(); }catch(_){}
   if(window._pendingLogs&&window._pendingLogs.length){
     S.logs=(window._pendingLogs||[]).concat(S.logs||[]);
