@@ -1,6 +1,6 @@
 {
   "name": "maniac-player",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Maniac - AI-Powered Media Player",
   "main": "main.js",
   "scripts": {
@@ -116,9 +116,7 @@
         "filter": [
           "**/*",
           "!**/__pycache__/**",
-          "!**/*.pyc",
-          "!**/test/**",
-          "!**/tests/**"
+          "!**/*.pyc"
         ]
       }
     ],

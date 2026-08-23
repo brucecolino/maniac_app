@@ -3,6 +3,16 @@
 Tutte le versioni pubblicate di Maniac. L'app controlla questa lista dalla
 scheda **Info → Controlla aggiornamenti**.
 
+## 1.1.1 — 2026-08-23
+
+### Correzioni
+- **Il riconoscimento volti non funzionava nell'app installata**, mentre in
+  sviluppo andava: l'installer escludeva tutte le cartelle chiamate `test`,
+  ma in TensorFlow una di queste fa parte dell'API vera e propria
+  (`tensorflow/_api/v2/__internal__/test`). Senza quella cartella l'intero
+  motore AI non si avviava e l'analisi terminava con un errore di import.
+  L'installer ora include il venv completo.
+
 ## 1.1.0 — 2026-08-23
 
 ### Riconoscimento persone
