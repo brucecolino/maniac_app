@@ -3,6 +3,21 @@
 Tutte le versioni pubblicate di Maniac. L'app controlla questa lista dalla
 scheda **Info → Controlla aggiornamenti**.
 
+## 1.1.2 — 2026-08-23
+
+### Riconoscimento più preciso
+- **Quando il riconoscimento era incerto usciva quasi sempre lo stesso nome.**
+  Due cause, entrambe misurate sull'archivio reale.
+- Alcune impronte salvate somigliano a moltissimi volti diversi — nascono da
+  ritagli sfocati o parziali e vincono qualsiasi confronto, a prescindere da
+  chi si sta cercando. L'app ora le riconosce da sola e smette di proporle:
+  su un archivio di 26 nomi ne ha escluse 9, lasciando i 17 affidabili.
+- I performer con pochissime foto nel database entravano fra le proposte con
+  una sola conferma. Con due o tre foto il punteggio è il migliore di pochi
+  tentativi, quindi capita facilmente per caso: misurato, chi ha 2 foto segna
+  in media 0.31 contro volti estranei, chi ne ha 49 si ferma a 0.13. Ora
+  servono due conferme indipendenti, oppure una somiglianza netta.
+
 ## 1.1.1 — 2026-08-23
 
 ### Correzioni
