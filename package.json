@@ -1,6 +1,6 @@
 {
   "name": "maniac-player",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "Maniac - AI-Powered Media Player",
   "main": "main.js",
   "scripts": {

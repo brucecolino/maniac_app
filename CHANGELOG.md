@@ -3,6 +3,38 @@
 Tutte le versioni pubblicate di Maniac. L'app controlla questa lista dalla
 scheda **Info → Controlla aggiornamenti**.
 
+## 1.1.3 — 2026-08-24
+
+### Wizard download: si incolla e basta
+- Via la griglia dei siti da scegliere. I link arrivano dagli appunti o
+  incollati a mano, quindi al suo posto ci sono tre pulsanti diretti:
+  **Incolla dagli appunti**, **Ricerca approfondita**, **Cerca per titolo**.
+
+### Ricerca approfondita: i video che prima non si prendevano
+- Per le pagine dove il video non è nel sorgente ma lo costruisce il lettore,
+  l'app apre la pagina in una finestra nascosta e guarda cosa chiede alla
+  rete. Tre problemi risolti, tutti misurati su una pagina reale:
+- Il manifesto spesso **non ha estensione** (`/playlist/<id>?token=…`):
+  cercare `.m3u8` non trovava nulla. Ora contano anche il percorso e il tipo
+  di contenuto dichiarato dalla risposta.
+- Certi siti, appena la pagina è pronta, la **sostituiscono con quella di
+  login** e così spengono il lettore prima che chieda il video. Bloccando
+  quella singola richiesta il flusso arriva in **1 secondo** invece di non
+  arrivare mai.
+- Il traffico è pieno di frammenti, anteprime e sottotitoli: restano fuori
+  dall'elenco. Il flusso completo — tutte le qualità e tutte le lingue — va
+  in testa, contrassegnato.
+- Verificato da capo a fondo: il flusso trovato si scarica, con qualità fino
+  a 1080p e traccia audio italiana e inglese.
+
+### Correzioni
+- Il controllo aggiornamenti non dichiara più «sei aggiornato» quando in
+  realtà non è riuscito a leggere la versione pubblicata: ora dice che il
+  controllo è fallito.
+- Su finestre basse l'elenco dei flussi trovati veniva schiacciato a una
+  fetta di riga illeggibile. Ora il dialogo scorre.
+- Una scheda del wizard mostrava frammenti di codice al posto dell'icona.
+
 ## 1.1.2 — 2026-08-23
 
 ### Riconoscimento più preciso
