@@ -2067,6 +2067,211 @@ ipcMain.handle('app:version', () => {
   catch (e) { return { ok: false, version: null }; }
 });
 
+// ═══════════════════════════════════════════════
+// RICERCA APPROFONDITA (deep scan)
+// ═══════════════════════════════════════════════
+// Molte pagine non espongono il video nell'HTML: il player lo costruisce con
+// JavaScript e il flusso compare solo come richiesta di rete. Leggere il
+// sorgente, come fa clipboard:scanPage, lì non basta.
+//
+// La pagina viene aperta in una finestra nascosta e si ascolta il traffico che
+// produce. Tre cose imparate provando sul campo, che valgono più di qualsiasi
+// euristica sull'indirizzo:
+//
+//  1. I manifesti spesso NON hanno estensione: quello di vixcloud è
+//     /playlist/<id>?token=… Cercare solo ".m3u8" non trova niente. Si guarda
+//     quindi anche il percorso e, soprattutto, il tipo di contenuto
+//     dichiarato nella risposta.
+//  2. Il video vero vive quasi sempre in un iframe di un altro dominio. Certi
+//     siti, subito dopo averlo caricato, rimandano al login e lo uccidono: il
+//     riquadro va allora riaperto da solo, nella stessa sessione.
+//  3. Il traffico è pieno di frammenti (.ts numerati), anteprime e sottotitoli
+//     che all'utente non servono: vanno scartati, non elencati.
+const _DEEP_EXT_RX     = /\.(m3u8|mpd|mp4|webm|mkv|m4v|mov|avi|flv)(\?|$)/i;
+const _DEEP_PATH_RX    = /\/(playlist|manifest|master|hls|dash)(\/|\?|$)/i;
+const _DEEP_CTYPE_RX   = /mpegurl|dash\+xml|^video\//;
+const _DEEP_SKIP_RX    = /(google|doubleclick|facebook|analytics|sentry|hotjar|adservice|taboola|outbrain|rtmark|spbgc)\./i;
+// Scarti: anteprime, sottotitoli, sprite, immagini. Non sono il video.
+const _DEEP_JUNK_RX    = /(thumbnail|sprite|preview|poster|storyboard|\/subtitle|[?&]type=subtitle|subs-|\.vtt|\.srt|\.webp|\.jpe?g|\.png|\.gif|\.ico|\.css|\.woff)/i;
+// Frammenti di un flusso già rappresentato dal suo manifesto.
+const _DEEP_SEGMENT_RX = /(\d{3,}[-_]\d{3,}\.ts|\/seg[-_]?\d+|\.ts(\?|$)|\.m4s(\?|$))/i;
+// Certi siti, appena la pagina è pronta, la sostituiscono con quella di login
+// e così spengono il lettore prima che chieda il video. Durante una scansione
+// non c'è nessuno da autenticare: quella richiesta si lascia cadere e il
+// lettore resta vivo. Misurato su streamingunity: senza, zero flussi; con,
+// il manifesto arriva in pochi secondi.
+const _DEEP_AUTH_RX    = /\/(login|signin|sign-in|accedi|auth)(\/|\?|$)/i;
+
+// Il pezzo buono è il manifesto senza "type=": contiene tutte le qualità e
+// tutte le tracce audio. Quelli con type=video/audio sono una traccia sola.
+function _deepRank(u, why) {
+  const single = /[?&]type=(video|audio|subtitle)/i.test(u);
+  if (/mpegurl|dash\+xml/.test(why) || _DEEP_PATH_RX.test(u) || /\.(m3u8|mpd)(\?|$)/i.test(u)) {
+    if (/[?&]type=audio/i.test(u)) return 40;             // solo audio: raramente utile
+    return single ? 70 : 100;                              // manifesto completo in testa
+  }
+  return 60;                                               // file video diretto
+}
+
+function _deepLabel(u, rank) {
+  if (rank >= 100) return 'Flusso completo — tutte le qualità e le lingue';
+  if (rank === 70) {
+    const q = /rendition=([0-9]+p)/i.exec(u);
+    return 'Solo video' + (q ? ' ' + q[1] : '');
+  }
+  if (rank === 40) {
+    const l = /rendition=([a-z]{2,3})/i.exec(u);
+    return 'Solo audio' + (l ? ' (' + l[1].toLowerCase() + ')' : '');
+  }
+  const e = /\.([a-z0-9]{2,4})(\?|$)/i.exec(u);
+  return 'File video diretto' + (e ? ' (' + e[1].toLowerCase() + ')' : '');
+}
+
+ipcMain.handle('download:deepScan', async (_e, { url, timeoutMs } = {}) => {
+  if (!url || !/^https?:\/\//i.test(url)) {
+    return { ok: false, error: 'Serve un indirizzo che inizi con http o https.' };
+  }
+  const budget = Math.min(Math.max(Number(timeoutMs) || 30000, 8000), 90000);
+  const t0 = Date.now();
+  const elapsed = () => Date.now() - t0;
+
+  let win = null;
+  const found = [];
+  const seen = new Set();
+  const embeds = [];
+  let authBlocked = 0;
+  let host = '';
+  try { host = new URL(url).hostname.replace(/^www\./, ''); } catch (_) {}
+
+  const add = (u, why) => {
+    if (!u || seen.has(u)) return;
+    if (_DEEP_SKIP_RX.test(u) || _DEEP_JUNK_RX.test(u) || _DEEP_SEGMENT_RX.test(u)) return;
+    seen.add(u);
+    const rank = _deepRank(u, why);
+    found.push({ url: u, kind: why, rank, manifest: rank >= 70, label: _deepLabel(u, rank) });
+  };
+  const hasGood = () => found.some(f => f.rank >= 70);
+  const say = (stage, extra) => _safeSend('download:deepScan:progress', Object.assign({
+    stage, found: found.length, elapsed: Math.round(elapsed() / 1000),
+  }, extra || {}));
+
+  // Fa partire il lettore: senza un avvio, molti player non chiedono mai il
+  // manifesto. Si tocca solo ciò che somiglia a un pulsante di riproduzione.
+  const nudge = async (w) => {
+    try {
+      await w.webContents.executeJavaScript(`(function(){
+        var v=document.querySelector('video');
+        if(v){ try{ v.muted=true; v.play&&v.play().catch(function(){}); }catch(e){} }
+        var b=document.querySelector('[class*="play" i],[id*="play" i],[aria-label*="play" i],button');
+        if(b&&b.click){ try{ b.click(); }catch(e){} }
+        return 1;
+      })()`, true);
+    } catch (_) {}
+  };
+
+  const settle = async (w, until, nudgeAt) => {
+    let n = 0;
+    while (elapsed() < until) {
+      if (hasGood()) return;
+      await new Promise(r => setTimeout(r, 600));
+      n += 1;
+      if (nudgeAt && (n === nudgeAt || n === nudgeAt * 3)) await nudge(w);
+      say('scanning');
+    }
+  };
+
+  try {
+    win = new BrowserWindow({
+      width: 1280, height: 800, show: false,
+      webPreferences: { partition: 'persist:deepscan', javascript: true, images: false },
+    });
+
+    win.webContents.session.webRequest.onBeforeRequest({ urls: ['*://*/*'] }, (d, cb) => {
+      try {
+        const u = d.url;
+        // L'indirizzo chiesto dall'utente non si tocca mai, neanche se è una
+        // pagina di login: sarebbe come rifiutarsi di aprirlo.
+        if (u !== url && _DEEP_AUTH_RX.test(u)
+            && (d.resourceType === 'xhr' || d.resourceType === 'mainFrame')) {
+          authBlocked += 1;
+          return cb({ cancel: true });
+        }
+        if (_DEEP_EXT_RX.test(u)) add(u, 'estensione');
+        else if (_DEEP_PATH_RX.test(u)) add(u, 'percorso');
+        else if (d.resourceType === 'media') add(u, 'media');
+        // Il lettore vero è quasi sempre un riquadro di un altro dominio.
+        if (d.resourceType === 'subFrame' && host) {
+          const h = new URL(u).hostname.replace(/^www\./, '');
+          if (h !== host && !_DEEP_SKIP_RX.test(u) && !embeds.includes(u)) embeds.push(u);
+        }
+      } catch (_) {}
+      cb({});
+    });
+
+    // Il tipo di contenuto è la prova più solida: non dipende da come è
+    // scritto l'indirizzo.
+    win.webContents.session.webRequest.onHeadersReceived({ urls: ['*://*/*'] }, (d, cb) => {
+      try {
+        const h = d.responseHeaders || {};
+        const k = Object.keys(h).find(x => x.toLowerCase() === 'content-type');
+        if (k) {
+          const v = String(h[k]).toLowerCase().trim();
+          if (_DEEP_CTYPE_RX.test(v)) add(d.url, v.split(';')[0]);
+        }
+      } catch (_) {}
+      cb({});
+    });
+
+    say('loading', { url });
+    await win.loadURL(url, { userAgent: _DEFAULT_UA }).catch(() => {});
+
+    // Prima metà del tempo sulla pagina così com'è.
+    await settle(win, budget * 0.5, 4);
+
+    // Niente di buono ma c'è un lettore incorporato: lo si apre da solo, nella
+    // stessa sessione, con il referer della pagina di partenza — senza quello
+    // molti embed rispondono 403.
+    if (!hasGood() && embeds.length) {
+      say('embed', { embed: embeds[0] });
+      await win.loadURL(embeds[0], { userAgent: _DEFAULT_UA, httpReferrer: url }).catch(() => {});
+      await settle(win, budget, 3);
+
+      // Ultima carta: il lettore tiene spesso l'indirizzo del manifesto in una
+      // variabile, anche quando non lo ha ancora richiesto.
+      if (!hasGood()) {
+        try {
+          const mp = await win.webContents.executeJavaScript(`(function(){
+            try{
+              if(window.masterPlaylist && window.masterPlaylist.url){
+                var u=window.masterPlaylist.url, p=window.masterPlaylist.params||{};
+                var q=Object.keys(p).filter(function(k){return p[k]}).map(function(k){return k+'='+encodeURIComponent(p[k])}).join('&');
+                return q ? u+(u.indexOf('?')>=0?'&':'?')+q : u;
+              }
+            }catch(e){}
+            return null;
+          })()`, true);
+          if (mp) add(mp, 'lettore');
+        } catch (_) {}
+      }
+    }
+
+    let title = null;
+    try { title = await win.webContents.executeJavaScript('document.title', true); } catch (_) {}
+
+    found.sort((a, b) => b.rank - a.rank);
+    return {
+      ok: true, url, title,
+      referer: embeds.length ? url : null,
+      authBlocked,
+      items: found.slice(0, 10), total: found.length,
+    };
+  } catch (e) {
+    return { ok: false, error: String(e.message || e).slice(0, 300) };
+  } finally {
+    try { if (win && !win.isDestroyed()) win.destroy(); } catch (_) {}
+  }
+});
+
 ipcMain.handle('clipboard:scanPage', async (_e, url) => {
   try {
     if (!url || !/^https?:\/\//i.test(url)) return { ok:false, error:'invalid url' };

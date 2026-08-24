@@ -91,6 +91,10 @@ contextBridge.exposeInMainWorld('maniac', {
 
   // Storico elementi analizzati
   appVersion: () => ipcRenderer.invoke('app:version'),
+  // Ricerca approfondita: apre la pagina in una finestra nascosta e ascolta
+  // il traffico per trovare il flusso video.
+  deepScan: (url, timeoutMs) => ipcRenderer.invoke('download:deepScan', { url, timeoutMs }),
+  onDeepScanProgress: (cb) => ipcRenderer.on('download:deepScan:progress', (_e, d) => cb(d)),
   // Aggiornamenti: controllo, download con avanzamento, installazione.
   update: {
     check:      () => ipcRenderer.invoke('update:check'),

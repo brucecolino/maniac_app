@@ -8799,73 +8799,30 @@ async function scStreamWizard(pageUrl){
   });
 }
 
-// ═══ WIZARD DOWNLOAD / SITE PICKER ═══
-// Catalogo siti categorizzato. `kind` decide il comportamento del click:
-//   - 'sc-api'  → apre scWizardOpen() con ricerca interna + poster + selezione episodi
-//   - 'scrape'  → ricerca esterna: apre il search URL nel browser
-//   - 'ytdlp'   → ricerca esterna; il download passa direttamente da yt-dlp
-const DL_SITES_BY_CAT={
-  'Streaming IT':[
-    {id:'streamingcommunity',label:'StreamingCommunity',hint:'film e serie · ricerca integrata',kind:'sc-api',icon:'play',          domain:'streamingcommunity.computer'},
-    {id:'cb01',              label:'CB01',              hint:'cb01.uno · film',          kind:'scrape', search:'https://cb01.uno/?s=',                       icon:'sparkle', domain:'cb01.uno'},
-    {id:'altadefinizione',   label:'AltaDefinizione',   hint:'film HD',                  kind:'scrape', search:'https://altadefinizione.now/?s=',            icon:'sparkle', domain:'altadefinizione.now'},
-    {id:'tantifilm',         label:'TantiFilm',         hint:'film e serie',             kind:'scrape', search:'https://tantifilm.tatar/?s=',                icon:'sparkle', domain:'tantifilm.tatar'},
-  ],
-  'Anime':[
-    {id:'animeunity',  label:'AnimeUnity',  hint:'animeunity.to',  kind:'scrape', search:'https://www.animeunity.to/archivio?title=',   icon:'shield', domain:'animeunity.to'},
-    {id:'animeworld',  label:'AnimeWorld',  hint:'animeworld.so',  kind:'scrape', search:'https://www.animeworld.so/search?keyword=',   icon:'shield', domain:'animeworld.so'},
-    {id:'animesaturn', label:'AnimeSaturn', hint:'animesaturn.cx', kind:'scrape', search:'https://www.animesaturn.cx/animelist?search=',icon:'shield', domain:'animesaturn.cx'},
-  ],
-  'Generalisti':[
-    {id:'youtube', label:'YouTube',           hint:'youtube.com / youtu.be', kind:'ytdlp', search:'https://www.youtube.com/results?search_query=', icon:'cam',     domain:'youtube.com'},
-    {id:'x',       label:'X (Twitter)',       hint:'x.com / twitter.com',    kind:'ytdlp', search:'https://x.com/search?q=',                       icon:'link',    domain:'x.com'},
-    {id:'vimeo',   label:'Vimeo',             hint:'vimeo.com',              kind:'ytdlp', search:'https://vimeo.com/search?q=',                   icon:'diamond', domain:'vimeo.com'},
-    {id:'twitch',  label:'Twitch (clip/VOD)', hint:'twitch.tv',              kind:'ytdlp', search:'https://www.twitch.tv/search?term=',            icon:'cam',     domain:'twitch.tv'},
-    {id:'instagram',label:'Instagram',        hint:'instagram.com',          kind:'ytdlp', search:'https://www.instagram.com/explore/search/keyword/?q=', icon:'cam', domain:'instagram.com'},
-    {id:'tiktok',  label:'TikTok',            hint:'tiktok.com',             kind:'ytdlp', search:'https://www.tiktok.com/search?q=',              icon:'cam',     domain:'tiktok.com'},
-  ],
-  'Altro':[
-    {id:'generic', label:'Incolla URL', hint:'qualsiasi URL diretto', kind:'ytdlp', icon:'link'},
-  ]
-};
-// Compatibilità: vecchio array piatto utilizzato altrove nel codice.
-const DL_SITES=Object.values(DL_SITES_BY_CAT).flat();
+// ═══ WIZARD DOWNLOAD ═══
 async function dlWizardOpen(prefillUrl){
   try { maybeShowTip('wizard-open'); } catch(_){}
   return new Promise(resolve=>{
     const ov=document.createElement('div');ov.className='wiz-ov';
     const initUrl=prefillUrl||'';
-    const _icMap={streamingcommunity:'play',cb01:'sparkle',animeunity:'shield',youtube:'cam',vimeo:'diamond',generic:'link'};
-    const _ic=k=>{
-      const m={
-        play:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5l5 2.5-5 2.5z" fill="currentColor"/></svg>',
-        sparkle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg>',
-        shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6l8-3z"/></svg>',
-        cam:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg>',
-        diamond:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M12 3l9 9-9 9-9-9z"/></svg>',
-        link:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>'
-      };
-      return m[k]||m.link;
-    };
-    const _favicon=d=>d?`<img src="https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(d)}" width="22" height="22" style="border-radius:4px;display:block" onerror="this.replaceWith(Object.assign(document.createElement('span'),{innerHTML:'${_ic('link').replace(/'/g,'&apos;')}'}).firstChild)">`:_ic('link');
-    const _tile=s=>`<button class="wiz-tile${s.id==='generic'?' dashed':''}${s.kind==='sc-api'?' featured':''}" data-site="${s.id}" data-kind="${s.kind||'ytdlp'}"><div class="ic">${s.domain?_favicon(s.domain):_ic(s.icon||_icMap[s.id]||'link')}</div><div class="lbl">${s.label}</div><div class="sub">${s.hint}</div></button>`;
-    const sitesHtml=Object.entries(DL_SITES_BY_CAT).map(([cat, items])=>
-      `<div class="wiz-cat-h" style="grid-column:1/-1;font:600 11px 'JetBrains Mono',monospace;color:var(--t3);padding:6px 2px 2px;letter-spacing:.06em;text-transform:uppercase">${cat}</div>`+
-      items.map(_tile).join('')
-    ).join('');
     ov.innerHTML=`<div class="wiz" role="dialog" aria-modal="true">
       <div class="wiz-head">
         <div class="ic"><svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 4l8 14H4z" opacity=".15"/><path d="M12 6l6 11H6z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></svg></div>
         <div class="t">Wizard Download</div>
         <button class="x" data-act="cancel" aria-label="Chiudi">×</button>
       </div>
-      <div class="wiz-msg">Scegli un sito o incolla un URL. Se è una pagina serie/film, ti guiderò nella scelta dell'episodio.</div>
-      <div class="wiz-grid">${sitesHtml}</div>
+      <div class="wiz-msg">Incolla l'indirizzo del video. Se è una pagina di serie o film, ti guido nella scelta dell'episodio.</div>
       <div class="wiz-search-row">
         <div class="m-search" style="flex:1"><svg class="m-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="dlWizInp" type="text" placeholder="Incolla URL o termine di ricerca…" value="${initUrl.replace(/"/g,'&quot;')}"></div>
         <button class="m2-btn primary lg" id="dlWizGo">Vai</button>
       </div>
+      <div class="wiz-actions" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="m2-btn" id="dlWizPaste" type="button" title="Prendi l'indirizzo dagli appunti">Incolla dagli appunti</button>
+        <button class="m2-btn" id="dlWizDeep" type="button" title="Apre la pagina e cerca il flusso video nel traffico di rete">Ricerca approfondita</button>
+        <button class="m2-btn" id="dlWizSc" type="button" title="Cerca per titolo su StreamingCommunity">Cerca per titolo</button>
+      </div>
       <div id="dlWizHint" style="margin-top:10px;font-size:12px;color:var(--text-3);min-height:18px"></div>
+      <div id="dlWizFound" style="margin-top:8px;display:none;flex-direction:column;gap:6px;max-height:230px;overflow:auto"></div>
       <div class="wiz-foot">
         <div class="wiz-foot-l">
           <button type="button" class="m2-sw ${S.downloaderCfg&&S.downloaderCfg.autoWizardOnFail===false?'':'on'}" id="dlWizAuto" aria-label="Suggerisci wizard"></button>
@@ -8880,41 +8837,89 @@ async function dlWizardOpen(prefillUrl){
     const hint=ov.querySelector('#dlWizHint');
     const auto=ov.querySelector('#dlWizAuto');
     auto.onclick=()=>{auto.classList.toggle('on');S.downloaderCfg=S.downloaderCfg||{};S.downloaderCfg.autoWizardOnFail=auto.classList.contains('on');saveConfig&&saveConfig();};
+
+    const foundBox=ov.querySelector('#dlWizFound');
+    const setHint=(t,col)=>{hint.textContent=t;hint.style.color=col||'var(--text-3)';};
+
+    // Incolla dagli appunti: è il gesto più frequente, merita un pulsante.
+    const pasteBtn=ov.querySelector('#dlWizPaste');
+    if(pasteBtn) pasteBtn.onclick=async ()=>{
+      try{
+        const txt=(await navigator.clipboard.readText()||'').trim();
+        if(!txt){ setHint('Gli appunti sono vuoti.','var(--warn,#E0B24C)'); return; }
+        inp.value=txt; inp.focus();
+        setHint(/^https?:\/\//i.test(txt)?'Indirizzo incollato.':'Testo incollato: userò questo come termine di ricerca.');
+      }catch(e){ setHint('Non riesco a leggere gli appunti.','var(--er,#e55)'); }
+    };
+
+    // Cerca per titolo: quello che prima era il riquadro StreamingCommunity.
+    const scBtn=ov.querySelector('#dlWizSc');
+    if(scBtn) scBtn.onclick=async ()=>{
+      const q=(inp.value||'').trim();
+      close(null);
+      try{ await scWizardOpen(q||''); }catch(e){ logError&&logError('scWizardOpen: '+e.message); }
+    };
+
+    // Ricerca approfondita: per le pagine dove il video non è nel sorgente e
+    // yt-dlp da solo non arriva.
+    const deepBtn=ov.querySelector('#dlWizDeep');
+    if(deepBtn) deepBtn.onclick=async ()=>{
+      const q=(inp.value||'').trim();
+      if(!/^https?:\/\//i.test(q)){
+        setHint('Serve l\'indirizzo completo della pagina del video.','var(--er,#e55)');
+        inp.focus(); return;
+      }
+      const api=window.maniac&&window.maniac.deepScan;
+      if(!api){ setHint('Funzione non disponibile: riavvia l\'app.','var(--er,#e55)'); return; }
+
+      deepBtn.disabled=true; const label=deepBtn.textContent;
+      deepBtn.textContent='Cerco…';
+      foundBox.style.display='none'; foundBox.innerHTML='';
+      setHint('Apro la pagina e guardo cosa chiede. Di solito bastano pochi secondi.');
+
+      if(!window._deepBound&&window.maniac.onDeepScanProgress){
+        window._deepBound=true;
+        window.maniac.onDeepScanProgress(d=>{
+          const h=document.querySelector('#dlWizHint'); if(!h)return;
+          if(d.stage==='embed') h.textContent='La pagina usa un lettore esterno: lo apro a parte…';
+          else if(d.stage==='scanning') h.textContent=`Sto guardando… ${d.elapsed||0}s · ${d.found||0} tracce`;
+        });
+      }
+
+      let r=null;
+      try{ r=await api(q); }catch(e){ r={ok:false,error:e.message}; }
+      deepBtn.disabled=false; deepBtn.textContent=label;
+
+      if(!r||!r.ok){ setHint(r&&r.error||'Ricerca non riuscita.','var(--er,#e55)'); return; }
+      if(!r.items||!r.items.length){
+        setHint('Nessun flusso video in questa pagina. Se il video parte solo dopo il login, la ricerca non può vederlo.','var(--warn,#E0B24C)');
+        return;
+      }
+
+      const _esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      setHint(r.title?`Trovato: ${_esc(r.title)} — scegli cosa scaricare.`:'Scegli cosa scaricare.','var(--ok,#3FB883)');
+      foundBox.style.display='flex';
+      foundBox.innerHTML=r.items.map((it,i)=>{
+        // L'etichetta arriva da chi ha analizzato il traffico: sa distinguere
+        // il flusso completo dalla singola traccia.
+        const best=it.rank>=100;
+        const corto=it.url.length>72?it.url.slice(0,69)+'…':it.url;
+        return `<button class="m2-btn" data-deep="${i}" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:8px 10px">
+          <span style="font-weight:600;font-size:12px">${best?'★ ':''}${_esc(it.label||'Flusso video')}</span>
+          <span style="font-size:10px;color:var(--text-3);word-break:break-all">${_esc(corto)}</span>
+        </button>`;
+      }).join('');
+      foundBox.querySelectorAll('[data-deep]').forEach(b=>b.onclick=()=>{
+        const it=r.items[+b.getAttribute('data-deep')];
+        close({url:it.url, title:r.title||null});
+      });
+    };
     ov.addEventListener('click',e=>{if(e.target===ov)close(null);});
     ov.querySelectorAll('[data-act="cancel"]').forEach(b=>b.onclick=()=>close(null));
-    ov.querySelectorAll('[data-site]').forEach(b=>b.onclick=async ()=>{
-      const id=b.getAttribute('data-site');
-      const site=DL_SITES.find(s=>s.id===id);
-      if(!site)return;
-      const q=(inp.value||'').trim();
-      // sc-api: apri wizard interno con poster + selezione episodi.
-      if(site.kind==='sc-api'){
-        close(null);
-        try { await scWizardOpen(q || ''); } catch(e){ logError && logError('scWizardOpen: '+e.message); }
-        return;
-      }
-      if(site.id==='generic'){
-        if(!q){hint.textContent='Incolla un URL nel campo sopra.';hint.style.color='var(--er,#e55)';inp.focus();return;}
-      }
-      if(site.search && q && !/^https?:\/\//i.test(q)){
-        const target=site.search+encodeURIComponent(q);
-        try{window.maniac&&window.maniac.openExternal&&window.maniac.openExternal(target);}catch(e){}
-        hint.textContent='Ricerca aperta nel browser. Copia l\'URL del film/serie e incollalo qui.';
-        hint.style.color='var(--t2)';
-        return;
-      }
-      if(/^https?:\/\//i.test(q)){
-        close({url:q});return;
-      }
-      // No query, just open site home if known
-      if(site.search){
-        try{window.maniac&&window.maniac.openExternal&&window.maniac.openExternal(site.search.replace(/[?&].*$/,''));}catch(e){}
-      }
-    });
     ov.querySelector('#dlWizGo').onclick=()=>{
       const q=(inp.value||'').trim();
       if(!q){inp.focus();return;}
-      if(!/^https?:\/\//i.test(q)&&!/^magnet:/i.test(q)){hint.textContent='Non sembra un URL. Seleziona prima un sito e cerca.';hint.style.color='var(--er,#e55)';return;}
+      if(!/^https?:\/\//i.test(q)&&!/^magnet:/i.test(q)){hint.textContent='Non sembra un indirizzo. Usa "Cerca per titolo" oppure incolla un link.';hint.style.color='var(--er,#e55)';return;}
       close({url:q});
     };
     inp.addEventListener('keydown',e=>{if(e.key==='Enter')ov.querySelector('#dlWizGo').click();});
