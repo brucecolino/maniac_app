@@ -1295,6 +1295,9 @@ input[type=range]::-webkit-slider-thumb{margin-top:-4.5px}
 .wiz-head .x{width:28px;height:28px;border:0;background:transparent;color:var(--text-3);border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .wiz-head .x:hover{background:var(--bg-elev-3);color:var(--text-1)}
 .wiz-msg{font:400 13px/18px 'Inter';color:var(--text-2);margin:0 0 16px}
+.wiz.wiz-dl{overflow-y:auto}
+.wiz.wiz-dl>*{flex-shrink:0}
+.wiz.wiz-dl #dlWizFound{max-height:min(230px,34vh)}
 .wiz-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
 .wiz-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:18px 14px;border:1px solid var(--stroke);background:var(--bg-elev-2);border-radius:var(--r-md);cursor:pointer;text-align:center;transition:background .15s,border-color .15s;color:var(--text-1)}
 .wiz-tile:hover{background:var(--bg-elev-3);border-color:var(--accent)}
@@ -8805,7 +8808,7 @@ async function dlWizardOpen(prefillUrl){
   return new Promise(resolve=>{
     const ov=document.createElement('div');ov.className='wiz-ov';
     const initUrl=prefillUrl||'';
-    ov.innerHTML=`<div class="wiz" role="dialog" aria-modal="true">
+    ov.innerHTML=`<div class="wiz wiz-dl" role="dialog" aria-modal="true">
       <div class="wiz-head">
         <div class="ic"><svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 4l8 14H4z" opacity=".15"/><path d="M12 6l6 11H6z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></svg></div>
         <div class="t">Wizard Download</div>
