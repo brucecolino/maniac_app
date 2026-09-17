@@ -2006,7 +2006,7 @@ ipcMain.handle('update:check', async () => {
                     + 'Controlla la connessione e riprova.' };
     }
 
-    const available = remote !== current;
+    const available = _verGreater(remote, current);
     _updateInfo = available ? r.updateInfo : null;
     return {
       ok: true, available, current, version: remote,
@@ -2018,6 +2018,19 @@ ipcMain.handle('update:check', async () => {
     return { ok: false, error: String(e.message || e).slice(0, 300) };
   }
 });
+
+// "1.1.4" contro "1.1.3" va confrontato numero per numero: con il confronto fra
+// stringhe qualunque versione diversa sembra nuova, e l'app arriva a proporre
+// come aggiornamento una release più vecchia di quella installata.
+function _verGreater(remote, current) {
+  const parse = v => String(v || '').split('-')[0].split('.').map(n => parseInt(n, 10) || 0);
+  const a = parse(remote), b = parse(current);
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const x = a[i] || 0, y = b[i] || 0;
+    if (x !== y) return x > y;
+  }
+  return false;
+}
 
 // Le note di rilascio arrivano in HTML da GitHub: le riduciamo a testo, così
 // la finestra le mostra senza rischiare di iniettare markup.
