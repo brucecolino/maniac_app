@@ -1113,6 +1113,92 @@ input[type=range]::-webkit-slider-thumb{margin-top:-4.5px}
 .wiz-head{padding:18px 22px 10px;border-bottom:1px solid var(--bd);flex-shrink:0}
 .wiz-body{flex:1;overflow-y:auto;padding:16px 22px;min-height:0;scrollbar-gutter:stable}
 .wiz-foot{padding:12px 22px;border-top:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;background:var(--s1)}
+/* Organizer performer e tipologia */
+.wiz.lo-wiz{width:960px;height:700px;max-width:96vw;max-height:94vh;padding:0}
+.wiz-head.lo-head{display:block;padding:14px 22px 10px}
+.lo-title{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.lo-title h3{margin:0;font:700 15px/1.3 'Inter';color:var(--t1)}
+.lo-steps{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.lo-step{font:600 10px/1 'Inter';letter-spacing:.03em;text-transform:uppercase;color:var(--t3);padding:5px 8px;border-radius:999px;border:1px solid var(--bd)}
+.lo-step.on{color:#fff;background:var(--p);border-color:var(--p)}
+.lo-step.done{color:var(--p);border-color:var(--p)}
+.lo-hint{font:400 12px/1.5 'Inter';color:var(--t2);margin-bottom:12px}
+.lo-row{display:flex;align-items:center;gap:8px;font:500 12px/1.4 'Inter';color:var(--t2);margin:8px 0}
+.lo-stats{margin:14px 0 4px;font:500 12px/1.4 'Inter';color:var(--t2)}
+.lo-stats b{color:var(--t1)}
+.lo-roles{display:flex;flex-direction:column;border:1px solid var(--bd);border-radius:8px;overflow:hidden}
+.lo-role-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid var(--bd);background:var(--s2)}
+.lo-role-row:last-child{border-bottom:0}
+.lo-role-name{flex:1;min-width:0}
+.lo-role-name .t,.lo-card .t,.lo-sw .t{font:600 12px/1.3 'Inter';color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lo-role-name .s,.lo-card .s,.lo-sw .s{font:400 11px/1.4 'Inter';color:var(--t3);margin-top:2px}
+.lo-role-sel{width:200px;height:30px;padding:0 8px}
+.lo-note{font:400 11px/1.5 'Inter';color:var(--t3);margin-top:8px}
+.lo-warn{font:500 11px/1.5 'Inter';color:#f59e0b;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);border-radius:8px;padding:8px 10px;margin:10px 0}
+.lo-err{font:500 12px/1.5 'Inter';color:#ef4444;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35);border-radius:8px;padding:10px 12px;margin:10px 0;white-space:pre-wrap;word-break:break-word}
+.lo-empty{text-align:center;padding:28px 10px;color:var(--t3);font:500 12px/1.5 'Inter';border:1px dashed var(--bd);border-radius:8px;margin-top:14px}
+.lo-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.lo-card{display:block;padding:10px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--s2);cursor:pointer;transition:border-color .15s,background .15s}
+.lo-card.on{border-color:var(--p);background:var(--pd)}
+.lo-card .ex{font:500 10px/1.4 'JetBrains Mono',monospace;color:var(--p);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lo-sws{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.lo-sw{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--s2);cursor:pointer}
+.lo-sw.dis{opacity:.5;cursor:default}
+.lo-phases{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:14px}
+.lo-ph{display:flex;align-items:center;gap:8px;font:500 12px/1.3 'Inter';color:var(--t3);padding:6px 10px;border-radius:6px;background:var(--s2)}
+.lo-ph i{width:8px;height:8px;border-radius:50%;background:var(--s3);flex-shrink:0}
+.lo-ph.on{color:var(--t1)}
+.lo-ph.on i{background:var(--p);box-shadow:0 0 0 3px var(--pd)}
+.lo-ph.done{color:var(--t2)}
+.lo-ph.done i{background:#22c55e}
+.lo-live{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:14px}
+.lo-live .t{font:600 13px/1.4 'Inter';color:var(--t1)}
+.lo-live .f{font:400 11px/1.4 'Inter';color:var(--t3);margin:6px 0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lo-bar{height:6px;background:var(--s3);border-radius:3px;overflow:hidden}
+.lo-bar>div{height:100%;background:var(--p);transition:width .25s}
+.lo-live .c{display:flex;justify-content:space-between;gap:10px;font:500 11px/1.4 'Inter';color:var(--t3);margin-top:8px}
+.lo-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.lo-kpi{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:8px 10px}
+.lo-kpi b{display:block;font:700 18px/1.2 'Inter';color:var(--t1)}
+.lo-kpi span{font:500 10px/1.2 'Inter';color:var(--t3);text-transform:uppercase;letter-spacing:.04em}
+.lo-sub{font:400 11px/1.5 'Inter';color:var(--t3);margin:8px 0 10px}
+.lo-filters{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.lo-chip{font:600 11px/1 'Inter';color:var(--t2);background:var(--s2);border:1px solid var(--bd);border-radius:999px;padding:6px 10px;cursor:pointer}
+.lo-chip.on{color:var(--p);border-color:var(--p);background:var(--pd)}
+.lo-list{border:1px solid var(--bd);border-radius:8px}
+.lo-group-h{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--s3);border-bottom:1px solid var(--bd);cursor:pointer;font:600 12px/1.3 'Inter';color:var(--t1);position:sticky;top:-16px;z-index:1}
+.lo-group-h .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lo-group-h .c{font:500 11px 'Inter';color:var(--t3)}
+.lo-group-h .chev{width:10px;color:var(--t3)}
+.lo-new{font:700 9px/1 'Inter';text-transform:uppercase;color:#22c55e;border:1px solid rgba(34,197,94,.5);border-radius:4px;padding:3px 5px}
+.lo-item{display:grid;grid-template-columns:18px minmax(0,1fr) auto minmax(120px,230px);align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid var(--bd);background:var(--s1)}
+.lo-item.sel{background:var(--pd)}
+.lo-item .n{font:500 12px/1.3 'Inter';color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lo-item .m{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-top:3px;font:400 10px/1.4 'Inter';color:var(--t3)}
+.lo-pchip,.lo-cchip{font:600 10px/1 'Inter';padding:3px 6px;border-radius:4px;white-space:nowrap}
+.lo-pchip{color:#f472b6;background:rgba(244,114,182,.12)}
+.lo-cchip{color:#60a5fa;background:rgba(96,165,250,.12)}
+.lo-badge{font:700 9px/1 'Inter';text-transform:uppercase;letter-spacing:.04em;padding:4px 6px;border-radius:4px;white-space:nowrap;cursor:help}
+.lo-c-certain{color:#22c55e;background:rgba(34,197,94,.12)}
+.lo-c-probable{color:#a78bfa;background:rgba(167,139,250,.14)}
+.lo-c-uncertain{color:#f59e0b;background:rgba(245,158,11,.12)}
+.lo-c-none,.lo-c-manual{color:var(--t3);background:var(--s3)}
+.lo-dest{font:500 11px/1.2 'Inter';color:var(--t2);background:transparent;border:1px dashed var(--bd);border-radius:6px;padding:5px 8px;text-align:left;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:230px}
+.lo-dest:hover{border-color:var(--p);color:var(--p)}
+.lo-dest-sel{height:28px;padding:0 6px;font-size:11px;max-width:230px}
+.lo-more{display:block;width:100%;padding:8px;border:0;border-bottom:1px solid var(--bd);background:var(--s2);color:var(--p);font:600 11px 'Inter';cursor:pointer}
+.lo-cta{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;margin-bottom:6px;border-radius:8px;border:1px solid var(--p);background:var(--pd);color:var(--t1);cursor:pointer}
+.lo-cta b{display:block;font:600 12px/1.3 'Inter'}
+.lo-cta small{display:block;font:400 11px/1.3 'Inter';color:var(--t3);margin-top:2px}
+[data-theme="light"] .lo-pchip{color:#be185d;background:rgba(190,24,93,.1)}
+[data-theme="light"] .lo-cchip{color:#1d4ed8;background:rgba(29,78,216,.1)}
+[data-theme="light"] .lo-c-certain{color:#15803d;background:rgba(21,128,61,.12)}
+[data-theme="light"] .lo-c-probable{color:#6d28d9;background:rgba(109,40,217,.1)}
+[data-theme="light"] .lo-c-uncertain{color:#b45309;background:rgba(180,83,9,.12)}
+[data-theme="light"] .lo-warn{color:#b45309}
+[data-theme="light"] .lo-err{color:#b91c1c}
+[data-theme="light"] .lo-new{color:#15803d;border-color:rgba(21,128,61,.5)}
+[data-theme="light"] .lo-ph.done i{background:#15803d}
 .wiz-foot .wiz-foot-r{display:flex;gap:var(--gap-sm)}
 .wiz h3{font:700 15px 'Inter';color:var(--p);margin:0}
 .wiz-opts{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:10px;margin-bottom:16px}
@@ -11491,6 +11577,7 @@ function renderOrganizer(){
   </div>`;
   // ── AZIONI RAPIDE ── (3 pulsanti simmetrici, stesso stile delle tab Settings)
   h+=`<div class="section-label" style="margin:0 0 6px">Azioni rapide</div>
+  <button class="lo-cta" onclick="openLibOrganizer()">${icon('userFocus')}<span><b>Organizza per performer e tipologia</b><small>${typeof _loPanelStatus==='function'?_loPanelStatus():''}</small></span></button>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px">
     <button class="stab-btn on" onclick="openOrganizerWizard()"><span>Wizard</span></button>
     <button class="stab-btn" onclick="_orgPanelExploreFolder()"><span>Esplora cartella</span></button>
@@ -11893,6 +11980,585 @@ async function _orgRestore(path){
   if(!r||!r.ok){toast('Restore fallito: '+(r&&r.error||''));return;}
   toast('Restore avviato (jobId '+(r.jobId||'')+')');
   const ov=document.getElementById('orgSnapOv');if(ov)ov.remove();
+}
+
+// ═══ Organizer performer e tipologia (python/library_organizer.py) ═══
+// Libreria → Regole → Analisi → Anteprima → Spostamento. L'analisi propone e
+// basta: si sposta solo ciò che resta selezionato, via organizer:execute (che
+// crea lo snapshot per l'undo). Configurazione in S.libOrgCfg, ruoli per libreria.
+const LO_ROLES=[
+  {id:'category',l:'Tipologia'},
+  {id:'category_performers',l:'Tipologia con performer'},
+  {id:'performers',l:'Cartelle performer'},
+  {id:'unsorted',l:'Da smistare'},
+  {id:'ignore',l:'Ignora'}
+];
+const LO_LAYOUTS=[
+  {id:'current',l:'Il tuo schema attuale',ex:'TIPOLOGIA\\video · PERFORMER\\Nome\\video',h:'Nella cartella del performer se esiste (o se ha abbastanza video), altrimenti nella tipologia.'},
+  {id:'category_performer',l:'Tipologia › Performer',ex:'GANGBANG\\Nome performer\\video',h:'Sottocartella del performer dentro la tipologia.'},
+  {id:'performer_category',l:'Performer › Tipologia',ex:'Nome performer\\GANGBANG\\video',h:'Senza performer riconosciuto: _Senza performer\\tipologia.'},
+  {id:'tags_only',l:'Solo tag, nessuno spostamento',ex:'i file restano dove sono',h:'Performer e tipologia diventano tag nel player.'}
+];
+const LO_PHASES=[['scan','Lettura libreria'],['hash','Impronte dei file'],['stash','Confronto con StashDB'],['folders','Cartelle performer'],['code','Codici scena'],['phash','Impronte visive'],['title','Titoli su StashDB'],['names','Nomi nei file'],['learn','Tipologie'],['plan','Proposte']];
+const LO_CONF={certain:['Certo','lo-c-certain'],probable:['Probabile','lo-c-probable'],uncertain:['Da verificare','lo-c-uncertain'],none:['Non spostato','lo-c-none'],manual:['Scelta tua','lo-c-manual']};
+const LO_SRC={oshash:'impronta file',phash:'impronta visiva',code:'codice scena',title:'titolo StashDB',filename:'nome nel file','stashdb-name':'nome su StashDB',folder:'cartella'};
+const LO_FILTERS=[['move','Da spostare'],['certain','Certi'],['probable','Probabili'],['uncertain','Da verificare'],['manual','Scelte tue'],['none','Non spostati'],['all','Tutti']];
+const _lo={step:1,detect:null,detectBusy:false,hasKey:null,jobId:null,prog:null,result:null,sel:new Set(),over:{},open:{},all:{},filter:'move',q:'',exec:null,undo:null,bound:false,bg:false,groups:[],_t:null};
+
+function _loEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function _loCfg(){
+  const c=(S.libOrgCfg&&typeof S.libOrgCfg==='object')?S.libOrgCfg:(S.libOrgCfg={});
+  if(!LO_LAYOUTS.some(l=>l.id===c.layout))c.layout='current';
+  if(c.scope!=='all')c.scope='unsorted';
+  if(!(c.minPerformerFiles>=1))c.minPerformerFiles=5;
+  ['useStashdb','usePhash','useSearch','applyTags','createPerformerFolders'].forEach(k=>{if(typeof c[k]!=='boolean')c[k]=true;});
+  if(!c.rolesByRoot||typeof c.rolesByRoot!=='object')c.rolesByRoot={};
+  return c;
+}
+function _loPanelStatus(){
+  if(_lo.jobId){const p=_lo.prog||{};return 'Analisi in corso'+(p.total?' · '+(p.current||0)+'/'+p.total:'')+'…';}
+  if(_lo.exec&&_lo.exec.running)return 'Spostamento in corso…';
+  if(_lo.result&&_lo.step===4)return _loCount(it=>_lo.sel.has(it.id)&&_loActionable(it))+' proposte pronte da rivedere';
+  return 'Riconosce performer e tipologia e mette ogni video al suo posto';
+}
+
+async function openLibOrganizer(){
+  const api=window.maniac&&window.maniac.libOrganizer;
+  if(!api){toast('Organizer non disponibile: riavvia l\'app');return;}
+  if(!_lo.bound){
+    api.onProgress(_loOnProgress);
+    if(window.maniac.organizer&&window.maniac.organizer.onProgress)window.maniac.organizer.onProgress(_loOnExecProgress);
+    _lo.bound=true;
+  }
+  _lo.bg=false;
+  const c=_loCfg();
+  if(_lo.step===1&&c.root&&!_lo.detect&&!_lo.detectBusy)_loDetect();
+  _loRender();
+}
+function _loRender(){
+  let ov=document.getElementById('loOv');
+  if(!ov){ov=document.createElement('div');ov.id='loOv';ov.className='wiz-ov';document.body.appendChild(ov);}
+  const body=ov.querySelector('.wiz-body');
+  const keep=body&&_lo._renderedStep===_lo.step?body.scrollTop:0;
+  const ae=document.activeElement;
+  const caret=ae&&ae.id==='loSearch'?ae.selectionStart:null;
+  ov.innerHTML=`<div class="wiz lo-wiz" role="dialog" aria-modal="true">${_loStepHtml()}</div>`;
+  _lo._renderedStep=_lo.step;
+  ov.querySelectorAll('input[data-ind]').forEach(i=>{i.indeterminate=true;});
+  const nb=ov.querySelector('.wiz-body');if(nb&&keep)nb.scrollTop=keep;
+  if(caret!=null){const i=document.getElementById('loSearch');if(i){i.focus();try{i.setSelectionRange(caret,caret);}catch(_){}}}
+  requestAnimationFrame(()=>ov.classList.add('show'));
+}
+function _loRenderSoon(){
+  if(_lo._t)return;
+  _lo._t=setTimeout(()=>{_lo._t=null;if(!_lo.bg&&document.getElementById('loOv'))_loRender();},180);
+}
+function _loHide(){
+  const ov=document.getElementById('loOv');
+  if(ov){ov.classList.remove('show');setTimeout(()=>ov.remove(),200);}
+}
+function _loClose(){
+  if(_lo.jobId){
+    if(!confirm('Interrompere l\'analisi? Quello già calcolato resta in cache.'))return;
+    _loCancel();
+  }
+  if((_lo.exec&&_lo.exec.running)||_lo.undo){_loBackground();return;}
+  _loHide();
+  if(S.panel==='organizer')renderPanel();
+}
+function _loBackground(){
+  _lo.bg=true;_loHide();
+  toast('Continua in background: riapri da Organizer');
+  if(S.panel==='organizer')renderPanel();
+}
+function _loStepHtml(){
+  return _lo.step===1?_loStep1():_lo.step===2?_loStep2():_lo.step===3?_loStep3():_lo.step===4?_loStep4():_loStep5();
+}
+function _loHead(){
+  const labels=['Libreria','Regole','Analisi','Anteprima','Spostamento'];
+  return `<div class="wiz-head lo-head">
+    <div class="lo-title"><h3>Organizer performer e tipologia</h3>${panelCloseBtn('_loClose()')}</div>
+    <div class="lo-steps">${labels.map((l,i)=>`<span class="lo-step ${i+1===_lo.step?'on':i+1<_lo.step?'done':''}">${i+1}. ${l}</span>`).join('')}</div>
+  </div>`;
+}
+
+// ── 1. Libreria ──
+function _loStep1(){
+  const c=_loCfg(), d=_lo.detect;
+  let b=`<div class="lo-hint">Scegli la cartella principale della libreria. Il wizard ne legge la struttura e qui sotto puoi correggere il ruolo di ogni cartella. Nessun file viene spostato prima dell'anteprima.</div>
+    <div class="lo-row"><input id="loRoot" class="m-input" style="flex:1" placeholder="es. D:\\Video\\Libreria" value="${_loEsc(c.root||'')}" onchange="_loSetRoot(this.value)"><button class="mdl-btn" onclick="_loPickRoot()">Sfoglia…</button></div>`;
+  if(_lo.detectBusy){
+    b+=`<div class="lo-empty">Leggo la struttura della libreria…</div>`;
+  } else if(d&&d.ok){
+    const rows=(d.folders||[]).map((f,i)=>`<div class="lo-role-row">
+        <div class="lo-role-name"><div class="t">${_loEsc(f.name)}</div>
+          <div class="s">${f.videos} video${f.performerFolders?' · '+f.performerFolders+' cartelle performer':''}${f.unsorted?' · '+f.unsorted+' da smistare':''}</div></div>
+        <select class="m-input lo-role-sel" onchange="_loSetRole(${i},this.value)">${LO_ROLES.map(r=>`<option value="${r.id}"${r.id===f.role?' selected':''}>${r.l}</option>`).join('')}</select>
+      </div>`).join('');
+    b+=`<div class="lo-stats"><b>${d.total}</b> video · <b>${d.unsortedTotal}</b> da smistare · <b>${d.performerFolders}</b> cartelle performer</div>
+      <div class="section-label">Ruolo delle cartelle</div>
+      ${rows?`<div class="lo-roles">${rows}</div>`:'<div class="lo-empty">Nessuna sottocartella: verranno smistati i file della cartella.</div>'}
+      <div class="lo-note">Tipologia: i video stanno direttamente nella cartella. Tipologia con performer: una sottocartella per performer. Cartelle performer: solo sottocartelle con i nomi. Le sottocartelle "Nuova cartella", "Senza titolo", "DA ORDINARE"… sono sempre da smistare.</div>`;
+  } else if(d&&!d.ok){
+    b+=`<div class="lo-err">${_loEsc(d.error||'Impossibile leggere la cartella')}</div>`;
+  } else {
+    b+=`<div class="lo-empty">Nessuna cartella scelta.</div>`;
+  }
+  const ready=d&&d.ok&&!_lo.detectBusy;
+  return `${_loHead()}<div class="wiz-body">${b}</div>
+    <div class="wiz-foot"><button class="mdl-btn" onclick="_loClose()">Annulla</button>
+    <button class="mdl-btn primary" ${ready?'':'disabled style="opacity:.45"'} onclick="_loGoRules()">Avanti →</button></div>`;
+}
+async function _loPickRoot(){
+  const api=window.maniac||{};
+  if(!api.chooseFolder)return;
+  const r=await api.chooseFolder();
+  if(r&&!r.canceled&&r.path)_loSetRoot(r.path);
+}
+function _loSetRoot(v){
+  const c=_loCfg();v=String(v||'').trim();
+  if(v===c.root&&_lo.detect)return;
+  c.root=v;_lo.detect=null;_lo.result=null;
+  try{saveConfig();}catch(_){}
+  if(v)_loDetect();else _loRender();
+}
+async function _loDetect(){
+  const c=_loCfg();if(!c.root)return;
+  _lo.detectBusy=true;_loRender();
+  let r=null;
+  try{r=await window.maniac.libOrganizer.detect({root:c.root,roles:c.rolesByRoot[c.root]||null});}
+  catch(e){r={ok:false,error:e.message};}
+  _lo.detectBusy=false;_lo.detect=r||{ok:false,error:'nessuna risposta'};
+  if(r&&r.ok){
+    const conts=(r.folders||[]).filter(f=>f.role==='performers').map(f=>f.name);
+    if(!conts.includes(c.performerContainer))c.performerContainer=r.performerContainer||conts[0]||null;
+  }
+  if(!_lo.bg&&document.getElementById('loOv'))_loRender();
+}
+function _loSetRole(i,role){
+  const c=_loCfg(), f=((_lo.detect||{}).folders||[])[i];if(!f)return;
+  const roles=Object.assign({},c.rolesByRoot[c.root]||{});roles[f.name]=role;
+  c.rolesByRoot[c.root]=roles;_lo.result=null;
+  try{saveConfig();}catch(_){}
+  _loDetect();
+}
+async function _loGoRules(){
+  _lo.step=2;_loRender();
+  try{const r=await window.maniac.stashdb.hasKey();_lo.hasKey=!!(r&&r.hasKey);}catch(_){_lo.hasKey=null;}
+  if(_lo.step===2&&document.getElementById('loOv'))_loRender();
+}
+
+// ── 2. Regole ──
+function _loStep2(){
+  const c=_loCfg(), d=_lo.detect||{};
+  const conts=(d.folders||[]).filter(f=>f.role==='performers');
+  const card=(k,v,t,ex,h)=>`<div class="lo-card ${c[k]===v?'on':''}" onclick="_loSet('${k}','${v}')"><div class="t">${t}</div>${ex?`<div class="ex">${_loEsc(ex)}</div>`:''}<div class="s">${h}</div></div>`;
+  const sw=(k,t,h,dis)=>`<div class="lo-sw ${dis?'dis':''}" onclick="${dis?'':`_loSet('${k}',${!c[k]})`}"><div class="sw ${c[k]&&!dis?'on':''}"><div class="dot"></div></div><div><div class="t">${t}</div><div class="s">${h}</div></div></div>`;
+  const noStash=!c.useStashdb;
+  let b=`<div class="section-label" style="margin-top:0">Struttura finale</div>
+    <div class="lo-cards">${LO_LAYOUTS.map(L=>card('layout',L.id,L.l,L.ex,L.h)).join('')}</div>
+    <div class="section-label">File da organizzare</div>
+    <div class="lo-cards">
+      ${card('scope','unsorted','Solo i file da smistare',(d.unsortedTotal||0)+' video','Le cartelle già ordinate non si toccano: servono a imparare le tue tipologie.')}
+      ${card('scope','all','Tutta la libreria',(d.total||0)+' video','Ricalcola la posizione di ogni video. Quelli già al posto giusto restano dove sono.')}
+    </div>`;
+  if(c.layout!=='tags_only'){
+    b+=`<div class="section-label">Cartelle performer</div>
+      <div class="lo-sws" style="grid-template-columns:1fr">${sw('createPerformerFolders','Crea nuove cartelle performer','Le cartelle che esistono già si usano sempre. Spegnilo se le tue cartelle performer sono una selezione fatta a mano.')}</div>`;
+    if(c.createPerformerFolders)b+=`<div class="lo-row">Crea la cartella di un performer da <input type="number" min="1" max="999" class="m-input" style="width:70px" value="${c.minPerformerFiles}" onchange="_loSet('minPerformerFiles',Math.max(1,Math.round(+this.value)||5),true)"> video da smistare in su.</div>`;
+    if(c.layout==='current'&&c.createPerformerFolders){
+      b+=conts.length
+        ?`<div class="lo-row">Le nuove cartelle performer vanno in <select class="m-input" style="width:auto;min-width:180px" onchange="_loSet('performerContainer',this.value,true)">${conts.map(f=>`<option value="${_loEsc(f.name)}"${f.name===c.performerContainer?' selected':''}>${_loEsc(f.name)}</option>`).join('')}</select></div>`
+        :`<div class="lo-note">Nessuna cartella con ruolo "Cartelle performer": i video andranno nelle cartelle performer esistenti o nella loro tipologia.</div>`;
+    }
+  }
+  b+=`<div class="section-label">Riconoscimento</div>
+    <div class="lo-sws">
+      ${sw('useStashdb','StashDB','Impronta del file, codici scena e cast da stashdb.org. Invia solo impronte e titoli, mai i video.')}
+      ${sw('usePhash','Impronta visiva','Riconosce anche i video ricompressi. La prima volta è lenta (1-3 s a video), poi resta in cache.',noStash)}
+      ${sw('useSearch','Ricerca per titolo e nome','Cerca su StashDB titoli e nomi scritti nel file, verificando la durata.',noStash)}
+      ${sw('applyTags','Tag nel player','Aggiunge performer e tipologia come tag ai video organizzati.')}
+    </div>`;
+  if(c.useStashdb&&_lo.hasKey===false)b+=`<div class="lo-warn">Manca la chiave API StashDB (Impostazioni › StashDB API key): senza, il riconoscimento usa solo i nomi dei file e le tue cartelle.</div>`;
+  return `${_loHead()}<div class="wiz-body">${b}</div>
+    <div class="wiz-foot"><button class="mdl-btn" onclick="_lo.step=1;_loRender()">← Indietro</button>
+    <button class="mdl-btn primary" onclick="_loStart()">Analizza →</button></div>`;
+}
+function _loSet(k,v,silent){
+  const c=_loCfg();c[k]=v;_lo.result=null;
+  try{saveConfig();}catch(_){}
+  if(!silent)_loRender();
+}
+
+// ── 3. Analisi ──
+async function _loStart(){
+  const c=_loCfg(), api=window.maniac.libOrganizer;
+  if(_lo.jobId)return;
+  const config={root:c.root,roles:c.rolesByRoot[c.root]||{},layout:c.layout,scope:c.scope,
+    minPerformerFiles:c.minPerformerFiles,createPerformerFolders:!!c.createPerformerFolders,performerContainer:c.performerContainer||null,
+    useStashdb:!!c.useStashdb,usePhash:!!(c.useStashdb&&c.usePhash),useSearch:!!(c.useStashdb&&c.useSearch)};
+  const jobId='liborg_'+Date.now();
+  Object.assign(_lo,{jobId,prog:{phases:{},warns:[]},result:null,step:3,bg:false});
+  _loRender();_workerInc('organizer');
+  let r=null;
+  try{r=await api.analyze({jobId,config});}catch(e){r={ok:false,error:e.message};}
+  if((!r||!r.ok)&&_lo.jobId===jobId){
+    _workerDec('organizer');_lo.jobId=null;
+    _lo.prog.error=(r&&r.error)||'avvio non riuscito';
+    _loRender();
+  }
+}
+function _loCancel(){
+  const id=_lo.jobId;if(!id)return;
+  _lo.jobId=null;_workerDec('organizer');
+  try{window.maniac.libOrganizer.cancel(id);}catch(_){}
+  if(_lo.prog)_lo.prog.error='Analisi interrotta.';
+}
+function _loOnProgress(evt){
+  if(!evt||!_lo.jobId||evt.jobId!==_lo.jobId)return;
+  const p=_lo.prog||(_lo.prog={phases:{},warns:[]});
+  const enter=ph=>{if(ph&&p.phase!==ph){if(p.phase)p.phases[p.phase]='done';p.phase=ph;p.current=0;p.total=0;p.file='';p.found=null;p.eta=null;}};
+  if(evt.type==='phase'){enter(evt.phase);p.text=evt.text||p.text;if(evt.total!=null)p.total=evt.total;}
+  else if(evt.type==='progress'){enter(evt.phase);Object.assign(p,{current:evt.current||0,total:evt.total||0,file:evt.file||'',found:evt.found,eta:evt.eta});}
+  else if(evt.type==='warn'){p.warns.push(String(evt.error||''));if(p.warns.length>3)p.warns.shift();}
+  else if(evt.type==='done'){_loFinish(evt);return;}
+  else if(evt.type==='error'){p.error=String(evt.error||'errore');}
+  else if(evt.type==='stderr'){p.stderr=((p.stderr||'')+String(evt.line||'')).slice(-800);}
+  else if(evt.type==='exit'){
+    _workerDec('organizer');_lo.jobId=null;
+    p.error=p.error||('Analisi interrotta (codice '+evt.code+')'+(p.stderr?'\n'+p.stderr:''));
+    if(_lo.bg)toast('Organizer: analisi non riuscita');
+    if(S.panel==='organizer')renderPanel();
+  }
+  if(_lo.bg&&evt.type==='phase'&&S.panel==='organizer')renderPanel();
+  if(_lo.step===3&&!_lo.bg)_loRenderSoon();
+}
+function _loStep3(){
+  const p=_lo.prog||{phases:{},warns:[]};
+  const phases=LO_PHASES.map(([id,l])=>`<div class="lo-ph ${p.phases[id]==='done'?'done':p.phase===id?'on':''}"><i></i>${l}</div>`).join('');
+  const pct=p.total?Math.min(100,Math.round(100*(p.current||0)/p.total)):0;
+  const eta=p.eta>0?(p.eta>=90?Math.round(p.eta/60)+' min':p.eta+' s'):'';
+  let b=`<div class="lo-hint">L'analisi non sposta nulla. Puoi chiudere la finestra con "Continua in background": ti avviso quando le proposte sono pronte.</div>
+    <div class="lo-phases">${phases}</div>`;
+  if(p.error){
+    b+=`<div class="lo-err">${_loEsc(p.error)}</div>`;
+  } else {
+    b+=`<div class="lo-live"><div class="t">${_loEsc(p.text||'Avvio…')}</div>
+      <div class="f">${_loEsc(p.file||'')}</div>
+      <div class="lo-bar"><div style="width:${pct}%"></div></div>
+      <div class="c"><span>${p.total?(p.current||0)+' / '+p.total:''}${p.found!=null?' · '+p.found+' riconosciuti':''}</span><span>${eta?'circa '+eta:''}</span></div></div>`;
+  }
+  if(p.warns&&p.warns.length)b+=`<div class="lo-warn">${p.warns.map(_loEsc).join('<br>')}</div>`;
+  const foot=p.error
+    ?`<button class="mdl-btn" onclick="_lo.step=2;_loRender()">← Regole</button><button class="mdl-btn primary" onclick="_loStart()">Riprova</button>`
+    :`<button class="mdl-btn" onclick="_loBackground()">Continua in background</button><button class="mdl-btn" onclick="_loCancel();_lo.step=2;_loRender()">Interrompi</button>`;
+  return `${_loHead()}<div class="wiz-body">${b}</div><div class="wiz-foot">${foot}</div>`;
+}
+function _loFinish(evt){
+  _workerDec('organizer');_lo.jobId=null;
+  const R=_lo.result={summary:evt.summary||{},items:evt.items||[],targets:evt.targets||{}};
+  Object.assign(_lo,{over:{},sel:new Set(),open:{},all:{},filter:'move',q:'',step:4,exec:null});
+  R.items.forEach(it=>{if(_loActionable(it)&&(it.conf==='certain'||it.conf==='probable'))_lo.sel.add(it.id);});
+  if(_lo.bg){
+    toast('Organizer: '+_lo.sel.size+' proposte pronte da rivedere');
+    if(S.panel==='organizer')renderPanel();
+  } else _loRender();
+}
+
+// ── 4. Anteprima ──
+function _loTagsOnly(){return ((_lo.result||{}).summary||{}).layout==='tags_only';}
+function _loHasOver(it){return Object.prototype.hasOwnProperty.call(_lo.over,it.id);}
+function _loDestRel(it){return _loHasOver(it)?_lo.over[it.id]:(it.destRel||'');}
+function _loDest(it){
+  if(_loTagsOnly())return null;
+  if(!_loHasOver(it))return it.dest||null;
+  const rel=_lo.over[it.id];if(!rel)return null;
+  const root=String(_lo.result.targets.root||'').replace(/[\\/]+$/,'');
+  const sep=root.includes('/')&&!root.includes('\\')?'/':'\\';
+  const dir=/^([a-zA-Z]:[\\/]|[\\/]{2})/.test(rel)?rel.replace(/[\\/]+$/,''):root+sep+rel;
+  const dest=dir+sep+it.name;
+  return dest.toLowerCase()===String(it.path).toLowerCase()?null:dest;
+}
+function _loActionable(it){return _loTagsOnly()?!!(it.primary||it.category):!!_loDest(it);}
+function _loConf(it){return _loHasOver(it)?(_loActionable(it)?'manual':'none'):(_loActionable(it)?it.conf:'none');}
+function _loCount(fn){return ((_lo.result||{}).items||[]).filter(fn).length;}
+function _loMatchFilter(it,f){
+  if(f==='all')return true;
+  const act=_loActionable(it);
+  if(f==='move')return act;
+  if(f==='none')return !act;
+  return act&&_loConf(it)===f;
+}
+function _loMatchQ(it,q){
+  if(!q)return true;
+  const hay=[it.name,it.primary,it.category&&it.category.name,_loDestRel(it),(it.performers||[]).map(p=>p.name).join(' '),it.scene&&it.scene.studio].join(' ').toLowerCase();
+  return q.split(/\s+/).every(w=>hay.includes(w));
+}
+function _loStep4(){
+  const R=_lo.result;if(!R)return _loStep2();
+  const s=R.summary||{}, idf=s.identified||{}, tagsOnly=_loTagsOnly();
+  const q=(_lo.q||'').trim().toLowerCase();
+  const map=new Map();
+  R.items.filter(it=>_loMatchFilter(it,_lo.filter)&&_loMatchQ(it,q)).forEach(it=>{
+    const k=tagsOnly?((it.category&&it.category.name)||'Senza tipologia'):(_loActionable(it)?_loDestRel(it):'');
+    if(!map.has(k))map.set(k,[]);
+    map.get(k).push(it);
+  });
+  const groups=[...map.entries()].sort((a,b)=>(!a[0])-(!b[0])||b[1].length-a[1].length);
+  _lo.groups=groups;
+  const selCount=_loCount(it=>_lo.sel.has(it.id)&&_loActionable(it));
+  const cls=s.classifier;
+  const kpi=(n,l)=>`<div class="lo-kpi"><b>${n}</b><span>${l}</span></div>`;
+  let b=`<div class="lo-sum">${kpi(s.inScope||0,'analizzati')}${kpi(s.withPerformer||0,'con performer')}${kpi(s.withCategory||0,'con tipologia')}${kpi(_loCount(_loActionable),tagsOnly?'da taggare':'da spostare')}</div>
+    <div class="lo-sub">Riconosciuti su StashDB: ${idf.oshash||0} con l'impronta del file, ${idf.phash||0} con l'impronta visiva, ${idf.code||0} dal codice scena, ${idf.title||0} dal titolo, ${idf.name||0} dal nome nel file.${cls&&cls.samples?' Tipologie imparate da '+cls.samples+' file già smistati'+(cls.coverage90?': affidabili al 90% nel '+Math.round(cls.coverage90*100)+'% dei casi':'')+'.':''}${(s.newFolders||[]).length?' Nuove cartelle: '+s.newFolders.slice(0,6).map(_loEsc).join(', ')+(s.newFolders.length>6?'…':'')+'.':''}</div>`;
+  if(s.stash&&s.stash.disabled)b+=`<div class="lo-warn">${_loEsc(s.stash.disabled)}</div>`;
+  b+=`<div class="lo-filters">${LO_FILTERS.map(([f,l])=>`<button class="lo-chip ${_lo.filter===f?'on':''}" onclick="_lo.filter='${f}';_lo.open={};_loRender()">${f==='move'&&tagsOnly?'Da taggare':l} ${_loCount(it=>_loMatchFilter(it,f))}</button>`).join('')}
+    <div style="flex:1;min-width:180px">${renderSearchBar('loSearch','Cerca file, performer, cartella…',"_lo.q=%v;_loRender()",{value:_lo.q||'',inline:true})}</div></div>`;
+  if(!groups.length){
+    b+=`<div class="lo-empty">Nessun file con questi filtri.</div>`;
+  } else {
+    b+='<div class="lo-list">';
+    groups.forEach(([key,items],gi)=>{
+      const act=items.filter(_loActionable);
+      const nSel=act.filter(it=>_lo.sel.has(it.id)).length;
+      const open=_lo.open[key]!==undefined?_lo.open[key]:(gi<3&&items.length<=60);
+      const isNew=!tagsOnly&&key&&items.some(it=>it.newFolder&&!_loHasOver(it));
+      b+=`<div class="lo-group-h" onclick="_loToggleGroup(${gi})">
+        <input type="checkbox" ${act.length?'':'disabled'} ${act.length&&nSel===act.length?'checked':''} ${nSel&&nSel<act.length?'data-ind="1"':''} onclick="event.stopPropagation();_loSelGroup(${gi},this.checked)">
+        <span class="chev">${open?'▾':'▸'}</span>
+        <span class="t" title="${_loEsc(key)}">${key?_loEsc(key):'Non spostati'}</span>${isNew?'<span class="lo-new">nuova</span>':''}
+        <span class="c">${act.length?nSel+' / ':''}${items.length}</span></div>`;
+      if(!open)return;
+      const lim=_lo.all[key]?items.length:150;
+      items.slice(0,lim).forEach(it=>{b+=_loRow(it);});
+      if(items.length>lim)b+=`<button class="lo-more" onclick="_loShowAll(${gi})">Mostra tutti (${items.length})</button>`;
+    });
+    b+='</div>';
+  }
+  const go=tagsOnly
+    ?`<button class="mdl-btn primary" ${selCount?'':'disabled style="opacity:.45"'} onclick="_loApplyTagsOnly()">Applica tag a ${selCount} file</button>`
+    :`<button class="mdl-btn primary" ${selCount?'':'disabled style="opacity:.45"'} onclick="_loExecute()">Sposta ${selCount} file</button>`;
+  return `${_loHead()}<div class="wiz-body">${b}</div>
+    <div class="wiz-foot"><button class="mdl-btn" onclick="_lo.step=2;_loRender()">← Regole</button>
+    <span style="font:500 11px 'Inter';color:var(--t3)">${selCount} selezionati · analisi in ${Math.round(s.elapsed||0)} s</span>${go}</div>`;
+}
+function _loRow(it){
+  const act=_loActionable(it), sel=act&&_lo.sel.has(it.id), conf=_loConf(it);
+  const cf=LO_CONF[conf]||LO_CONF.none;
+  const perfs=(it.performers||[]).filter(p=>!/^(MALE|TRANSGENDER_MALE)$/.test(p.gender||'')).slice(0,3);
+  const chips=perfs.map(p=>`<span class="lo-pchip" title="${_loEsc((LO_SRC[p.source]||p.source)+' · '+((LO_CONF[p.conf]||[''])[0]))}">${_loEsc(p.name)}</span>`).join('')
+    +(it.category?`<span class="lo-cchip" title="${_loEsc((LO_CONF[it.category.conf]||[''])[0])}">${_loEsc(it.category.name)}</span>`:'')
+    +(it.scene?`<span title="${_loEsc(it.scene.title||'')}">${_loEsc(LO_SRC[it.scene.source]||'')}${it.scene.studio?' · '+_loEsc(it.scene.studio):''}</span>`:'');
+  const tip=[it.reason,it.scene&&it.scene.title?'Scena: '+it.scene.title:'',it.rel].filter(Boolean).join('\n');
+  const dest=_loTagsOnly()?'<span></span>':`<button class="lo-dest" onclick="_loEditDest(${it.id},this)" title="Cambia destinazione">${_loEsc(_loDestRel(it)||'Non spostare')}</button>`;
+  return `<div class="lo-item ${sel?'sel':''}">
+    <input type="checkbox" ${act?'':'disabled'} ${sel?'checked':''} onchange="_loToggle(${it.id},this.checked)">
+    <div style="min-width:0"><div class="n" title="${_loEsc(it.rel)}">${_loEsc(it.name)}</div><div class="m">${chips||'<span>nessun indizio</span>'}</div></div>
+    <span class="lo-badge ${cf[1]}" title="${_loEsc(tip)}">${cf[0]}</span>
+    ${dest}
+  </div>`;
+}
+function _loToggle(id,on){if(on)_lo.sel.add(id);else _lo.sel.delete(id);_loRender();}
+function _loSelGroup(gi,on){
+  const g=_lo.groups[gi];if(!g)return;
+  g[1].forEach(it=>{if(!_loActionable(it))return;if(on)_lo.sel.add(it.id);else _lo.sel.delete(it.id);});
+  _loRender();
+}
+function _loToggleGroup(gi){
+  const g=_lo.groups[gi];if(!g)return;
+  const cur=_lo.open[g[0]]!==undefined?_lo.open[g[0]]:(gi<3&&g[1].length<=60);
+  _lo.open[g[0]]=!cur;_loRender();
+}
+function _loShowAll(gi){const g=_lo.groups[gi];if(g){_lo.all[g[0]]=true;_loRender();}}
+function _loEditDest(id,btn){
+  const R=_lo.result, it=R&&R.items.find(x=>x.id===id);if(!it)return;
+  const cur=_loDestRel(it), seen=new Set(), opts=[];
+  const add=(v,l)=>{if(seen.has(v))return;seen.add(v);opts.push(`<option value="${_loEsc(v)}"${v===cur?' selected':''}>${_loEsc(l)}</option>`);};
+  add('','— Non spostare —');
+  if(it.destRel)add(it.destRel,'Proposta: '+it.destRel);
+  if(cur)add(cur,cur);
+  (R.targets.categories||[]).forEach(c=>add(c.rel,'Tipologia · '+c.rel));
+  (R.targets.performerFolders||[]).forEach(f=>add(f.rel,'Performer · '+f.rel+(f.performer&&f.performer!==f.name?' ('+f.performer+')':'')));
+  opts.push('<option value="__pick__">Altra cartella…</option>');
+  const sel=document.createElement('select');
+  sel.className='m-input lo-dest-sel';sel.innerHTML=opts.join('');
+  sel.onchange=async()=>{
+    let v=sel.value;
+    if(v==='__pick__'){
+      const r=window.maniac.chooseFolder?await window.maniac.chooseFolder():null;
+      if(!r||r.canceled||!r.path){_loRender();return;}
+      v=r.path;
+    }
+    if(v===(it.destRel||''))delete _lo.over[id];else _lo.over[id]=v;
+    if(_loActionable(it))_lo.sel.add(id);else _lo.sel.delete(id);
+    _loRender();
+  };
+  sel.onblur=()=>setTimeout(()=>{if(document.body.contains(sel)&&document.activeElement!==sel)_loRender();},200);
+  btn.replaceWith(sel);sel.focus();
+}
+
+// ── 5. Spostamento ──
+async function _loExecute(){
+  const R=_lo.result;if(!R||(_lo.exec&&_lo.exec.running))return;
+  const chosen=R.items.filter(it=>_lo.sel.has(it.id)&&_loActionable(it));
+  if(!chosen.length){toast('Nessun file selezionato');return;}
+  if(!confirm('Spostare '+chosen.length+' file? Alla fine potrai annullare lo spostamento.'))return;
+  const ops=chosen.map(it=>({from:it.path,to:_loDest(it)}));
+  const jobId='lo_exec_'+Date.now();
+  _lo.exec={jobId,ops,running:true,current:0,total:ops.length,file:'',failed:new Set(),warns:[],done:null,error:null};
+  _lo.step=5;_loRender();_workerInc('organizer');
+  let r=null;
+  try{r=await window.maniac.organizer.execute({jobId,ops});}catch(e){r={ok:false,error:e.message};}
+  const X=_lo.exec;
+  if((!r||!r.ok)&&X&&X.jobId===jobId&&X.running){
+    X.running=false;_workerDec('organizer');X.error=(r&&r.error)||'avvio non riuscito';_loRender();
+  }
+}
+function _loOnExecProgress(evt){
+  if(!evt)return;
+  const U=_lo.undo;
+  if(U&&evt.jobId===U.jobId){
+    if(evt.type==='warn'){const m=String(evt.error||'');const pr=U.pairs.find(x=>m.includes(x.to));if(pr)U.failed.add(pr.to);}
+    else if(evt.type==='done'){
+      _workerDec('organizer');_lo.undo=null;
+      _loRemap(U.pairs.filter(x=>!U.failed.has(x.to)).map(x=>({from:x.to,to:x.from})),false);
+      if(_lo.exec)_lo.exec.undone={restored:evt.restored||0,failed:evt.failed||0};
+      toast('Ripristinati '+(evt.restored||0)+' file');
+      if(!_lo.bg&&document.getElementById('loOv'))_loRender();
+    } else if(evt.type==='exit'){_workerDec('organizer');_lo.undo=null;}
+    return;
+  }
+  const X=_lo.exec;if(!X||evt.jobId!==X.jobId)return;
+  if(evt.type==='progress'){X.current=evt.current||0;X.total=evt.total||X.total;X.file=evt.file||'';}
+  else if(evt.type==='warn'){
+    const m=String(evt.error||'');X.warns.push(m);
+    const op=X.ops.find(o=>m.includes(o.from)||m.includes(o.to));if(op)X.failed.add(op.from);
+  }
+  else if(evt.type==='done'){
+    X.running=false;_workerDec('organizer');
+    X.pairs=X.ops.filter(o=>!X.failed.has(o.from));
+    X.tagged=_loRemap(X.pairs,true);
+    X.done={moved:evt.moved||0,failed:evt.failed||0,snapshot:evt.snapshot||''};
+    try{
+      const root=_loCfg().root;
+      S.organizerRecents=Array.isArray(S.organizerRecents)?S.organizerRecents:[];
+      S.organizerRecents.unshift({ts:Date.now(),moved:X.done.moved,failed:X.done.failed,snapshot:X.done.snapshot,
+        sources:[root],root,sample:X.pairs.slice(0,12).map(o=>({from:o.from,to:o.to}))});
+      S.organizerRecents=S.organizerRecents.slice(0,50);
+      S._orgPanelSnaps=undefined;
+      saveConfig();
+    }catch(_){}
+    if(_lo.bg)toast('Organizer: '+X.done.moved+' file spostati');
+    if(S.panel==='organizer')renderPanel();
+  }
+  else if(evt.type==='error'){X.error=String(evt.error||'errore');}
+  else if(evt.type==='exit'&&X.running){X.running=false;_workerDec('organizer');X.error=X.error||'Spostamento interrotto';}
+  if(_lo.step===5&&!_lo.bg)_loRenderSoon();
+}
+function _loTagFile(path,it){
+  const labels=[];
+  (it.performers||[]).forEach(p=>{
+    if(/^(MALE|TRANSGENDER_MALE)$/.test(p.gender||''))return;
+    // Solo chi dà il nome al video: il cast completo di un'orgia creerebbe decine di tag.
+    if(p.name===it.primary||(p.inName&&p.conf!=='uncertain'))labels.push([p.name,'performer']);
+  });
+  const all=labels.slice(0,3);
+  if(it.category&&it.category.name)all.push([it.category.name,'category']);
+  if(!all.length)return false;
+  S._fileTags=S._fileTags||{};
+  const cur=S._fileTags[path]||[];
+  all.forEach(([label,kind])=>{
+    const tc=ensureKindTag(label,kind);
+    if(!cur.some(e=>e.label===tc.label))cur.push({color:tc.color,label:tc.label});
+  });
+  S._fileTags[path]=cur;
+  (S.players||[]).forEach(p=>p&&(p.playlist||[]).forEach(f=>{
+    if(f.path!==path)return;
+    f.tags=f.tags||[];
+    cur.forEach(t=>{if(!f.tags.some(x=>x.label===t.label))f.tags.push({color:t.color,label:t.label});});
+  }));
+  return true;
+}
+// I file spostati si portano dietro tag, voci di playlist e recenti; con addTags
+// ricevono anche performer e tipologia riconosciuti.
+function _loRemap(pairs,addTags){
+  if(!pairs||!pairs.length)return 0;
+  const moved=new Map(pairs.map(p=>[p.from,p.to]));
+  S._fileTags=S._fileTags||{};
+  pairs.forEach(({from,to})=>{
+    const old=S._fileTags[from];
+    if(!old)return;
+    const cur=S._fileTags[to]||[];
+    old.forEach(t=>{if(!cur.some(x=>x.label===t.label))cur.push(t);});
+    S._fileTags[to]=cur;delete S._fileTags[from];
+  });
+  (S.players||[]).forEach(p=>p&&(p.playlist||[]).forEach(f=>{const d=moved.get(f.path);if(d){f.path=d;try{f.url=mkUrl(d);}catch(_){}}}));
+  (S.recent||[]).forEach(r=>{const d=moved.get(r.path);if(d)r.path=d;});
+  let tagged=0;
+  if(addTags&&_loCfg().applyTags&&_lo.result){
+    const byPath=new Map(_lo.result.items.map(it=>[it.path,it]));
+    pairs.forEach(({from,to})=>{const it=byPath.get(from);if(it&&_loTagFile(to,it))tagged++;});
+  }
+  try{persistFileTags();}catch(_){}
+  try{saveConfig();}catch(_){}
+  try{refreshPerformerBadges();}catch(_){}
+  return tagged;
+}
+function _loApplyTagsOnly(){
+  const R=_lo.result;if(!R)return;
+  let n=0;
+  R.items.filter(it=>_lo.sel.has(it.id)&&_loActionable(it)).forEach(it=>{if(_loTagFile(it.path,it))n++;});
+  try{persistFileTags();}catch(_){}
+  try{saveConfig();}catch(_){}
+  try{refreshPerformerBadges();}catch(_){}
+  _lo.exec={running:false,done:{moved:0,failed:0,snapshot:''},tagged:n,warns:[]};
+  _lo.step=5;_loRender();
+}
+async function _loUndo(){
+  const X=_lo.exec;if(!X||!X.done||!X.done.snapshot||_lo.undo)return;
+  if(!confirm('Riportare i file dove erano prima?'))return;
+  let r=null;
+  try{r=await window.maniac.organizer.restore(X.done.snapshot);}catch(e){r={ok:false,error:e.message};}
+  if(!r||!r.ok){toast('Ripristino non riuscito: '+((r&&r.error)||''));return;}
+  _lo.undo={jobId:r.jobId,pairs:X.pairs||[],failed:new Set()};
+  _workerInc('organizer');
+  toast('Ripristino in corso…');
+  _loRender();
+}
+function _loReset(){
+  Object.assign(_lo,{step:1,detect:null,result:null,exec:null,prog:null,sel:new Set(),over:{},open:{},all:{},q:''});
+  _loHide();
+  if(S.panel==='organizer')renderPanel();
+}
+function _loStep5(){
+  const X=_lo.exec||{};
+  let b, foot;
+  if(X.running){
+    const pct=X.total?Math.round(100*(X.current||0)/X.total):0;
+    b=`<div class="lo-live"><div class="t">Sposto i file…</div><div class="f">${_loEsc(X.file||'')}</div>
+      <div class="lo-bar"><div style="width:${pct}%"></div></div>
+      <div class="c"><span>${X.current||0} / ${X.total||0}</span><span>${X.failed&&X.failed.size?X.failed.size+' non spostati':''}</span></div></div>`;
+    foot=`<button class="mdl-btn" onclick="_loBackground()">Continua in background</button><span></span>`;
+  } else if(X.done){
+    const d=X.done, tagsOnly=_loTagsOnly();
+    const line=X.undone
+      ?X.undone.restored+' file riportati dov\'erano'+(X.undone.failed?' · '+X.undone.failed+' non ripristinati':'')
+      :tagsOnly?(X.tagged||0)+' file taggati'
+      :d.moved+' file spostati'+(d.failed?' · '+d.failed+' non spostati':'')+(X.tagged?' · '+X.tagged+' taggati':'');
+    b=`<div class="lo-empty" style="border-style:solid">
+        <div style="font:700 16px/1.4 'Inter';color:var(--t1)">${X.undone?'Spostamento annullato':_lo.undo?'Ripristino in corso…':'Fatto'}</div>
+        <div style="margin-top:6px">${line}</div>
+        ${d.snapshot&&!X.undone?`<div class="lo-note">Snapshot per l'annullamento: ${_loEsc(d.snapshot.split(/[\\\/]/).pop())}</div>`:''}
+      </div>`;
+    if(X.warns&&X.warns.length)b+=`<div class="lo-warn">${X.warns.slice(0,6).map(_loEsc).join('<br>')}${X.warns.length>6?'<br>…':''}</div>`;
+    foot=`<div style="display:flex;gap:6px">${d.snapshot&&!X.undone&&!_lo.undo?'<button class="mdl-btn" onclick="_loUndo()">Annulla spostamento</button>':''}
+      <button class="mdl-btn" onclick="window.maniac.showInFolder&&window.maniac.showInFolder(_loCfg().root)">Apri libreria</button></div>
+      <button class="mdl-btn primary" onclick="_loReset()">Fine</button>`;
+  } else {
+    b=`<div class="lo-err">${_loEsc(X.error||'Spostamento non avviato')}</div>`;
+    foot=`<button class="mdl-btn" onclick="_lo.step=4;_loRender()">← Anteprima</button><span></span>`;
+  }
+  return `${_loHead()}<div class="wiz-body">${b}</div><div class="wiz-foot">${foot}</div>`;
 }
 
 // ═══ HW Accel + Upscaling AI ═══
@@ -13823,6 +14489,7 @@ function _cmdpRegistry(){
     {id:'w-analyze',l:'Wizard analisi cartella…',k:'wizard',i:icon('wizard'),h:'AI face/place/object/animal',x:()=>{typeof openAnalyzeWizard==='function'&&openAnalyzeWizard();}},
     {id:'w-sc',l:'Cerca su StreamingCommunity…',k:'wizard',i:icon('film'),x:()=>{typeof scWizardOpen==='function'&&scWizardOpen();}},
     {id:'w-org',l:'Wizard Organizer…',k:'wizard',i:icon('folderAdd'),h:'Organizza libreria automaticamente',x:()=>{typeof openOrganizerWizard==='function'&&openOrganizerWizard();}},
+    {id:'w-liborg',l:'Organizer performer e tipologia…',k:'wizard',i:icon('userFocus'),h:'Riconosce performer e tipologia e sposta i video',x:()=>{typeof openLibOrganizer==='function'&&openLibOrganizer();}},
     {id:'w-dl',l:'Wizard download…',k:'wizard',i:icon('download'),x:()=>{typeof dlWizardOpen==='function'&&dlWizardOpen('');}},
     // Download utilities
     {id:'d-paste',l:'Incolla URL → Scarica',k:'action',i:icon('link'),h:'Da appunti',x:async()=>{
@@ -14137,6 +14804,7 @@ async function _saveConfigNow(){
     exploreTagFilter:(S.exploreTagFilter||[]),
     downloads:(S.downloads||[]).slice(0,200),
     organizerRecents:(S.organizerRecents||[]).slice(0,50),
+    libOrgCfg:S.libOrgCfg||{},
     wizardCfg:S.wizardCfg||{},
     hideThumbs:S.hideThumbs||{},
     downloaderCfg:S.downloaderCfg||{},
@@ -14213,6 +14881,7 @@ async function loadConfig(){
   S.exploreTagFilter=Array.isArray(cfg.exploreTagFilter)?cfg.exploreTagFilter:[];
   S.downloads=Array.isArray(cfg.downloads)?cfg.downloads:[];
   S.organizerRecents=Array.isArray(cfg.organizerRecents)?cfg.organizerRecents:[];
+  S.libOrgCfg=(cfg.libOrgCfg&&typeof cfg.libOrgCfg==='object')?cfg.libOrgCfg:{};
   S.wizardCfg=(cfg.wizardCfg&&typeof cfg.wizardCfg==='object')?cfg.wizardCfg:(S.wizardCfg||{});
   if(cfg.hideThumbs&&typeof cfg.hideThumbs==='object')S.hideThumbs={...S.hideThumbs,...cfg.hideThumbs};
   if(cfg.downloaderCfg&&typeof cfg.downloaderCfg==='object')S.downloaderCfg={...(S.downloaderCfg||{}),...cfg.downloaderCfg};

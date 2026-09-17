@@ -2533,6 +2533,10 @@ function _streamWorker(scriptName, args, channel, jobId) {
   if (!proc) return null;
   const send = (obj) => { try { mainWindow?.webContents.send(channel, { jobId, ...obj }); } catch(e){} };
   let buf = '';
+  // Decodifica con StringDecoder: un carattere UTF-8 spezzato fra due chunk
+  // corromperebbe nomi e percorsi (es. "⭐" nei titoli), e un percorso sbagliato
+  // fa fallire lo spostamento del file.
+  proc.stdout.setEncoding('utf8');
   proc.stdout.on('data', d => {
     buf += d.toString();
     let i;
@@ -2747,6 +2751,35 @@ ipcMain.handle('organizer:restore', (_e, snapshotPath) => {
 ipcMain.handle('organizer:cancel', (_e, jobId) => {
   const p = _organizerJobs.get(jobId);
   if (p) { _killProcessTree(p); _organizerJobs.delete(jobId); return { ok:true }; }
+  return { ok:false };
+});
+
+// ═══ Organizer libreria: performer e tipologia (library_organizer.py) ═══
+// Lo spostamento vero passa da organizer:execute, che crea lo snapshot per l'undo.
+// La cache (impronte, risposte StashDB) sta in userData: la seconda analisi
+// della stessa libreria riparte da lì invece di ricalcolare tutto.
+const _libOrgJobs = new Map();
+const _libOrgCache = path.join(userDataPath, 'library_organizer.sqlite');
+ipcMain.handle('liborg:detect', async (_e, { root, roles } = {}) => {
+  if (!root || !fs.existsSync(root)) return { ok:false, error:'cartella non trovata' };
+  const args = ['detect', '--root', root];
+  if (roles && typeof roles === 'object') args.push('--roles', JSON.stringify(roles));
+  return _runOneShot('library_organizer.py', args);
+});
+ipcMain.handle('liborg:analyze', (_e, { jobId, config } = {}) => {
+  if (!config || !config.root || !fs.existsSync(config.root)) return { ok:false, error:'cartella libreria non valida' };
+  jobId = jobId || ('liborg_' + Date.now());
+  const fp = _writeJsonTemp('liborg-cfg', config);
+  const args = ['analyze', '--config', fp, '--cache', _libOrgCache, '--ffmpeg', _ffmpegBin()];
+  const proc = _streamWorker('library_organizer.py', args, 'liborg:progress', jobId);
+  if (!proc) { try { fs.unlinkSync(fp); } catch(_){} return { ok:false, error:'spawn library_organizer.py fallito' }; }
+  _libOrgJobs.set(jobId, proc);
+  proc.on('close', () => { _libOrgJobs.delete(jobId); try { fs.unlinkSync(fp); } catch(_){} });
+  return { ok:true, jobId };
+});
+ipcMain.handle('liborg:cancel', (_e, jobId) => {
+  const p = _libOrgJobs.get(jobId);
+  if (p) { _killProcessTree(p); _libOrgJobs.delete(jobId); return { ok:true }; }
   return { ok:false };
 });
 

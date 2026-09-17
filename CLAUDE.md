@@ -81,6 +81,14 @@ Everything is a single HTML file with one `<script>` block (~9k lines of JS).
 - ML weights (`yolov8n.pt`, `resnet18_places365.pth.tar`) live in `models/ml/` and are lazy-downloaded by `analyze.py` on first use.
 - External binaries in `tools/` (`ffmpeg`, `exiftool`, `mediainfo`) are bundled as `extraResources`; `bootstrap.py probe_external_tools()` resolves them.
 
+### Library organizer (performer + category)
+
+- `python/library_organizer.py`: `detect` assigns a role to every top-level folder (`category`, `category_performers`, `performers`, `unsorted`, `ignore`); `analyze` streams JSONL and ends with `{type:"done", items, summary, targets}`. It never moves files: the renderer sends the approved ops to `organizer:execute`, which writes the undo snapshot.
+- Identification order: OSHASH → scene code in the name → PHASH → StashDB title search (accepted only if the duration matches) → names in the filename (user performer folders, cast already seen in the library, then StashDB exact name/alias). Categories come from a naive Bayes classifier trained on the files the user already sorted, with confidence thresholds calibrated by cross-validation on that same library.
+- `python/videohash.py` reproduces Stash's OSHASH/PHASH bit for bit, including goimagehash's quickselect median and nfnt/resize's 8-bit bilinear. Don't "simplify" either: StashDB lookups stop matching.
+- Cache in `userData/library_organizer.sqlite` (hashes keyed by oshash, StashDB answers with TTL), so re-analysis is incremental.
+- Renderer: `openLibOrganizer()` wizard (`_lo*` functions, config in `S.libOrgCfg`, roles saved per library root). Smoke test: `python/test_library_organizer_smoke.py` (no network, no ffmpeg).
+
 ### StreamingCommunity flow
 
 The site has a JS anti-bot challenge that ordinary `requests.get()` can't solve. Architecture:

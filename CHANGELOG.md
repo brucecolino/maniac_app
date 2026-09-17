@@ -3,6 +3,31 @@
 Tutte le versioni pubblicate di Maniac. L'app controlla questa lista dalla
 scheda **Info → Controlla aggiornamenti**.
 
+## 1.1.4 — 2026-09-17
+
+### Organizer: performer e tipologia, in automatico
+- Nuovo wizard **Organizer → Organizza per performer e tipologia**. Legge la
+  libreria, riconosce chi c'è nel video e di che tipo è, e propone dove
+  spostarlo. Niente si muove finché non confermi l'anteprima, e lo spostamento
+  si annulla con un clic.
+- Riconoscimento in cinque passaggi, dal segnale più solido al più debole:
+  impronta del file e **impronta visiva** su StashDB (regge le ricodifiche),
+  codice scena nel nome (GIO2408, SZ2380…), titolo accettato solo se la durata
+  coincide, nomi scritti nel file confrontati con le tue cartelle performer e
+  con StashDB.
+- La tipologia la impara dalle **tue** cartelle già smistate, e calibra le
+  soglie sulla libreria stessa: "probabile" vuol dire davvero nove volte su
+  dieci.
+- Struttura finale a scelta: il tuo schema attuale, Tipologia › Performer,
+  Performer › Tipologia, oppure solo tag senza spostare niente. Il ruolo di
+  ogni cartella si può correggere prima di partire.
+- Performer e tipologia diventano tag nel player, e seguono i file quando
+  vengono spostati o riportati indietro.
+- Impronte e risposte di StashDB restano in cache: la seconda analisi della
+  stessa libreria è questione di secondi.
+- Misurato su una libreria di 5.900 video: sui 2.256 file da smistare,
+  performer riconosciuto per 1.398 e tipologia per 2.154.
+
 ## 1.1.3 — 2026-08-24
 
 ### Wizard download: si incolla e basta

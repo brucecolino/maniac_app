@@ -44,6 +44,7 @@ function runScript(scriptName, args = [], { onStdout, onStderr, timeoutMs } = {}
     let stdout = '', stderr = '';
     let timer = null;
     if (timeoutMs) timer = setTimeout(() => { try { proc.kill(); } catch(e){} }, timeoutMs);
+    proc.stdout.setEncoding('utf8');
 
     proc.stdout.on('data', d => {
       const s = d.toString();

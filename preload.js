@@ -173,6 +173,13 @@ contextBridge.exposeInMainWorld('maniac', {
     cancel: (jobId) => ipcRenderer.invoke('organizer:cancel', jobId),
     onProgress: (cb) => ipcRenderer.on('organizer:progress', (_e, data) => cb(data))
   },
+  // Organizer libreria: rileva struttura, riconosce performer/tipologia, propone gli spostamenti
+  libOrganizer: {
+    detect: (opts) => ipcRenderer.invoke('liborg:detect', opts),
+    analyze: (opts) => ipcRenderer.invoke('liborg:analyze', opts),
+    cancel: (jobId) => ipcRenderer.invoke('liborg:cancel', jobId),
+    onProgress: (cb) => ipcRenderer.on('liborg:progress', (_e, data) => cb(data))
+  },
 
   // i18n persistence
   i18n: {
