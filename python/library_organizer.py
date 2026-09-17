@@ -197,7 +197,7 @@ def _context(parts, role_of, unsorted_names):
     return {'unsorted': unsorted, 'category': category, 'perf_folder': perf_folder}
 
 
-def build_library(root, roles=None, unsorted_names=None):
+def build_library(root, roles=None, unsorted_names=None, extra_categories=None):
     unsorted_names = {_norm(n) for n in (unsorted_names or DEFAULT_UNSORTED_NAMES) if _norm(n)}
     tree, counts = _walk(root)
     tops = tree.get('', {}).get('dirs', [])
@@ -218,6 +218,14 @@ def build_library(root, roles=None, unsorted_names=None):
                 perf_folders[rel] = {'rel': rel, 'name': child, 'path': os.path.join(root, rel),
                                      'container': d, 'containerRole': role_of[d],
                                      'videos': counts.get(rel, 0), 'performer': None}
+
+    # Tipologie aggiunte a mano nel wizard: possono non esistere ancora su disco,
+    # vengono create quando l'utente conferma gli spostamenti.
+    for extra in (extra_categories or []):
+        rel = str(extra or '').strip().strip('\\/')
+        if not rel or rel in categories:
+            continue
+        categories[rel] = {'name': rel, 'rel': rel, 'path': os.path.join(root, rel), 'role': ROLE_CATEGORY}
 
     for rel, node in tree.items():
         if not node['files']:
@@ -875,7 +883,8 @@ class Analyzer:
     # ── scansione ──
     def scan(self):
         _emit({'type': 'phase', 'phase': 'scan', 'text': 'Lettura della libreria…'})
-        lib = build_library(self.root, self.cfg.get('roles') or {}, self.cfg.get('unsortedNames'))
+        lib = build_library(self.root, self.cfg.get('roles') or {}, self.cfg.get('unsortedNames'),
+                            self.cfg.get('extraCategories'))
         self.lib = lib
         items = lib['items']
         for i, it in enumerate(items):
@@ -1513,8 +1522,8 @@ def _item_out(it, cat, primary, dest, dest_dir, conf, reason, new_folder):
         'duration': it['duration'] or (sc or {}).get('duration') or None,
         'scene': {'title': sc['title'], 'studio': sc['studio'], 'code': sc['code'], 'date': sc['date'],
                   'source': it['sceneSource'], 'conf': it['sceneConf']} if sc else None,
-        'performers': [{'name': p['name'], 'gender': p.get('gender'), 'source': p['source'], 'conf': p['conf'],
-                        'inName': bool(p.get('inName'))} for p in perfs[:8]],
+        'performers': [{'id': p.get('id'), 'name': p['name'], 'gender': p.get('gender'), 'source': p['source'],
+                        'conf': p['conf'], 'inName': bool(p.get('inName'))} for p in perfs[:8]],
         'primary': primary['name'] if primary else None,
         'category': cat,
         'tags': (sc or {}).get('tags', [])[:14],

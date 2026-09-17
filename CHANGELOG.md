@@ -3,6 +3,19 @@
 Tutte le versioni pubblicate di Maniac. L'app controlla questa lista dalla
 scheda **Info → Controlla aggiornamenti**.
 
+## 1.1.5 — 2026-09-18
+
+### Organizer: si decide meglio cosa fare di ogni video
+- Ogni riga dell'anteprima mostra un **fotogramma del video**, così i file senza
+  indizi si riconoscono a occhio. L'interruttore **Anteprime** le accende e le
+  spegne.
+- Le righe **senza destinazione ora si selezionano**, e con **Manda i selezionati
+  in…** scegli la cartella per tutto il gruppo in un colpo solo.
+- **Tipologie gestibili a mano**: puoi aggiungere una cartella che esiste già
+  oppure crearne una nuova, che nasce solo quando confermi gli spostamenti.
+- Due nuove spunte: **tagga anche i file che restano dove sono** e **aggiungi a
+  Maniac i performer che non ha ancora**, con la foto presa da StashDB.
+
 ## 1.1.4 — 2026-09-17
 
 ### Organizer: performer e tipologia, in automatico

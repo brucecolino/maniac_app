@@ -87,7 +87,7 @@ Everything is a single HTML file with one `<script>` block (~9k lines of JS).
 - Identification order: OSHASH → scene code in the name → PHASH → StashDB title search (accepted only if the duration matches) → names in the filename (user performer folders, cast already seen in the library, then StashDB exact name/alias). Categories come from a naive Bayes classifier trained on the files the user already sorted, with confidence thresholds calibrated by cross-validation on that same library.
 - `python/videohash.py` reproduces Stash's OSHASH/PHASH bit for bit, including goimagehash's quickselect median and nfnt/resize's 8-bit bilinear. Don't "simplify" either: StashDB lookups stop matching.
 - Cache in `userData/library_organizer.sqlite` (hashes keyed by oshash, StashDB answers with TTL), so re-analysis is incremental.
-- Renderer: `openLibOrganizer()` wizard (`_lo*` functions, config in `S.libOrgCfg`, roles saved per library root). Smoke test: `python/test_library_organizer_smoke.py` (no network, no ffmpeg).
+- Renderer: `openLibOrganizer()` wizard (`_lo*` functions, config in `S.libOrgCfg`, roles and hand-added categories saved per library root). Every preview row is selectable — rows without a destination included, so `_loBulkDest()` can send them somewhere, `tagAll` tags the ones that stay, and `addPerformers` registers unknown performers as analysis elements with their StashDB photo. Smoke test: `python/test_library_organizer_smoke.py` (no network, no ffmpeg).
 
 ### StreamingCommunity flow
 
