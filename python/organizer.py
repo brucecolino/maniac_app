@@ -167,32 +167,38 @@ def _clean_title(filename):
 def cmd_scan(args):
     folders = [f.strip() for f in args.folders.split(",") if f.strip()]
     max_files = int(args.max or 0)
-    files = []
     _phase(f"Scansione {len(folders)} cartella/e…")
-    seen = 0
+
+    # I file si contano prima di leggerli: senza totale la barra resta ferma e
+    # l'utente vede solo "75 file", senza sapere se ne mancano dieci o diecimila.
+    paths = []
     for folder in folders:
         if not os.path.isdir(folder):
             _emit({"type": "warn", "error": f"non è una cartella: {folder}"}); continue
         for root, _, fnames in os.walk(folder):
             for fn in fnames:
-                ext = os.path.splitext(fn)[1].lower()
-                if ext not in MEDIA_EXTS: continue
-                p = os.path.join(root, fn)
-                seen += 1
-                if max_files and seen > max_files: break
-                meta = _extract_metadata(p)
-                files.append({
-                    "path": p, "name": fn, "ext": ext,
-                    "title_guess": _clean_title(p),
-                    "year_guess":  _guess_year(p),
-                    "kind_guess":  _guess_kind(p),
-                    **meta,
-                })
-                if seen % 25 == 0:
-                    _emit({"type": "progress", "stage": "scan",
-                           "current": seen, "file": fn})
-            if max_files and seen > max_files: break
-        if max_files and seen > max_files: break
+                if os.path.splitext(fn)[1].lower() in MEDIA_EXTS:
+                    paths.append(os.path.join(root, fn))
+                    if max_files and len(paths) >= max_files: break
+            if max_files and len(paths) >= max_files: break
+        if max_files and len(paths) >= max_files: break
+
+    total = len(paths)
+    _phase(f"{total} file trovati: leggo i dettagli…")
+    files = []
+    for i, p in enumerate(paths, 1):
+        fn = os.path.basename(p)
+        meta = _extract_metadata(p)
+        files.append({
+            "path": p, "name": fn, "ext": os.path.splitext(fn)[1].lower(),
+            "title_guess": _clean_title(p),
+            "year_guess":  _guess_year(p),
+            "kind_guess":  _guess_kind(p),
+            **meta,
+        })
+        if i % 25 == 0 or i == total:
+            _emit({"type": "progress", "stage": "scan",
+                   "current": i, "total": total, "file": fn})
 
     _emit({"type": "done", "ok": True, "count": len(files), "files": files})
     return 0

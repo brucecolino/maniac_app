@@ -117,6 +117,8 @@ def test_library(tmp):
     d = touch(root, 'NEW/zzz qqq.mp4', seed=403)
     e = touch(root, 'NEW/huge dildo insertion stretch.mp4', seed=404)
     f = touch(root, 'TOYS/DA ORDINARE/unknown dildo clip.mp4', seed=405)
+    # stesso contenuto di un file già smistato: deve risultare un doppione
+    g = touch(root, 'NEW/Scene 3 gangbang 5on1 dap anal (copia).mp4', seed=3)
 
     lib = lo.build_library(root)
     roles = lib['roles']
@@ -127,13 +129,17 @@ def test_library(tmp):
     check('struttura: foto ignorate', roles.get('PICS') == 'ignore', roles)
     check('struttura: nessun file da cartelle ignorate', not any(it['rel'].startswith('PICS') for it in lib['items']))
 
-    base = {'root': root, 'scope': 'unsorted', 'useStashdb': False, 'usePhash': False, 'minPerformerFiles': 5}
+    base = {'root': root, 'scope': 'unsorted', 'useStashdb': False, 'usePhash': False, 'minPerformerFiles': 5,
+            'useVisual': True, 'visualDownload': False}
     done = run_analyze(tmp, dict(base, layout='current'))
     check('analisi: evento finale', done is not None)
     if not done:
         return
     by = {it['path']: it for it in done['items']}
-    check('analisi: solo i file da smistare', set(by) == {a, b, c, d, e, f}, sorted(by))
+    check('analisi: solo i file da smistare', set(by) == {a, b, c, d, e, f, g}, sorted(by))
+    ig = by.get(g) or {}
+    check('doppioni: copia identica riconosciuta',
+          (ig.get('dup') or {}).get('kind') == 'identico' and ig.get('dest') is None, ig)
     ia, ib, ic, idd = by.get(a, {}), by.get(b, {}), by.get(c, {}), by.get(d, {})
     check('schema attuale: tipologia con performer, senza performer → sua cartella da smistare',
           (by.get(e) or {}).get('destRel') == os.path.join('TOYS', 'DA ORDINARE'), by.get(e))
@@ -146,6 +152,8 @@ def test_library(tmp):
           ic.get('destRel') == 'GANGBANG' and ic.get('conf') == 'certain', ic)
     check('schema attuale: file sconosciuto non si sposta', idd.get('dest') is None, idd)
     check('riepilogo: classificatore calibrato', bool((done['summary'] or {}).get('classifier')), done['summary'])
+    check('immagini: senza modello l\'analisi prosegue senza bloccarsi',
+          (done['summary'] or {}).get('visual') is None, (done['summary'] or {}).get('visual'))
 
     done = run_analyze(tmp, dict(base, layout='category_performer', minPerformerFiles=1))
     by = {it['path']: it for it in (done or {}).get('items', [])}
@@ -154,6 +162,28 @@ def test_library(tmp):
 
     done = run_analyze(tmp, dict(base, layout='tags_only'))
     check('solo tag: nessuno spostamento', done is not None and all(not it['dest'] for it in done['items']))
+
+
+def test_visual_training():
+    """Il classificatore sulle immagini: niente modello e niente ffmpeg, si verifica
+    solo che impari classi separabili e che la soglia esca calibrata."""
+    try:
+        import numpy as np
+        import torch  # noqa: F401
+    except ImportError:
+        print('[skip] numpy/torch assenti: addestramento sulle immagini non verificato')
+        return
+    rng = np.random.RandomState(5)
+    centers = rng.randn(3, 32).astype(np.float32)
+    X, y = [], []
+    for k in range(3):
+        for _ in range(40):
+            v = centers[k] + 0.4 * rng.randn(32).astype(np.float32)
+            X.append(v / np.linalg.norm(v))
+            y.append(k)
+    m = lo.train_visual(np.stack(X).astype(np.float32), np.array(y), ['A', 'B', 'C'])
+    check('immagini: impara classi separabili', m['accuracy'] > 0.9, m['accuracy'])
+    check('immagini: soglia di fiducia calibrata', m['t90'] is not None and 0 < m['t90'] <= 1, m)
 
 
 def main():
@@ -165,6 +195,7 @@ def main():
         test_parse()
         test_hashes(tmp)
         test_library(tmp)
+        test_visual_training()
     finally:
         if args.keep:
             print('[smoke] cartella: ' + tmp)

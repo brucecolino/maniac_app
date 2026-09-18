@@ -26,6 +26,7 @@ MODULES = [
     ("ultralytics",    "ultralytics"),
     ("pymediainfo",    "pymediainfo"),
     ("yt_dlp",         "yt-dlp"),
+    ("onnxruntime",    "onnxruntime"),
 ]
 
 OPTIONAL_MODULES = [

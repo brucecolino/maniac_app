@@ -1171,6 +1171,7 @@ input[type=range]::-webkit-slider-thumb{margin-top:-4.5px}
 .lo-group-h .c{font:500 11px 'Inter';color:var(--t3)}
 .lo-group-h .chev{width:10px;color:var(--t3)}
 .lo-new{font:700 9px/1 'Inter';text-transform:uppercase;color:#22c55e;border:1px solid rgba(34,197,94,.5);border-radius:4px;padding:3px 5px}
+.lo-dup{font:700 9px/1 'Inter';text-transform:uppercase;color:#f59e0b;border:1px solid rgba(245,158,11,.45);border-radius:4px;padding:3px 5px}
 .lo-item{display:grid;grid-template-columns:18px minmax(0,1fr) auto minmax(120px,230px);align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid var(--bd);background:var(--s1)}
 .lo-item.sel{background:var(--pd)}
 .lo-item .n{font:500 12px/1.3 'Inter';color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -12009,10 +12010,11 @@ const LO_LAYOUTS=[
   {id:'performer_category',l:'Performer › Tipologia',ex:'Nome performer\\GANGBANG\\video',h:'Senza performer riconosciuto: _Senza performer\\tipologia.'},
   {id:'tags_only',l:'Solo tag, nessuno spostamento',ex:'i file restano dove sono',h:'Performer e tipologia diventano tag nel player.'}
 ];
-const LO_PHASES=[['scan','Lettura libreria'],['hash','Impronte dei file'],['stash','Confronto con StashDB'],['folders','Cartelle performer'],['code','Codici scena'],['phash','Impronte visive'],['title','Titoli su StashDB'],['names','Nomi nei file'],['learn','Tipologie'],['plan','Proposte']];
+const LO_PHASES=[['scan','Lettura libreria'],['hash','Impronte dei file'],['stash','Confronto con StashDB'],['folders','Cartelle performer'],['code','Codici scena'],['phash','Impronte visive'],['title','Titoli su StashDB'],['names','Nomi nei file'],['learn','Tipologie'],['visual','Immagini dei video'],['plan','Proposte']];
 const LO_CONF={certain:['Certo','lo-c-certain'],probable:['Probabile','lo-c-probable'],uncertain:['Da verificare','lo-c-uncertain'],none:['Non spostato','lo-c-none'],manual:['Scelta tua','lo-c-manual']};
 const LO_SRC={oshash:'impronta file',phash:'impronta visiva',code:'codice scena',title:'titolo StashDB',filename:'nome nel file','stashdb-name':'nome su StashDB',folder:'cartella'};
-const LO_FILTERS=[['move','Da spostare'],['certain','Certi'],['probable','Probabili'],['uncertain','Da verificare'],['manual','Scelte tue'],['none','Non spostati'],['all','Tutti']];
+const LO_RANK={certain:3,probable:2,manual:2,uncertain:1,none:0};
+const LO_FILTERS=[['move','Da spostare'],['certain','Certi'],['probable','Probabili'],['uncertain','Da verificare'],['manual','Scelte tue'],['dup','Doppioni'],['none','Non spostati'],['all','Tutti']];
 const _lo={step:1,detect:null,detectBusy:false,hasKey:null,jobId:null,prog:null,result:null,sel:new Set(),over:{},open:{},all:{},filter:'move',q:'',exec:null,undo:null,bound:false,bg:false,groups:[],_t:null,
   thumbs:{},thumbQ:[],thumbInFlight:0,thumbT:null};
 
@@ -12026,6 +12028,11 @@ function _loCfg(){
     .forEach(k=>{if(typeof c[k]!=='boolean')c[k]=true;});
   if(!c.rolesByRoot||typeof c.rolesByRoot!=='object')c.rolesByRoot={};
   if(!c.extraCategoriesByRoot||typeof c.extraCategoriesByRoot!=='object')c.extraCategoriesByRoot={};
+  if(typeof c.duplicatesFolder!=='string')c.duplicatesFolder='';
+  if(typeof c.useVisual!=='boolean')c.useVisual=false;
+  if(typeof c.autoOrganize!=='boolean')c.autoOrganize=false;
+  if(c.autoConfidence!=='probable')c.autoConfidence='certain';
+  if(!(c.autoIntervalMin>=5))c.autoIntervalMin=15;
   return c;
 }
 // Tipologie disponibili: le cartelle rilevate come tipologia più quelle aggiunte a mano.
@@ -12127,6 +12134,10 @@ function _loPanelStatus(){
   if(_lo.jobId){const p=_lo.prog||{};return 'Analisi in corso'+(p.total?' · '+(p.current||0)+'/'+p.total:'')+'…';}
   if(_lo.exec&&_lo.exec.running)return 'Spostamento in corso…';
   if(_lo.result&&_lo.step===4)return _loCount(it=>_lo.sel.has(it.id)&&_loActionable(it))+' proposte pronte da rivedere';
+  const c=_loCfg();
+  if(c.autoOrganize){
+    return 'Automatico attivo'+(_lo.autoLast?' · ultimo giro: '+(_lo.autoLast.moved||0)+' video':' · controlla ogni '+c.autoIntervalMin+' minuti');
+  }
   return 'Riconosce performer e tipologia e mette ogni video al suo posto';
 }
 
@@ -12288,18 +12299,41 @@ function _loStep2(){
       <div class="lo-row" style="gap:6px"><button class="mdl-btn" onclick="_loAddCategoryFolder()">Aggiungi cartella esistente…</button><button class="mdl-btn" onclick="_loAddCategoryNew()">Nuova tipologia…</button></div>
       <div class="lo-note">Le cartelle nuove vengono create solo quando confermi gli spostamenti.</div>`;
   }
+  const swRaw=(on,t,onclick,h)=>`<div class="lo-sw" onclick="${onclick}"><div class="sw ${on?'on':''}"><div class="dot"></div></div><div><div class="t">${t}</div><div class="s">${h}</div></div></div>`;
+  b+=`<div class="section-label">Doppioni</div>
+    <div class="lo-sws" style="grid-template-columns:1fr">
+      ${swRaw(!!c.duplicatesFolder,'Manda i doppioni in una cartella a parte',
+        `_loSet('duplicatesFolder',${c.duplicatesFolder?"''":"'_DOPPIONI'"})`,
+        'Li riconosce dall\'impronta del file, dall\'impronta visiva o dalla stessa scena su StashDB. Da spento restano dove sono, segnalati nell\'anteprima.')}
+    </div>`;
+  if(c.duplicatesFolder){
+    b+=`<div class="lo-row">Cartella dei doppioni: <input class="m-input" style="width:220px" value="${_loEsc(c.duplicatesFolder)}" onchange="_loSet('duplicatesFolder',this.value.trim()||'_DOPPIONI',true)"></div>`;
+  }
   b+=`<div class="section-label">Riconoscimento</div>
     <div class="lo-sws">
       ${sw('useStashdb','StashDB','Impronta del file, codici scena e cast da stashdb.org. Invia solo impronte e titoli, mai i video.')}
       ${sw('usePhash','Impronta visiva','Riconosce anche i video ricompressi. La prima volta è lenta (1-3 s a video), poi resta in cache.',noStash)}
       ${sw('useSearch','Ricerca per titolo e nome','Cerca su StashDB titoli e nomi scritti nel file, verificando la durata.',noStash)}
-    </div>
+      ${sw('useVisual','Tipologia dalle immagini','Guarda otto fotogrammi per video e impara le tue tipologie anche dall\'immagine: serve quando il nome del file non dice niente.')}
+    </div>${c.useVisual?`<div class="lo-note">La prima volta scarica un modello da 335 MB e impiega circa mezzo secondo a video${_loVisualEta(d)}: i risultati restano in cache, le volte dopo tocca solo ai video nuovi. La risposta viene usata solo quando è abbastanza sicura, e non sostituisce mai la cartella di origine.</div>`:''}
     <div class="section-label">Tag e performer</div>
     <div class="lo-sws">
       ${sw('applyTags','Tag performer e tipologia','Li aggiunge come tag ai video organizzati, e i tag seguono i file spostati.')}
       ${sw('tagAll','Tagga anche i file che restano dove sono','Utile per i video già al posto giusto o che scegli di non spostare.',!c.applyTags)}
       ${sw('addPerformers','Aggiungi i performer nuovi a Maniac','Chi non è ancora fra gli elementi riconosciuti entra in elenco con la foto da StashDB.')}
     </div>`;
+  b+=`<div class="section-label">Automatico</div>
+    <div class="lo-sws" style="grid-template-columns:1fr">
+      ${sw('autoOrganize','Sistema da solo i nuovi video','Ogni tanto ricontrolla le cartelle da smistare e mette a posto quello che riconosce, lasciando lo snapshot per annullare. I doppioni non li tocca.')}
+    </div>`;
+  if(c.autoOrganize){
+    b+=`<div class="lo-row">Sposta da solo i file
+      <select class="m-input" style="width:auto" onchange="_loSet('autoConfidence',this.value,true)">
+        <option value="certain"${c.autoConfidence!=='probable'?' selected':''}>solo certi</option>
+        <option value="probable"${c.autoConfidence==='probable'?' selected':''}>certi e probabili</option>
+      </select> e ricontrolla ogni
+      <input type="number" min="5" max="720" class="m-input" style="width:70px" value="${c.autoIntervalMin}" onchange="_loSet('autoIntervalMin',Math.max(5,Math.round(+this.value)||15),true)"> minuti.</div>`;
+  }
   if(c.useStashdb&&_lo.hasKey===false)b+=`<div class="lo-warn">Manca la chiave API StashDB (Impostazioni › StashDB API key): senza, il riconoscimento usa solo i nomi dei file e le tue cartelle.</div>`;
   return `${_loHead()}<div class="wiz-body">${b}</div>
     <div class="wiz-foot"><button class="mdl-btn" onclick="_lo.step=1;_loRender()">← Indietro</button>
@@ -12308,9 +12342,20 @@ function _loStep2(){
 function _loSet(k,v,silent){
   const c=_loCfg();c[k]=v;
   // Tag, performer e anteprime si applicano dopo: non invalidano l'analisi già fatta.
-  if(!['showThumbs','applyTags','tagAll','addPerformers'].includes(k))_lo.result=null;
+  if(!['showThumbs','applyTags','tagAll','addPerformers','autoOrganize','autoConfidence','autoIntervalMin'].includes(k))_lo.result=null;
+  if(['autoOrganize','autoIntervalMin'].includes(k)){try{_loAutoInit();}catch(_){}}
   try{saveConfig();}catch(_){}
   if(!silent)_loRender();
+}
+
+// Stima grossolana: mezzo/sette decimi di secondo a video, contando anche i file
+// gia' smistati che servono da esempio per imparare.
+function _loVisualEta(d){
+  const cats=_loCategories().length||1;
+  const nTarget=(_loCfg().scope==='all'?(d.total||0):(d.unsortedTotal||0));
+  const nTrain=Math.min(d.total||0,cats*120);
+  const min=Math.round((nTarget+nTrain)*0.7/60);
+  return min>=2?`, quindi circa ${min<60?min+' minuti':Math.round(min/60)+' ore'} su questa libreria`:'';
 }
 
 // ── 3. Analisi ──
@@ -12319,8 +12364,9 @@ async function _loStart(){
   if(_lo.jobId)return;
   const config={root:c.root,roles:c.rolesByRoot[c.root]||{},layout:c.layout,scope:c.scope,
     minPerformerFiles:c.minPerformerFiles,createPerformerFolders:!!c.createPerformerFolders,performerContainer:c.performerContainer||null,
-    extraCategories:(c.extraCategoriesByRoot[c.root]||[]),
-    useStashdb:!!c.useStashdb,usePhash:!!(c.useStashdb&&c.usePhash),useSearch:!!(c.useStashdb&&c.useSearch)};
+    extraCategories:(c.extraCategoriesByRoot[c.root]||[]),duplicatesFolder:c.duplicatesFolder||'',
+    useStashdb:!!c.useStashdb,usePhash:!!(c.useStashdb&&c.usePhash),useSearch:!!(c.useStashdb&&c.useSearch),
+    useVisual:!!c.useVisual};
   const jobId='liborg_'+Date.now();
   Object.assign(_lo,{jobId,prog:{phases:{},warns:[]},result:null,step:3,bg:false});
   _loRender();_workerInc('organizer');
@@ -12339,7 +12385,13 @@ function _loCancel(){
   if(_lo.prog)_lo.prog.error='Analisi interrotta.';
 }
 function _loOnProgress(evt){
-  if(!evt||!_lo.jobId||evt.jobId!==_lo.jobId)return;
+  if(!evt)return;
+  if(_lo.autoJob&&evt.jobId===_lo.autoJob){
+    if(evt.type==='done')_loAutoDone(evt);
+    else if(evt.type==='exit'||evt.type==='error')_lo.autoJob=null;
+    return;
+  }
+  if(!_lo.jobId||evt.jobId!==_lo.jobId)return;
   const p=_lo.prog||(_lo.prog={phases:{},warns:[]});
   const enter=ph=>{if(ph&&p.phase!==ph){if(p.phase)p.phases[p.phase]='done';p.phase=ph;p.current=0;p.total=0;p.file='';p.found=null;p.eta=null;}};
   if(evt.type==='phase'){enter(evt.phase);p.text=evt.text||p.text;if(evt.total!=null)p.total=evt.total;}
@@ -12408,6 +12460,7 @@ function _loConf(it){return _loHasOver(it)?(_loActionable(it)?'manual':'none'):(
 function _loCount(fn){return ((_lo.result||{}).items||[]).filter(fn).length;}
 function _loMatchFilter(it,f){
   if(f==='all')return true;
+  if(f==='dup')return !!it.dup;
   const act=_loActionable(it);
   if(f==='move')return act;
   if(f==='none')return !act;
@@ -12437,7 +12490,7 @@ function _loStep4(){
   const cls=s.classifier;
   const kpi=(n,l)=>`<div class="lo-kpi"><b>${n}</b><span>${l}</span></div>`;
   let b=`<div class="lo-sum">${kpi(s.inScope||0,'analizzati')}${kpi(s.withPerformer||0,'con performer')}${kpi(s.withCategory||0,'con tipologia')}${kpi(_loCount(_loActionable),tagsOnly?'da taggare':'da spostare')}</div>
-    <div class="lo-sub">Riconosciuti su StashDB: ${idf.oshash||0} con l'impronta del file, ${idf.phash||0} con l'impronta visiva, ${idf.code||0} dal codice scena, ${idf.title||0} dal titolo, ${idf.name||0} dal nome nel file.${cls&&cls.samples?' Tipologie imparate da '+cls.samples+' file già smistati'+(cls.coverage90?': affidabili al 90% nel '+Math.round(cls.coverage90*100)+'% dei casi':'')+'.':''}${(s.newFolders||[]).length?' Nuove cartelle: '+s.newFolders.slice(0,6).map(_loEsc).join(', ')+(s.newFolders.length>6?'…':'')+'.':''}</div>`;
+    <div class="lo-sub">Riconosciuti su StashDB: ${idf.oshash||0} con l'impronta del file, ${idf.phash||0} con l'impronta visiva, ${idf.code||0} dal codice scena, ${idf.title||0} dal titolo, ${idf.name||0} dal nome nel file.${cls&&cls.samples?' Tipologie imparate da '+cls.samples+' file già smistati'+(cls.coverage90?': affidabili al 90% nel '+Math.round(cls.coverage90*100)+'% dei casi':'')+'.':''}${s.visual?' Immagini: imparate da '+s.visual.trained+' file, '+Math.round(s.visual.accuracy*100)+'% di risposte esatte in prova, usate su '+s.visual.used+'.':''}${s.duplicates?' Doppioni: '+s.duplicates+'.':''}${(s.newFolders||[]).length?' Nuove cartelle: '+s.newFolders.slice(0,6).map(_loEsc).join(', ')+(s.newFolders.length>6?'…':'')+'.':''}</div>`;
   if(s.stash&&s.stash.disabled)b+=`<div class="lo-warn">${_loEsc(s.stash.disabled)}</div>`;
   b+=`<div class="lo-filters">${LO_FILTERS.map(([f,l])=>`<button class="lo-chip ${_lo.filter===f?'on':''}" onclick="_lo.filter='${f}';_lo.open={};_loRender()">${f==='move'&&tagsOnly?'Da taggare':l} ${_loCount(it=>_loMatchFilter(it,f))}</button>`).join('')}
     <button class="lo-chip ${cfg.showThumbs?'on':''}" title="Mostra un fotogramma di ogni video" onclick="_loSet('showThumbs',${!cfg.showThumbs})">Anteprime</button>
@@ -12480,7 +12533,8 @@ function _loRow(it){
   const cf=LO_CONF[conf]||LO_CONF.none;
   const th=cfg.showThumbs?`<div class="lo-thumb">${(t=>t?`<img src="${t}" alt="">`:'<span>…</span>')(_loThumb(it.path))}</div>`:'';
   const perfs=(it.performers||[]).filter(p=>!/^(MALE|TRANSGENDER_MALE)$/.test(p.gender||'')).slice(0,3);
-  const chips=perfs.map(p=>`<span class="lo-pchip" title="${_loEsc((LO_SRC[p.source]||p.source)+' · '+((LO_CONF[p.conf]||[''])[0]))}">${_loEsc(p.name)}</span>`).join('')
+  const chips=(it.dup?`<span class="lo-dup" title="${_loEsc('Doppione ('+it.dup.kind+') di '+it.dup.of)}">doppione</span>`:'')
+    +perfs.map(p=>`<span class="lo-pchip" title="${_loEsc((LO_SRC[p.source]||p.source)+' · '+((LO_CONF[p.conf]||[''])[0]))}">${_loEsc(p.name)}</span>`).join('')
     +(it.category?`<span class="lo-cchip" title="${_loEsc((LO_CONF[it.category.conf]||[''])[0])}">${_loEsc(it.category.name)}</span>`:'')
     +(it.scene?`<span title="${_loEsc(it.scene.title||'')}">${_loEsc(LO_SRC[it.scene.source]||'')}${it.scene.studio?' · '+_loEsc(it.scene.studio):''}</span>`:'');
   const tip=[it.reason,it.scene&&it.scene.title?'Scena: '+it.scene.title:'',it.rel].filter(Boolean).join('\n');
@@ -12604,6 +12658,19 @@ function _loOnExecProgress(evt){
     } else if(evt.type==='exit'){_workerDec('organizer');_lo.undo=null;}
     return;
   }
+  const A=_lo.autoExec;
+  if(A&&evt.jobId===A.jobId){
+    if(evt.type==='warn'){
+      const m=String(evt.error||'');
+      const op=A.ops.find(o=>m.includes(o.from)||m.includes(o.to));
+      if(op)A.failed.add(op.from);
+    } else if(evt.type==='done'){
+      _loAutoExecDone(evt,A);
+    } else if(evt.type==='exit'&&A.running){
+      A.running=false;_lo.autoExec=null;
+    }
+    return;
+  }
   const X=_lo.exec;if(!X||evt.jobId!==X.jobId)return;
   if(evt.type==='progress'){X.current=evt.current||0;X.total=evt.total||X.total;X.file=evt.file||'';}
   else if(evt.type==='warn'){
@@ -12675,7 +12742,7 @@ function _loTagFile(path,it){
 }
 // I file spostati si portano dietro tag, voci di playlist e recenti; con addTags
 // ricevono anche performer e tipologia riconosciuti.
-function _loRemap(pairs,addTags){
+function _loRemap(pairs,addTags,byPathArg){
   if(!pairs||!pairs.length)return 0;
   const moved=new Map(pairs.map(p=>[p.from,p.to]));
   S._fileTags=S._fileTags||{};
@@ -12689,8 +12756,8 @@ function _loRemap(pairs,addTags){
   (S.players||[]).forEach(p=>p&&(p.playlist||[]).forEach(f=>{const d=moved.get(f.path);if(d){f.path=d;try{f.url=mkUrl(d);}catch(_){}}}));
   (S.recent||[]).forEach(r=>{const d=moved.get(r.path);if(d)r.path=d;});
   let tagged=0;
-  if(addTags&&_loCfg().applyTags&&_lo.result){
-    const byPath=new Map(_lo.result.items.map(it=>[it.path,it]));
+  if(addTags&&_loCfg().applyTags&&(byPathArg||_lo.result)){
+    const byPath=byPathArg||new Map(_lo.result.items.map(it=>[it.path,it]));
     pairs.forEach(({from,to})=>{const it=byPath.get(from);if(it&&_loTagFile(to,it))tagged++;});
   }
   try{persistFileTags();}catch(_){}
@@ -12764,6 +12831,75 @@ async function _loUndo(){
   _workerInc('organizer');
   toast('Ripristino in corso…');
   _loRender();
+}
+// ── Sistemazione automatica dei nuovi arrivi ──
+// Spenta di suo. Accesa, ogni tot minuti rianalizza le cartelle da smistare — con
+// la cache è questione di secondi — e sposta da sola solo ciò che rientra nella
+// soglia scelta, mai i doppioni, lasciando snapshot e cronologia per tornare indietro.
+function _loAutoInit(){
+  if(window._loAutoTimer){clearInterval(window._loAutoTimer);window._loAutoTimer=null;}
+  const c=_loCfg();
+  if(!c.autoOrganize||!c.root)return;
+  window._loAutoTimer=setInterval(()=>{_loAutoRun();},Math.max(5,+c.autoIntervalMin||15)*60000);
+  setTimeout(()=>{_loAutoRun();},60000);
+}
+async function _loAutoRun(){
+  const c=_loCfg(), api=window.maniac&&window.maniac.libOrganizer;
+  if(!c.autoOrganize||!c.root||!api)return;
+  // Mai in mezzo a un lavoro dell'utente: se il wizard è aperto decide lui.
+  if(_lo.jobId||_lo.autoJob||_lo.undo||(_lo.exec&&_lo.exec.running)||(_lo.autoExec&&_lo.autoExec.running))return;
+  if(document.getElementById('loOv'))return;
+  const jobId='liborg_auto_'+Date.now();
+  _lo.autoJob=jobId;
+  const config={root:c.root,roles:c.rolesByRoot[c.root]||{},layout:c.layout,scope:'unsorted',
+    minPerformerFiles:c.minPerformerFiles,createPerformerFolders:!!c.createPerformerFolders,
+    performerContainer:c.performerContainer||null,extraCategories:(c.extraCategoriesByRoot[c.root]||[]),
+    duplicatesFolder:c.duplicatesFolder||'',useStashdb:!!c.useStashdb,
+    usePhash:!!(c.useStashdb&&c.usePhash),useSearch:!!(c.useStashdb&&c.useSearch),
+    useVisual:!!c.useVisual,visualDownload:false};
+  let r=null;
+  try{r=await api.analyze({jobId,config});}catch(_){r=null;}
+  if(!r||!r.ok)_lo.autoJob=null;
+}
+function _loAutoDone(evt){
+  _lo.autoJob=null;
+  const c=_loCfg();
+  const min=c.autoConfidence==='probable'?2:3;
+  const items=(evt.items||[]).filter(it=>it.dest&&!it.dup&&(LO_RANK[it.conf]||0)>=min);
+  if(!items.length)return;
+  const jobId='lo_auto_exec_'+Date.now();
+  _lo.autoExec={jobId,running:true,items,ops:items.map(it=>({from:it.path,to:it.dest})),failed:new Set()};
+  try{window.maniac.organizer.execute({jobId,ops:_lo.autoExec.ops});}catch(_){_lo.autoExec=null;}
+}
+function _loAutoExecDone(evt,A){
+  A.running=false;
+  const pairs=A.ops.filter(o=>!A.failed.has(o.from));
+  const byPath=new Map(A.items.map(it=>[it.path,it]));
+  const tagged=_loRemap(pairs,true,byPath);
+  const moved=evt.moved||0;
+  try{
+    const root=_loCfg().root;
+    S.organizerRecents=Array.isArray(S.organizerRecents)?S.organizerRecents:[];
+    S.organizerRecents.unshift({ts:Date.now(),moved,failed:evt.failed||0,snapshot:evt.snapshot||'',
+      sources:[root],root,auto:true,sample:pairs.slice(0,12).map(o=>({from:o.from,to:o.to}))});
+    S.organizerRecents=S.organizerRecents.slice(0,50);
+    S._orgPanelSnaps=undefined;
+    saveConfig();
+  }catch(_){}
+  if(_loCfg().addPerformers){
+    _loAddPerformers(pairs.map(o=>({it:byPath.get(o.from),path:o.to})).filter(x=>x.it));
+  }
+  _lo.autoLast={ts:Date.now(),moved,tagged,snapshot:evt.snapshot||''};
+  _lo.autoExec=null;
+  if(moved){
+    toast('Organizer: '+moved+' nuovi video sistemati');
+    try{
+      if(window.Notification&&Notification.permission==='granted'){
+        new Notification('Maniac · Organizer',{body:moved+' nuovi video sistemati automaticamente',silent:true});
+      }
+    }catch(_){}
+  }
+  if(S.panel==='organizer')renderPanel();
 }
 function _loReset(){
   Object.assign(_lo,{step:1,detect:null,result:null,exec:null,prog:null,sel:new Set(),over:{},open:{},all:{},q:''});
@@ -16179,6 +16315,8 @@ window.addEventListener('DOMContentLoaded', ()=>{
   // i18n: inizializza prima del resto così t() è già disponibile
   try{ if(window.i18n&&window.i18n.init) window.i18n.init().catch(()=>{}); }catch(_){}
   setTimeout(()=>{try{initVenvCheck(false);}catch(e){}}, 1200);
+  // Organizer automatico: parte solo se l'utente lo ha acceso per una libreria.
+  setTimeout(()=>{try{_loAutoInit();}catch(e){}}, 5000);
   // Browser detection per cookies (popola la dropdown nelle Impostazioni)
   setTimeout(async ()=>{
     try{
