@@ -541,9 +541,12 @@ class Cache:
             (oshash, phash, duration, int(time.time())))
 
     def clipemb(self, oshash):
-        """None = mai provato, b'' = video illeggibile, altrimenti il vettore."""
-        r = self.con.execute('SELECT vec FROM clipemb WHERE oshash=?', (oshash,)).fetchone()
-        return None if not r else r[0]
+        """None = da calcolare, altrimenti il vettore. Un fallimento (b'') vale una
+        settimana: il file poteva essere solo occupato o su un disco staccato."""
+        r = self.con.execute('SELECT vec, updated FROM clipemb WHERE oshash=?', (oshash,)).fetchone()
+        if not r or (not r[0] and time.time() - (r[1] or 0) > 7 * DAY):
+            return None
+        return r[0]
 
     def put_clipemb(self, oshash, blob):
         self.con.execute('INSERT OR REPLACE INTO clipemb(oshash, vec, updated) VALUES(?,?,?)',
