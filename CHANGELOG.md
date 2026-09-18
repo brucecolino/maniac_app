@@ -3,6 +3,30 @@
 Tutte le versioni pubblicate di Maniac. L'app controlla questa lista dalla
 scheda **Info → Controlla aggiornamenti**.
 
+## 1.1.6 — 2026-09-18
+
+### Organizer: riconosce anche quello che vede
+- Nuova opzione **Tipologia dalle immagini**. Guarda otto fotogrammi per video e
+  impara le *tue* tipologie anche dall'immagine, così finiscono in cartella pure
+  i file col nome che non dice niente (`68c4eb094c99….mp4`). Risponde solo
+  quando è abbastanza sicura: sotto la soglia tace e il video resta dov'è. Il
+  modello (335 MB) si scarica al primo uso e i risultati restano in cache, quindi
+  la prima analisi è lenta (circa mezzo secondo a video) e le successive no.
+  Quando nome e immagini dicono la stessa cosa, la proposta sale a "probabile".
+- **Doppioni**. Trova lo stesso video due volte in libreria — copia identica,
+  ricodifica (impronta visiva) o stessa scena su StashDB — tiene quello già
+  smistato o il più grande e segnala gli altri, con la spunta per mandarli tutti
+  in una cartella a parte.
+- **Sistemazione automatica**. Ogni tanto ricontrolla le cartelle da smistare e
+  mette a posto da solo quello che riconosce con certezza. Spento di default, non
+  tocca mai i doppioni e lascia sempre lo snapshot per annullare.
+
+### Correzioni
+- Il controllo aggiornamenti confronta i numeri di versione uno per uno: non
+  propone più di "aggiornare" alla 1.1.3 quando hai già la 1.1.4.
+- Nell'organizer classico la barra dice quanti file sono in tutto, non più solo
+  quanti ne ha letti finora.
+
 ## 1.1.5 — 2026-09-18
 
 ### Organizer: si decide meglio cosa fare di ogni video

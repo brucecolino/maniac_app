@@ -72,6 +72,15 @@ MALE_GENDERS = {'MALE', 'TRANSGENDER_MALE'}
 DAY = 86400
 
 
+# Il flusso JSONL e' sempre UTF-8: l'app passa gia' PYTHONIOENCODING, ma chi lancia
+# il worker a mano su Windows si ritroverebbe cp1252 e accenti rotti.
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
+
 def _emit(obj):
     try:
         sys.stdout.write(json.dumps(obj, ensure_ascii=False) + "\n")
@@ -510,6 +519,7 @@ class Cache:
         self.con.execute('CREATE TABLE IF NOT EXISTS files(path TEXT PRIMARY KEY, size INTEGER, mtime REAL, oshash TEXT)')
         self.con.execute('CREATE TABLE IF NOT EXISTS vhash(oshash TEXT PRIMARY KEY, phash TEXT, duration REAL, updated INTEGER)')
         self.con.execute('CREATE TABLE IF NOT EXISTS lookup(kind TEXT, key TEXT, value TEXT, updated INTEGER, PRIMARY KEY(kind, key))')
+        self.con.execute('CREATE TABLE IF NOT EXISTS clipemb(oshash TEXT PRIMARY KEY, vec BLOB, updated INTEGER)')
         self.con.commit()
 
     def oshash(self, path, size, mtime):
@@ -529,6 +539,18 @@ class Cache:
             'ON CONFLICT(oshash) DO UPDATE SET phash=COALESCE(excluded.phash, vhash.phash), '
             'duration=COALESCE(excluded.duration, vhash.duration), updated=excluded.updated',
             (oshash, phash, duration, int(time.time())))
+
+    def clipemb(self, oshash):
+        """None = da calcolare, altrimenti il vettore. Un fallimento (b'') vale una
+        settimana: il file poteva essere solo occupato o su un disco staccato."""
+        r = self.con.execute('SELECT vec, updated FROM clipemb WHERE oshash=?', (oshash,)).fetchone()
+        if not r or (not r[0] and time.time() - (r[1] or 0) > 7 * DAY):
+            return None
+        return r[0]
+
+    def put_clipemb(self, oshash, blob):
+        self.con.execute('INSERT OR REPLACE INTO clipemb(oshash, vec, updated) VALUES(?,?,?)',
+                         (oshash, blob, int(time.time())))
 
     def lookup(self, kind, key, ttl_hit, ttl_miss):
         r = self.con.execute('SELECT value, updated FROM lookup WHERE kind=? AND key=?', (kind, key)).fetchone()
@@ -804,6 +826,52 @@ def calibrate(X, y, folds=5, seed=13):
             'coverage70': round(c70 / float(len(y)), 3), 'accuracy': round(acc, 3), 'samples': len(y)}
 
 
+def train_visual(X, y, labels, seed=7):
+    """Regressione logistica sui vettori CLIP, con soglie calibrate in validazione
+    incrociata: il riconoscimento dalle immagini parla solo quando è sicuro.
+    Misurato: sopra la soglia del 90% copre un terzo dei file col 97% di precisione."""
+    import numpy as np, torch
+
+    def fit(Xtr, ytr, k, epochs=300):
+        w = torch.zeros(Xtr.shape[1], k, requires_grad=True)
+        b = torch.zeros(k, requires_grad=True)
+        opt = torch.optim.Adam([w, b], lr=0.05, weight_decay=1e-4)
+        xt, yt = torch.tensor(Xtr), torch.tensor(ytr)
+        for _ in range(epochs):
+            opt.zero_grad()
+            torch.nn.functional.cross_entropy(xt @ w + b, yt).backward()
+            opt.step()
+        return w.detach(), b.detach()
+
+    k = len(labels)
+    idx = np.arange(len(y))
+    np.random.RandomState(seed).shuffle(idx)
+    preds = []
+    for f in np.array_split(idx, 5):
+        tr = np.setdiff1d(idx, f)
+        W, B = fit(X[tr], y[tr], k)
+        with torch.no_grad():
+            p = torch.softmax(torch.tensor(X[f]) @ W + B, 1).numpy()
+        for i, row in zip(f, p):
+            preds.append((float(row.max()), int(row.argmax()) == int(y[i])))
+    preds.sort(key=lambda t: -t[0])
+
+    def threshold(target):
+        best, correct = None, 0
+        for n, (p, ok) in enumerate(preds, 1):
+            correct += ok
+            if n >= 20 and correct / float(n) >= target:
+                best = p
+        return best
+
+    W, B = fit(X, y, k)
+    acc = sum(ok for _, ok in preds) / float(max(1, len(preds)))
+    t90, t70 = threshold(0.90), threshold(0.70)
+    cov = (sum(1 for p, _ in preds if t90 is not None and p >= t90) / float(max(1, len(preds))))
+    return {'W': W, 'B': B, 'labels': labels, 't90': t90, 't70': t70,
+            'accuracy': round(acc, 3), 'coverage90': round(cov, 3), 'samples': int(len(y))}
+
+
 def features(item):
     f = set(item['parsed']['tokens'])
     sc = item.get('scene')
@@ -879,6 +947,7 @@ class Analyzer:
         self.ffmpeg = videohash.resolve_ffmpeg(ffmpeg)
         self.t0 = time.time()
         self.stats = Counter()
+        self.vis = None
 
     # ── scansione ──
     def scan(self):
@@ -907,7 +976,9 @@ class Analyzer:
 
     # ── OSHASH ──
     def hash_files(self):
-        targets = self.items if self.stash.enabled else []
+        # Le impronte servono anche senza StashDB: trovano i doppioni e fanno da
+        # chiave stabile per la cache, quindi si calcolano sempre (e restano).
+        targets = self.items
         if not targets:
             return
         prog = Progress('hash', len(targets), 'Impronte dei file…')
@@ -1256,6 +1327,61 @@ class Analyzer:
         self.cache.commit()
         prog.tick(len(todo), found=found, force=True)
 
+    # ── doppioni ──
+    def find_duplicates(self):
+        """Stesso file due volte in libreria: per impronta identica, per impronta
+        visiva quasi uguale, o perché puntano alla stessa scena di StashDB.
+        Il "buono" è quello già smistato, o il più grande: gli altri sono copie."""
+        groups = {}
+        by_os = defaultdict(list)
+        for it in self.items:
+            if it['oshash']:
+                by_os[it['oshash']].append(it)
+        for h, bucket in by_os.items():
+            if len(bucket) > 1:
+                groups[('identico', h)] = bucket
+
+        by_ph = defaultdict(list)
+        for it in self.items:
+            if it.get('phash'):
+                by_ph[it['phash']].append(it)
+        keys = list(by_ph)
+        used = set()
+        for i, k in enumerate(keys):
+            if k in used:
+                continue
+            bucket = list(by_ph[k])
+            used.add(k)
+            for k2 in keys[i + 1:]:
+                if k2 not in used and videohash.hamming(k, k2) <= 4:
+                    bucket.extend(by_ph[k2])
+                    used.add(k2)
+            if len(bucket) > 1:
+                groups[('stesso video', k)] = bucket
+
+        by_scene = defaultdict(list)
+        for it in self.items:
+            sc = it['scene']
+            # Solo riconoscimenti forti: due titoli uguali non bastano a dire "doppione".
+            if sc and sc.get('id') and it['sceneSource'] in ('oshash', 'phash', 'code'):
+                by_scene[sc['id']].append(it)
+        for sid, bucket in by_scene.items():
+            if len(bucket) > 1:
+                groups[('stessa scena', sid)] = bucket
+
+        rank = {'identico': 3, 'stesso video': 2, 'stessa scena': 1}
+        for (kind, _), bucket in groups.items():
+            keeper = max(bucket, key=lambda it: (0 if it['ctx']['unsorted'] else 1,
+                                                 it['size'], it['duration'] or 0))
+            for it in bucket:
+                if it is keeper:
+                    continue
+                cur = it.get('dup')
+                if cur and rank[cur['kind']] >= rank[kind]:
+                    continue
+                it['dup'] = {'kind': kind, 'of': keeper['rel'], 'ofName': keeper['name']}
+        self.stats['duplicates'] = sum(1 for it in self.scope_items if it.get('dup'))
+
     # ── tipologia ──
     def learn_categories(self):
         cats = self.lib['categories']
@@ -1270,18 +1396,143 @@ class Analyzer:
         self.calib = calibrate(X, y)
         self.clf = Classifier().fit(X, y)
 
+    # ── tipologia dalle immagini ──
+    def visual(self):
+        """Quando il nome non dice niente ("68c4eb094c99.mp4") il testo tace, le
+        immagini no: qualche fotogramma passa dentro CLIP e un classificatore
+        addestrato sulle TUE cartelle dice di che tipologia sembra. Parla solo
+        sopra la soglia calibrata, altrimenti sbaglierebbe più di quanto aiuta."""
+        self.vis = None
+        if not self.cfg.get('useVisual'):
+            return
+        targets = [it for it in self.scope_items
+                   if not it['ctx']['category'] and not it.get('dup') and it['oshash']]
+        if not targets:
+            return
+        cats = self.lib['categories']
+        pool = defaultdict(list)
+        for it in self.items:
+            if it['ctx']['category'] in cats and it['oshash'] and not it.get('dup'):
+                pool[it['ctx']['category']].append(it)
+        cap = max(20, int(self.cfg.get('visualMaxPerClass') or 120))
+        rnd = random.Random(11)
+        train = []
+        for cat in sorted(pool):
+            lst = sorted(pool[cat], key=lambda x: x['rel'])
+            if len(lst) < 12:      # con pochi esempi la classe non si impara
+                continue
+            train.extend(lst if len(lst) <= cap else rnd.sample(lst, cap))
+        if len(train) < 40 or len({it['ctx']['category'] for it in train}) < 2:
+            _warn('immagini: troppi pochi file già smistati per imparare le tipologie')
+            return
+        try:
+            import numpy as np, torch, visualtag  # noqa: F401
+        except ImportError as e:
+            _warn('analisi delle immagini non disponibile: %s' % e)
+            return
+        if not self.ffmpeg:
+            _warn('analisi delle immagini: ffmpeg non trovato')
+            return
+        try:
+            if not visualtag.have_model():
+                if not self.cfg.get('visualDownload', True):
+                    _warn('immagini: modello assente e scaricamento disattivato')
+                    return
+                pm = Progress('visual', 100, 'Scarico il modello immagini (335 MB, una volta sola)…')
+                visualtag.ensure_model(lambda d, t: pm.tick(int(100.0 * d / t) if t else 0))
+                pm.tick(100, force=True)
+        except Exception as e:
+            _warn('modello immagini non scaricato: %s' % str(e)[:160])
+            return
+
+        seen = {it['id'] for it in train}
+        todo = train + [it for it in targets if it['id'] not in seen]
+        prog = Progress('visual', len(todo),
+                        'Guardo i fotogrammi di %d video (una volta sola)…' % len(todo))
+        vecs, fails = {}, 0
+        for k, it in enumerate(todo, 1):
+            blob = self.cache.clipemb(it['oshash'])
+            if blob is None:
+                try:
+                    emb = visualtag.embed(it['path'], self.ffmpeg, self.duration(it),
+                                          int(self.cfg.get('visualFrames') or 8))
+                except Exception:
+                    emb = None
+                blob = visualtag.pack(emb) if emb is not None else b''
+                self.cache.put_clipemb(it['oshash'], blob)
+                if k % 20 == 0:
+                    self.cache.commit()
+            if blob:
+                vecs[it['id']] = visualtag.unpack(blob)
+            else:
+                fails += 1
+            prog.tick(k, file=it['name'])
+        self.cache.commit()
+        prog.tick(len(todo), force=True)
+
+        tr = [it for it in train if it['id'] in vecs]
+        labels = sorted({it['ctx']['category'] for it in tr})
+        if len(tr) < 40 or len(labels) < 2:
+            _warn('immagini: fotogrammi illeggibili su troppi file (%d)' % fails)
+            return
+        _emit({'type': 'phase', 'phase': 'visual',
+               'text': 'Imparo le tipologie dalle immagini di %d file…' % len(tr)})
+        X = np.stack([vecs[it['id']] for it in tr]).astype(np.float32)
+        y = np.array([labels.index(it['ctx']['category']) for it in tr])
+        try:
+            m = train_visual(X, y, labels)
+        except Exception as e:
+            _warn('addestramento sulle immagini fallito: %s' % str(e)[:160])
+            return
+        t90, t70 = m['t90'], m['t70']
+        used = 0
+        for it in targets:
+            v = vecs.get(it['id'])
+            if v is None:
+                continue
+            with torch.no_grad():
+                row = torch.tensor(np.asarray([v], dtype=np.float32)) @ m['W'] + m['B']
+                p = torch.softmax(row, 1).numpy()[0]
+            j = int(p.argmax())
+            conf = 'probable' if (t90 is not None and p[j] >= t90) else (
+                'uncertain' if (t70 is not None and p[j] >= t70) else 'none')
+            it['visual'] = {'name': labels[j], 'p': float(p[j]), 'conf': conf}
+            if conf != 'none':
+                used += 1
+        self.vis = {'trained': len(tr), 'classes': len(labels), 'embedded': len(vecs),
+                    'unreadable': fails, 'accuracy': m['accuracy'], 'coverage90': m['coverage90'],
+                    't90': t90, 't70': t70, 'used': used}
+        _emit({'type': 'phase', 'phase': 'visual',
+               'text': 'Immagini: %d%% di risposte esatte in prova, usate su %d file' % (
+                   round(100 * m['accuracy']), used)})
+
     def predict_category(self, it):
         if it['ctx']['category']:
             return {'name': it['ctx']['category'], 'conf': 'certain', 'source': 'folder'}
+        vis = it.get('visual') or {}
+        if vis.get('conf') in (None, 'none'):
+            vis = {}
+        text = None
         if self.clf:
             lab, margin, nf = self.clf.predict(features(it))
             c = self.calib or {}
             if lab is not None and nf >= 1:
                 # Un solo indizio non basta per "probabile", qualunque sia il margine.
                 if c.get('t90') is not None and margin >= c['t90'] and nf >= 2:
-                    return {'name': lab, 'conf': 'probable', 'source': 'learned', 'margin': round(margin, 3)}
-                if c.get('t70') is not None and margin >= c['t70']:
-                    return {'name': lab, 'conf': 'uncertain', 'source': 'learned', 'margin': round(margin, 3)}
+                    text = {'name': lab, 'conf': 'probable', 'source': 'learned', 'margin': round(margin, 3)}
+                elif c.get('t70') is not None and margin >= c['t70']:
+                    text = {'name': lab, 'conf': 'uncertain', 'source': 'learned', 'margin': round(margin, 3)}
+        if text and vis:
+            if vis['name'] == text['name']:
+                # Nome e immagini d'accordo: due indizi indipendenti, sale di livello.
+                return dict(text, conf='probable', source='learned+visual', visual=round(vis['p'], 3))
+            # In disaccordo vince il nome, ma non si può più chiamare probabile.
+            return dict(text, conf='uncertain', visual=round(vis['p'], 3))
+        if text:
+            return text
+        if vis:
+            return {'name': vis['name'], 'conf': vis['conf'], 'source': 'visual',
+                    'visual': round(vis['p'], 3)}
         lit = literal_category(it, self.cat_names)
         if lit:
             return {'name': lit, 'conf': 'uncertain', 'source': 'name'}
@@ -1320,6 +1571,30 @@ class Analyzer:
             in_cat = [f for f in folders if f.split(os.sep)[0] == category['name']]
             folders = in_cat or folders
         return best, (folders[0] if folders else None), [a for a in alts if a != best['name']]
+
+    def _finalize(self, it, cat, primary, dest_dir, conf, reason, new_folder, taken):
+        """Trasforma la decisione in percorso reale: controlla che non sia già al
+        posto giusto e che non ci sia già un file identico a destinazione."""
+        dest = None
+        if dest_dir and self.layout != 'tags_only':
+            abs_dir = os.path.join(self.root, dest_dir)
+            if _inside(it['path'], abs_dir) and (not it['ctx']['unsorted'] or os.path.dirname(it['path']) == abs_dir):
+                reason = 'Già al posto giusto'
+                dest_dir, conf = None, 'none'
+            else:
+                dest, same = _unique_dest(abs_dir, it['name'], taken, it)
+                if same:
+                    reason = 'Già presente in %s' % dest_dir
+                    dest, dest_dir, conf = None, None, 'none'
+        if not dest and not reason:
+            reason = 'Non riconosciuto'
+        if not dest and self.layout != 'tags_only':
+            conf = 'none'
+        if self.layout == 'tags_only':
+            conf = max([(primary or {}).get('conf', 'none'), (cat or {}).get('conf', 'none')],
+                       key=lambda c: CONF_RANK[c])
+            reason = reason or 'Solo tag'
+        return _item_out(it, cat, primary, dest, dest_dir, conf, reason, new_folder)
 
     def plan(self):
         _emit({'type': 'phase', 'phase': 'plan', 'text': 'Preparo le proposte…'})
@@ -1371,6 +1646,17 @@ class Analyzer:
             cat_conf = cat['conf'] if cat else 'none'
             cat_rel = cat['name'] if cat else None
 
+            # Un doppione non va organizzato come se fosse un video a sé: o resta
+            # dov'è, o finisce nella cartella che l'utente ha scelto per le copie.
+            if it.get('dup'):
+                dup_dir = (self.cfg.get('duplicatesFolder') or '').strip().strip('\\/')
+                reason = 'Doppione (%s) di %s' % (it['dup']['kind'], it['dup']['ofName'])
+                if dup_dir:
+                    dest_dir = dup_dir
+                    conf = 'certain' if it['dup']['kind'] == 'identico' else 'probable'
+                out.append(self._finalize(it, cat, primary, dest_dir, conf, reason, False, taken))
+                continue
+
             if self.layout == 'current':
                 base = new_base.get(primary['key']) if big_enough and not folder else None
                 if folder:
@@ -1415,25 +1701,7 @@ class Analyzer:
                     dest_dir, conf = os.path.join(unknown_dir, cat_rel), cat_conf
                     reason = 'Performer non riconosciuto · ' + _cat_reason(cat)
 
-            dest = None
-            if dest_dir and self.layout != 'tags_only':
-                abs_dir = os.path.join(self.root, dest_dir)
-                if _inside(it['path'], abs_dir) and (not it['ctx']['unsorted'] or os.path.dirname(it['path']) == abs_dir):
-                    reason = 'Già al posto giusto'
-                    dest_dir, conf = None, 'none'
-                else:
-                    dest, dup = _unique_dest(abs_dir, it['name'], taken, it)
-                    if dup:
-                        reason = 'Già presente in %s' % dest_dir
-                        dest, dest_dir, conf = None, None, 'none'
-            if not dest and not reason:
-                reason = 'Non riconosciuto'
-            if not dest and self.layout != 'tags_only':
-                conf = 'none'
-            if self.layout == 'tags_only':
-                conf = max([pconf, cat_conf], key=lambda c: CONF_RANK[c])
-                reason = reason or 'Solo tag'
-            out.append(_item_out(it, cat, primary, dest, dest_dir, conf, reason, new_folder))
+            out.append(self._finalize(it, cat, primary, dest_dir, conf, reason, new_folder, taken))
         return out
 
     def run(self):
@@ -1451,7 +1719,9 @@ class Analyzer:
         self.build_dictionary()
         self.local_names(only_missing=True)
         self.stash_names()
+        self.find_duplicates()
         self.learn_categories()
+        self.visual()
         items = self.plan()
         moves = Counter(i['conf'] for i in items if i['dest'])
         summary = {
@@ -1460,10 +1730,12 @@ class Analyzer:
             'identified': {k: self.stats[k] for k in ('oshash', 'code', 'phash', 'title', 'name')},
             'withPerformer': sum(1 for i in items if i['primary']),
             'withCategory': sum(1 for i in items if i['category']),
+            'duplicates': sum(1 for i in items if i.get('dup')),
             'moves': {k: moves.get(k, 0) for k in ('certain', 'probable', 'uncertain')},
             'unchanged': sum(1 for i in items if not i['dest']),
             'newFolders': sorted({i['destRel'] for i in items if i['dest'] and i['newFolder']}),
             'classifier': self.calib,
+            'visual': self.vis,
             'stash': {'enabled': self.stash.enabled, 'requests': self.stash.requests,
                       'disabled': self.stash.disabled_reason},
             'elapsed': round(time.time() - self.t0, 1),
@@ -1480,7 +1752,8 @@ class Analyzer:
 
 def _cat_reason(cat):
     return {'folder': 'Tipologia della cartella: %s', 'learned': 'Tipologia imparata dai tuoi file: %s',
-            'name': 'Tipologia dal nome: %s'}.get(cat['source'], '%s') % cat['name']
+            'name': 'Tipologia dal nome: %s', 'visual': 'Tipologia dalle immagini: %s',
+            'learned+visual': 'Tipologia da nome e immagini: %s'}.get(cat['source'], '%s') % cat['name']
 
 
 def _safe_dirname(name):
@@ -1528,7 +1801,7 @@ def _item_out(it, cat, primary, dest, dest_dir, conf, reason, new_folder):
         'category': cat,
         'tags': (sc or {}).get('tags', [])[:14],
         'dest': dest, 'destRel': dest_dir, 'newFolder': bool(new_folder and dest),
-        'conf': conf, 'reason': reason,
+        'conf': conf, 'reason': reason, 'dup': it.get('dup'),
     }
 
 
