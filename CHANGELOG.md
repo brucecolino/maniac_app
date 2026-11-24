@@ -22,6 +22,7 @@ scheda **Info → Controlla aggiornamenti**.
   quelli che scegli, nella cartella «X @nome». La coda rispetta "Download
   concorrenti"; dopo un riavvio i video non ancora partiti restano in pausa, da
   riprendere.
+- "Download concorrenti" arriva fino a 100 (prima 10).
 - Errori di X spiegati: post sensibile, account protetto, post senza video,
   sessione scaduta.
 
