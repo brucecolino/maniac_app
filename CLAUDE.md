@@ -103,6 +103,13 @@ The site has a JS anti-bot challenge that ordinary `requests.get()` can't solve.
 
 If the wizard returns nothing, the warmup probably timed out — see `_scEnsureShell` retry budget.
 
+### X (Twitter) downloads
+
+- Sensitive (NSFW) posts need a logged-in session, and browser cookies are unusable (Chrome/Edge lock the DB while open and use app-bound encryption). Maniac keeps its own session in partition `persist:maniac-x`: `xauth:login` opens x.com's login page (the user types the password into X; Maniac never reads it) and waits for `auth_token` + `ct0`. For X URLs `_baseDownloadArgs` skips `--cookies-from-browser` (unless the user picked a browser explicitly) and `download:start` passes `--cookies <temp file>` built by `_xCookieFile()`, deleted in `finally`.
+- `_xFriendlyError` maps X errors to actionable text and `needXLogin`; the session is never cleared automatically (`xauth:login {force}` reopens the login page instead).
+- Profiles: yt-dlp can't list a timeline, so `xprofile:scan` loads `x.com/<name>/media` in a hidden window of that partition, reads the page's own GraphQL responses (`UserMedia`/`UserTweets`) through `webContents.debugger`, and `_xCollectVideos` walks them generically. The renderer (`xProfileDialog`, `_dlQueueBatch`) queues the chosen posts honouring `maxConcurrent`.
+- yt-dlp always runs with `--encoding utf-8` and stdout decoded as a UTF-8 stream: otherwise Windows prints filenames in the console code page and emoji titles end in "file non trovato".
+
 ### Download pipeline (yt-dlp)
 
 - `download:start` (`main.js` ~600) builds args via `_baseDownloadArgs` (UA + `--cookies-from-browser <detected>` + per-host extractor tweaks).

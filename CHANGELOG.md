@@ -3,6 +3,37 @@
 Tutte le versioni pubblicate di Maniac. L'app controlla questa lista dalla
 scheda **Info → Controlla aggiornamenti**.
 
+## 1.1.7 — 2026-11-24
+
+### Download da X
+- **I link di X funzionano anche con Chrome aperto.** Prima yt-dlp provava a
+  leggere i cookie di Chrome, trovava il file bloccato e si fermava prima ancora
+  di contattare X: niente video e nemmeno il titolo. I post pubblici ora si
+  scaricano senza cookie.
+- **Account X dentro Maniac**, per i post segnati come sensibili (X li mostra
+  solo a chi ha fatto login). Da **Impostazioni → Downloader → Account X**, o dal
+  link "Collega account X e riprova" sulla riga in errore, si apre la pagina di
+  login di X: la password la scrivi a X, Maniac non la legge e non la salva. I
+  cookie di quella sessione vanno a yt-dlp solo per i link di X, in un file
+  temporaneo cancellato appena il download finisce.
+- **Tutti i video di un profilo.** Incolla il link di un profilo
+  (`x.com/nome`): Maniac scorre la scheda Media con il tuo account, ti mostra i
+  video con anteprima, durata e data, salta quelli già scaricati e mette in coda
+  quelli che scegli, nella cartella «X @nome». La coda rispetta "Download
+  concorrenti"; dopo un riavvio i video non ancora partiti restano in pausa, da
+  riprendere.
+- Errori di X spiegati: post sensibile, account protetto, post senza video,
+  sessione scaduta.
+
+### Correzioni
+- I titoli con emoji o simboli davano "file non trovato" a fine download: yt-dlp
+  scriveva il nome del file nella codifica della console di Windows, che le emoji
+  non le ha. Ora il nome letto coincide con quello su disco.
+- A fine download la riga mostra il nome del file finale, non quello della
+  traccia audio scaricata per ultima.
+- Organizer: un video illeggibile dalle immagini si riprova dopo una settimana
+  invece di restare escluso per sempre.
+
 ## 1.1.6 — 2026-09-18
 
 ### Organizer: riconosce anche quello che vede

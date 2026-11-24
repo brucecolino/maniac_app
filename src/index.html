@@ -1345,6 +1345,30 @@ input[type=range]::-webkit-slider-thumb{margin-top:-4.5px}
 .m2-dl-row .m2-dl-size{justify-self:end;font:600 11px 'JetBrains Mono',monospace;color:var(--t2);white-space:nowrap}
 .m2-dl-row .m2-dl-acts{display:flex;align-items:center;gap:4px;justify-content:flex-end}
 .m2-dl-act-trash{color:var(--err,#e55)!important}
+.xp-mdl{max-width:760px!important;width:min(760px,calc(100vw - 32px));display:flex;flex-direction:column;max-height:calc(100vh - 60px)}
+.xp-body{flex:1;min-height:0;overflow:auto;margin:6px 0 12px}
+.xp-foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.xp-note{font:400 11px/1.45 'Inter';color:var(--t3);margin-top:8px}
+.xp-live{padding:14px;border:1px solid var(--bd);border-radius:8px;background:var(--s2)}
+.xp-live .xp-t{font:600 13px 'Inter';color:var(--t1)}
+.xp-live .xp-c{font:400 12px 'JetBrains Mono',monospace;color:var(--t2);margin-top:4px}
+.xp-opts{display:flex;flex-wrap:wrap;gap:6px 16px;margin-bottom:8px;font:400 12px 'Inter';color:var(--t2)}
+.xp-opts label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.xp-opts a{color:var(--accent-hi);cursor:pointer}
+.xp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.xp-it{position:relative;display:flex;flex-direction:column;border:1px solid var(--bd);border-radius:8px;overflow:hidden;background:var(--s2);cursor:pointer}
+.xp-it.off{opacity:.45}
+.xp-it img{width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--s3);display:block}
+.xp-it input{position:absolute;top:6px;left:6px;width:16px;height:16px}
+.xp-it .xp-tx{padding:6px 8px;font:400 11px/1.35 'Inter';color:var(--t1);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:30px}
+.xp-it .xp-m{padding:0 8px 6px;font:400 10px 'JetBrains Mono',monospace;color:var(--t3)}
+[data-theme="light"] .xp-it,[data-theme="light"] .xp-live{background:#fff;border-color:rgba(0,0,0,.12)}
+[data-theme="light"] .xp-it img{background:#e9e9ef}
+[data-theme="light"] .xp-opts a{color:#4a2e75}
+.m2-dl-xlink{color:var(--accent-hi);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.m2-dl-xlink:hover{color:var(--t1)}
+[data-theme="light"] .m2-dl-xlink{color:#4a2e75}
+[data-theme="light"] .m2-dl-xlink:hover{color:#1A1A2E}
 .m2-dl-act-trash:hover{background:rgba(229,85,85,.14)!important;color:#fff!important}
 [data-theme="light"] .m2-dl-act-trash:hover{background:rgba(229,85,85,.18)!important;color:var(--err,#c0392b)!important}
 .m2-dl-size{text-align:right;font:600 12px/1 'JetBrains Mono',monospace;color:var(--t1);white-space:nowrap;letter-spacing:.02em}
@@ -7100,6 +7124,12 @@ function renderTab(){
         ${['auto','chrome','edge','firefox','brave','opera','vivaldi'].map(b=>`<option value="${b}" ${cfg.cookieBrowser===b?'selected':''}>${b==='auto'?'Auto-detect':b.charAt(0).toUpperCase()+b.slice(1)}</option>`).join('')}
       </select>
       <div id="dlCookieHint" style="font:400 10px 'JetBrains Mono',monospace;color:var(--t3);margin-top:4px">${(()=>{ const list=window.__cookieBrowsers||[]; return list.length?'Rilevati: '+list.join(', '):'Sto rilevando…'; })()}</div>
+      <div class="sg-lbl" style="margin-top:10px">Account X (per i post sensibili)</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span id="dlXStatus" style="flex:1;font:400 11px 'JetBrains Mono',monospace;color:var(--t2)">Controllo…</span>
+        <button class="reset-btn" id="dlXBtn" onclick="dlXToggle()" disabled>…</button>
+      </div>
+      <div style="font:400 10px 'JetBrains Mono',monospace;color:var(--t3);margin-top:4px">X mostra i video per adulti solo a chi ha fatto login. Entri dalla pagina di X in una finestra di Maniac: la password la scrivi a X, Maniac non la legge e non la salva. La sessione serve solo per i link di X.</div>${(setTimeout(()=>{try{_dlXRefresh();}catch(_){}},0),'')}
       <div class="sg-row" style="margin-top:10px"><span class="sg-txt">Download concorrenti (max)</span>
         <input type="range" min="1" max="10" value="${dc.maxConcurrent||3}" oninput="S.downloaderCfg.maxConcurrent=+this.value;saveConfig();this.nextElementSibling.textContent=this.value" style="width:160px"><span style="width:24px;text-align:right">${dc.maxConcurrent||3}</span></div>
       <div class="sg-row"><span class="sg-txt">Limite banda</span>
@@ -8002,7 +8032,7 @@ function _dlRenderList(list){
         <div class="m2-dl-title">
           <span class="m2-dl-titletxt" title="Doppio click per rinominare" ondblclick="event.stopPropagation();dlRenameInline(this,'${d.id}')">${title}</span>
         </div>
-        <div class="m2-dl-meta">${meta}${showNote?' · '+d.note.replace(/</g,'&lt;'):''}</div>
+        <div class="m2-dl-meta">${meta}${showNote?' · '+d.note.replace(/</g,'&lt;'):''}${d.status==='Error'&&d.needXLogin?` · post sensibile, serve il login a X · <a class="m2-dl-xlink" onclick="event.stopPropagation();dlConnectXAndRetry('${d.id}')">Collega account X e riprova</a>`:''}</div>
         <div class="m2-dl-bar"><div class="m2-dl-fill" style="width:${pct}%;background:${stColor}"></div></div>
       </div>
       <span class="m2-dl-chip" title="${chip}">${chip}</span>
@@ -8258,6 +8288,7 @@ function wireDownloadPanel(){
     if(evt.filePath)d.filePath=evt.filePath;
     if(evt.note!==undefined)d.note=evt.note;
     if(evt.error)d.error=evt.error;
+    if(evt.status)d.needXLogin=evt.status==='Error'&&!!evt.needXLogin;
     // F4: log errori download nel pannello Info → Logs
     if(evt.status==='Error'&&evt.error&&!d._loggedError){
       d._loggedError=true;
@@ -8351,6 +8382,10 @@ async function dlStart(url, opts){
   if(!window.maniac||!window.maniac.downloadStart){toast('IPC non disponibile');return;}
   dlUpdateCfg();
   const cfg=_dlCfg();
+  // Il link di un profilo X non è un video ma un elenco: si sceglie cosa scaricare.
+  // Vale anche per i link copiati con l'avvio automatico: centinaia di video non
+  // partono mai senza che l'utente li abbia visti.
+  if(!opts.batch&&_dlXProfileName(url)){if(inp)inp.value='';xProfileDialog(url);return;}
   const isTorrent=/^magnet:/i.test(url)||/\.torrent(\?|$)/i.test(url);
   // Wizard streamingcommunity: serie → stagione → episodio (skip in modalità auto)
   if(!opts.auto && !isTorrent && /streamingcommunity|stream(ing)?community|cb01|animeworld|animeunity/i.test(url)){
@@ -8360,18 +8395,22 @@ async function dlStart(url, opts){
       if(chosen&&chosen.url)url=chosen.url;
     }catch(e){}
   }
-  const id=(isTorrent?'tor_':'dl_')+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+  const id=opts.rowId||((isTorrent?'tor_':'dl_')+Date.now()+'_'+Math.random().toString(36).slice(2,7));
   let domain='';try{domain=new URL(url).hostname.replace(/^www\./,'');}catch(e){}
   const list=_dlLoad();
-  const entry={id,url,domain,title:url,percent:0,status:'Queued',ts:Date.now(),torrent:isTorrent};
-  _dlImproveTitle(entry);
-  list.unshift(entry);
+  let entry=opts.rowId?list.find(x=>x.id===opts.rowId):null;
+  if(entry){entry.status='Preparing';}
+  else{
+    entry={id,url,domain,title:url,percent:0,status:'Queued',ts:Date.now(),torrent:isTorrent};
+    _dlImproveTitle(entry);
+    list.unshift(entry);
+  }
   _dlSave(list);
   if(inp)inp.value='';
   const el=document.getElementById('dlList');if(el)el.innerHTML=_dlRenderList(_dlSorted(list));
   wireDownloadPanel();
   // Notifica visibile di avvio (user request: pop-up quando parte download)
-  try{
+  if(!opts.batch)try{
     const active=_dlLoad().filter(x=>x.status==='Queued'||x.status==='Downloading'||x.status==='Preparing').length;
     toast(active>1?('Sto scaricando '+active+' file'):(isTorrent?'Avvio download torrent…':'Avvio download…'));
   }catch(e){}
@@ -8391,15 +8430,19 @@ async function dlStart(url, opts){
     }
     return;
   }
-  const policy=_dlGetPolicy();
+  const policy=opts.policy||_dlGetPolicy();
   const _cb = cfg.cookieBrowser && cfg.cookieBrowser !== 'auto' ? cfg.cookieBrowser : null;
-  const r=await window.maniac.downloadStart({id,url,quality:cfg.quality,format:cfg.format,outputDir:cfg.outputDir,vibraVidPath:cfg.vibraVidPath,policy,cookieBrowser:_cb});
+  const r=await window.maniac.downloadStart({id,url,quality:cfg.quality,format:cfg.format,outputDir:cfg.outputDir,vibraVidPath:cfg.vibraVidPath,policy,cookieBrowser:_cb,subDir:opts.subDir||entry.subDir||null});
   if(r&&!r.success){
     const l2=_dlLoad();const d=l2.find(x=>x.id===id);
-    if(d){d.status='Error';d.error=r.error||'';}
+    if(d){d.status='Error';d.error=r.error||'';d.needXLogin=!!r.needXLogin;}
     _dlSave(l2);
     if(S.panel==='downloader')renderPanel();
+    // In una coda gli errori restano sulla loro riga: un avviso per video sarebbe solo rumore.
+    if(opts.batch)return;
     toast('Errore: '+(r.error||'yt-dlp non trovato'));
+    // Il video c'è, X lo mostra solo a chi ha fatto login: cercarlo nella pagina non serve.
+    if(r.needXLogin)return;
     // Auto-suggest wizard when URL was unresolvable
     const cfgW=S.downloaderCfg||{};
     const autoWiz=cfgW.autoWizardOnFail!==false;
@@ -8492,6 +8535,167 @@ function dlRenameInline(spanEl,id){
   inp.addEventListener('blur',()=>finish(true));
 }
 // F4: retry come RESUME — riusa lo stesso id, passa --continue a yt-dlp
+// ── Profili X: tutti i video di un profilo ──
+const _DL_X_RESERVED=new Set(['i','home','explore','search','settings','notifications','messages','compose','login','logout','signup','tos','privacy','intent','share','hashtag','jobs','lists']);
+function _dlXProfileName(url){
+  try{
+    const u=new URL(url);
+    if(!/(^|\.)(x|twitter)\.com$/i.test(u.hostname||''))return null;
+    const p=u.pathname.split('/').filter(Boolean);
+    if(!p.length||p.length>2)return null;
+    if(p.length===2&&!/^(media|with_replies|highlights|videos)$/i.test(p[1]))return null;
+    if(_DL_X_RESERVED.has(p[0].toLowerCase())||!/^[A-Za-z0-9_]{1,15}$/.test(p[0]))return null;
+    return p[0];
+  }catch(_){return null;}
+}
+function _xpEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function _xpDur(s){if(!s)return '';s=Math.round(s);const m=Math.floor(s/60),x=s%60;return m>=60?Math.floor(m/60)+':'+String(m%60).padStart(2,'0')+':'+String(x).padStart(2,'0'):m+':'+String(x).padStart(2,'0');}
+async function xProfileDialog(url){
+  const name=_dlXProfileName(url);if(!name)return;
+  const api=window.maniac&&window.maniac.xauth;
+  if(!api||!api.scanProfile){toast('Lettura dei profili X non disponibile');return;}
+  if(!window.__xpWired){window.__xpWired=true;api.onScanProgress(d=>{const f=(window.__xpCb||{})[d.scanId];if(f)f(d);});}
+  const ov=document.createElement('div');ov.className='mdl-ov';
+  ov.innerHTML=`<div class="mdl xp-mdl" role="dialog" aria-modal="true"><div class="mdl-ttl">Video del profilo @${_xpEsc(name)}</div><div class="xp-body"></div><div class="xp-foot"></div></div>`;
+  document.body.appendChild(ov);requestAnimationFrame(()=>ov.classList.add('show'));
+  const body=ov.querySelector('.xp-body'),foot=ov.querySelector('.xp-foot');
+  const scanId='xp_'+Date.now();
+  let closed=false;
+  const close=()=>{if(closed)return;closed=true;try{api.cancelScan(scanId);}catch(_){}delete (window.__xpCb||{})[scanId];ov.classList.remove('show');setTimeout(()=>ov.remove(),200);};
+  const btn=(label,primary,fn)=>{const b=document.createElement('button');b.className='mdl-btn'+(primary?' primary':'');b.textContent=label;b.onclick=fn;return b;};
+  const setFoot=(...bs)=>{foot.innerHTML='';bs.forEach(b=>foot.appendChild(b));};
+  const needLogin=msg=>{
+    body.innerHTML=`<div class="mdl-msg">${_xpEsc(msg)}</div><div class="xp-note">Entri dalla pagina di X in una finestra di Maniac: la password la scrivi a X, Maniac non la legge e non la salva.</div>`;
+    setFoot(btn('Annulla',false,close),btn('Collega account X',true,async()=>{
+      let r=null;try{r=await api.login(true);}catch(_){}
+      if(r&&r.pending){toast('La finestra di login di X è già aperta');return;}
+      if(r&&r.connected){toast('Account X collegato');try{_dlXRefresh();}catch(_){}scan();}
+      else toast('Login a X non completato');
+    }));
+  };
+  const showList=r=>{
+    const items=r.items||[];
+    if(!items.length){body.innerHTML=`<div class="mdl-msg">${_xpEsc(r.note||'Nessun video trovato.')}</div>`;setFoot(btn('Chiudi',false,close));return;}
+    // Già scaricati (o in coda): stesso post, stesso video del post.
+    const have=new Set();
+    _dlLoad().forEach(d=>{if(d.status==='Error'||d.status==='Canceled')return;const m=String(d.url||'').match(/\/status\/(\d+)(?:\/video\/(\d+))?/);if(m)have.add(m[1]+(m[2]?'/'+m[2]:''));});
+    const had=it=>have.has(it.id)||(!/\//.test(it.id)&&have.has(it.tweetId));
+    let skipHad=true,useDir=true;
+    const sel=new Set(items.map((it,i)=>i).filter(i=>!had(items[i])));
+    const nHad=items.filter(had).length;
+    const draw=()=>{
+      const n=sel.size;
+      body.innerHTML=`<div class="xp-opts"><span><b>${items.length}</b> video${r.canceled?' (lettura fermata: quelli trovati fin qui)':''}${r.truncated?' (primi '+items.length+')':''}</span>
+          ${nHad?`<label><input type="checkbox" data-o="had" ${skipHad?'checked':''}> Salta i ${nHad} già scaricati</label>`:''}
+          <label><input type="checkbox" data-o="dir" ${useDir?'checked':''}> Nella cartella «X @${_xpEsc(name)}»</label>
+          <a data-o="all">Tutti</a><a data-o="none">Nessuno</a></div>
+        <div class="xp-grid">${items.map((it,i)=>`<label class="xp-it ${sel.has(i)?'':'off'}" data-i="${i}" title="${_xpEsc(it.text||'')}">
+          <input type="checkbox" ${sel.has(i)?'checked':''}>${it.thumb?`<img loading="lazy" src="${_xpEsc(it.thumb)}" alt="">`:'<img alt="">'}
+          <div class="xp-tx">${_xpEsc(it.text||'(senza testo)')}</div>
+          <div class="xp-m">${[it.gif?'GIF':_xpDur(it.duration),it.date?new Date(it.date).toLocaleDateString():'',had(it)?'già scaricato':''].filter(Boolean).join(' · ')}</div></label>`).join('')}</div>`;
+      body.querySelectorAll('.xp-it').forEach(el=>{el.onclick=e=>{e.preventDefault();const i=+el.dataset.i;sel.has(i)?sel.delete(i):sel.add(i);draw();};});
+      const o=k=>body.querySelector(`[data-o="${k}"]`);
+      if(o('had'))o('had').onchange=e=>{skipHad=e.target.checked;items.forEach((it,i)=>{if(had(it)){skipHad?sel.delete(i):sel.add(i);}});draw();};
+      o('dir').onchange=e=>{useDir=e.target.checked;};
+      o('all').onclick=()=>{items.forEach((it,i)=>{if(!(skipHad&&had(it)))sel.add(i);});draw();};
+      o('none').onclick=()=>{sel.clear();draw();};
+      const go=btn(n?`Scarica ${n} video`:'Scegli i video',true,()=>{
+        if(!sel.size)return;
+        const chosen=[...sel].sort((a,b)=>a-b).map(i=>items[i]);
+        close();
+        _dlQueueBatch(chosen,useDir?'X @'+name:null);
+      });
+      go.disabled=!n;
+      setFoot(btn('Annulla',false,close),go);
+    };
+    draw();
+  };
+  const scan=async()=>{
+    body.innerHTML=`<div class="xp-live"><div class="xp-t">Apro il profilo @${_xpEsc(name)}…</div><div class="xp-c">0 video trovati</div></div>
+      <div class="xp-note">Maniac scorre la scheda Media del profilo con il tuo account X, come faresti tu nel browser. Su profili grandi ci vuole qualche minuto: puoi fermarti quando vuoi e scaricare quelli trovati fin lì.</div>`;
+    (window.__xpCb=window.__xpCb||{})[scanId]=d=>{
+      const t=body.querySelector('.xp-t'),c=body.querySelector('.xp-c');
+      if(t&&d.note)t.textContent=d.note;
+      if(c&&d.found!=null)c.textContent=d.found+' video trovati';
+    };
+    setFoot(btn('Annulla',false,close),btn('Fermati qui',false,()=>api.cancelScan(scanId)));
+    let r=null;
+    try{r=await api.scanProfile(url,scanId);}catch(e){r={ok:false,error:String(e&&e.message||e)};}
+    if(closed)return;
+    if(!r||!r.ok){
+      if(r&&r.needXLogin)return needLogin(r.error);
+      body.innerHTML=`<div class="mdl-msg">${_xpEsc((r&&r.error)||'Errore durante la lettura del profilo')}</div>`;
+      setFoot(btn('Chiudi',false,close));return;
+    }
+    showList(r);
+  };
+  let on=false;try{on=!!((await api.status())||{}).connected;}catch(_){}
+  if(on)scan();
+  else needLogin('Per leggere i video di un profilo X serve il login: X non mostra i profili a chi non è entrato.');
+}
+// Mette in coda tanti video e ne scarica al massimo "Download concorrenti" alla volta.
+// Le righe compaiono subito come "In coda"; annullarne una la toglie dalla coda.
+async function _dlQueueBatch(items,subDir){
+  const now=Date.now();
+  const rows=items.map((it,i)=>({id:'dl_'+now+'_'+i+'_'+Math.random().toString(36).slice(2,6),url:it.url,domain:'x.com',
+    title:it.text?it.text.slice(0,90):'Post X '+it.tweetId,thumb:it.thumb||null,percent:0,status:'Queued',ts:now-i,batch:true,subDir:subDir||null}));
+  const list=_dlLoad();list.unshift(...rows);_dlSave(list);
+  if(S.panel==='downloader'){const el=document.getElementById('dlList');if(el)el.innerHTML=_dlRenderList(_dlSorted(_dlLoad()));}
+  wireDownloadPanel();
+  toast(rows.length+' video di X in coda');
+  const max=Math.max(1,Math.min(10,+((S.downloaderCfg||{}).maxConcurrent)||3));
+  let next=0,done=0;
+  const worker=async()=>{
+    while(next<rows.length){
+      const row=rows[next++];
+      const cur=_dlLoad().find(x=>x.id===row.id);
+      if(!cur||cur.status!=='Queued')continue;
+      try{await dlStart(row.url,{batch:true,auto:true,rowId:row.id,policy:{kind:'best'},subDir:row.subDir});}catch(_){}
+      done++;
+    }
+  };
+  await Promise.all(Array.from({length:Math.min(max,rows.length)},worker));
+  const fin=_dlLoad().filter(d=>rows.some(r=>r.id===d.id));
+  const ok=fin.filter(d=>d.status==='Done').length,ko=fin.filter(d=>d.status==='Error').length;
+  toast('Video di X: '+ok+' scaricati'+(ko?', '+ko+' con errore (li riprovi dalla loro riga)':''));
+}
+
+// ── Account X ──
+async function _dlXRefresh(){
+  const st=document.getElementById('dlXStatus'),bt=document.getElementById('dlXBtn');
+  if(!st||!bt||!(window.maniac&&window.maniac.xauth))return;
+  let on=false;
+  try{on=!!((await window.maniac.xauth.status())||{}).connected;}catch(_){}
+  st.textContent=on?'Collegato: i post sensibili si scaricano':'Non collegato: si scaricano solo i post pubblici';
+  st.style.color=on?'var(--success)':'var(--t2)';
+  bt.textContent=on?'Scollega':'Collega account X';
+  bt.disabled=false;
+  bt.dataset.on=on?'1':'';
+}
+async function dlXToggle(){
+  const bt=document.getElementById('dlXBtn');
+  if(!(window.maniac&&window.maniac.xauth))return;
+  if(bt)bt.disabled=true;
+  try{
+    if(bt&&bt.dataset.on){await window.maniac.xauth.logout();toast('Account X scollegato');}
+    else{
+      const r=await window.maniac.xauth.login();
+      if(r&&r.pending)toast('La finestra di login di X è già aperta');
+      else toast(r&&r.connected?'Account X collegato':'Login a X non completato');
+    }
+  }catch(e){toast('Account X: '+(e&&e.message||e));}
+  _dlXRefresh();
+}
+async function dlConnectXAndRetry(id){
+  if(!(window.maniac&&window.maniac.xauth))return;
+  let r=null;
+  try{r=await window.maniac.xauth.login(true);}catch(_){}
+  if(r&&r.pending){toast('La finestra di login di X è già aperta');return;}
+  if(!(r&&r.connected)){toast('Login a X non completato');return;}
+  toast('Account X collegato: riprovo il download');
+  _dlXRefresh();
+  dlRetry(id);
+}
 async function dlRetry(id){
   const list=_dlLoad();const d=list.find(x=>x.id===id);
   if(!d)return;
@@ -8548,7 +8752,7 @@ async function dlRetry(id){
   const r=await window.maniac.downloadStart({
     id,url:d.url,
     quality:cfg.quality,format:cfg.format,
-    outputDir:cfg.outputDir,vibraVidPath:cfg.vibraVidPath,
+    outputDir:cfg.outputDir,vibraVidPath:cfg.vibraVidPath,subDir:d.subDir||null,
     cookieBrowser:_cb,resume:true,priority:d.priority||'high',
     resumeFilePath:d.filePath||null
   });
@@ -8606,7 +8810,7 @@ async function dlRestart(id){
   const r=await window.maniac.downloadStart({
     id,url:d.url,
     quality:cfg.quality,format:cfg.format,
-    outputDir:cfg.outputDir,vibraVidPath:cfg.vibraVidPath,
+    outputDir:cfg.outputDir,vibraVidPath:cfg.vibraVidPath,subDir:d.subDir||null,
     cookieBrowser:_cb,resume:false,priority:d.priority||'high',
     resumeFilePath:null
   });
@@ -8901,6 +9105,7 @@ async function scStreamWizard(pageUrl){
 
 // ═══ WIZARD DOWNLOAD ═══
 async function dlWizardOpen(prefillUrl){
+  if(prefillUrl&&_dlXProfileName(prefillUrl)){xProfileDialog(prefillUrl);return;}
   try { maybeShowTip('wizard-open'); } catch(_){}
   return new Promise(resolve=>{
     const ov=document.createElement('div');ov.className='wiz-ov';
@@ -16315,6 +16520,9 @@ window.addEventListener('DOMContentLoaded', ()=>{
   // i18n: inizializza prima del resto così t() è già disponibile
   try{ if(window.i18n&&window.i18n.init) window.i18n.init().catch(()=>{}); }catch(_){}
   setTimeout(()=>{try{initVenvCheck(false);}catch(e){}}, 1200);
+  // Coda di un profilo X interrotta da un riavvio: i video non ancora partiti restano
+  // in pausa con "Riprendi", invece di sembrare in coda per sempre.
+  setTimeout(()=>{try{const l=_dlLoad();let ch=0;l.forEach(d=>{if(d.batch&&(d.status==='Queued'||d.status==='Preparing'||d.status==='Downloading')){d.status='Paused';d.note='';ch++;}});if(ch)_dlSave(l);}catch(e){}},800);
   // Organizer automatico: parte solo se l'utente lo ha acceso per una libreria.
   setTimeout(()=>{try{_loAutoInit();}catch(e){}}, 5000);
   // Browser detection per cookies (popola la dropdown nelle Impostazioni)

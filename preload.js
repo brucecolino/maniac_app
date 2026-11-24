@@ -107,6 +107,16 @@ contextBridge.exposeInMainWorld('maniac', {
 
   // Download (yt-dlp / VibraVid)
   downloadStart: (opts) => ipcRenderer.invoke('download:start', opts),
+  // Sessione X di Maniac: serve per i post segnati come sensibili.
+  xauth: {
+    status: () => ipcRenderer.invoke('xauth:status'),
+    login:  (force) => ipcRenderer.invoke('xauth:login', { force: !!force }),
+    logout: () => ipcRenderer.invoke('xauth:logout'),
+    // Tutti i video di un profilo: elenco dei post, poi ognuno va a yt-dlp.
+    scanProfile: (url, scanId, max) => ipcRenderer.invoke('xprofile:scan', { url, scanId, max }),
+    cancelScan:  (scanId) => ipcRenderer.invoke('xprofile:cancel', scanId),
+    onScanProgress: (cb) => ipcRenderer.on('xprofile:progress', (_e, d) => cb(d)),
+  },
   downloadCancel: (id) => ipcRenderer.invoke('download:cancel', id),
   downloadPickDir: () => ipcRenderer.invoke('download:pickDir'),
   downloadPickQuality: (id, policy) => ipcRenderer.invoke('download:pickQuality', { id, policy }),
