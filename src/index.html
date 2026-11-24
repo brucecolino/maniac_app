@@ -2016,6 +2016,7 @@ const S={
   toolbarIcons:{tc:false,td:true,loop:true,shuf:true,mag:true,fav:true,pl:true,fs:true},
   // Title-at-start settings
   titleAtStart:false, titleAtStartPath:false,
+  crossfadeSec:0,
   // Logs
   logs:[]
 };
@@ -3739,7 +3740,9 @@ function loadFileIntoPlayer(pid){
   const f=p.playlist[p.idx]; if(!f)return;
   // Reset stato sub: nuovo file → dimentica eventuale SRT del precedente
   p._subsSrtPath=null; p.subtitles=null;
+  const xf=_xfCapture(pid,f);
   renderGrid();
+  if(xf&&p.vidEl){p.vidEl._xfGain=0;applyPlayerVol(p);}
   // Pre-flight check: se il path locale non esiste più (file spostato/cancellato),
   // mostra toast chiaro invece di lasciar lanciare un MEDIA_ERROR opaco.
   if(f.path && /^(file:|[A-Za-z]:|\/)/.test(f.path) && window.maniac && window.maniac.fileExists){
@@ -3770,6 +3773,7 @@ function loadFileIntoPlayer(pid){
       p.vidEl.play().catch(()=>{});
       pushHistory(pid);
     }
+    if(xf)_xfRun(pid,xf);
     // Auto-carica sottotitoli salvati accanto al video (es. video.srt o video.it.srt)
     _autoLoadSiblingSubs(pid,f.path);
   },60);
@@ -4074,9 +4078,94 @@ function applyEqToPlayer(p){
   c.boostGain.gain.value=(p.boost||100)/100;
 }
 
+// ═══ CROSSFADE ═══
+// Il passaggio da un file all'altro sfuma invece di tagliare. Il video uscente viene
+// spostato in uno strato sopra la sua cella (continua a muoversi e a suonare), sotto
+// parte il nuovo; in S.crossfadeSec secondi il primo svanisce mentre il volume passa
+// dall'uno all'altro. Vale per video, audio e immagini, in ogni cella della griglia,
+// sia a fine file sia con Avanti/Indietro. Le altre celle non vengono toccate.
+const _xfActive={};
+function _xfSecs(){const s=+S.crossfadeSec||0;return s>0?Math.min(10,s):0;}
+function _xfBaseVol(p){return (p.vol/100)*((p.muted||S.muted)?0:1);}
+function _xfCapture(pid,f){
+  if(_xfActive[pid])_xfEnd(pid,_xfActive[pid]);
+  const secs=_xfSecs();if(!secs)return null;
+  const p=P(pid),old=p.vidEl;
+  if(!old||!old.isConnected)return null;
+  const cell=old.closest('.vc');
+  if(!cell||cell.classList.contains('live'))return null;
+  // Stesso file: la griglia riusa la cella, non c'è niente da sfumare.
+  if(cell.getAttribute('data-file-uid')===String(f&&f.uid))return null;
+  // Video non ancora partito: niente immagine da tenere, si taglia come prima.
+  if(!old._imgMode&&old.tagName==='VIDEO'&&old.readyState<2)return null;
+  const r=(old.parentElement||old).getBoundingClientRect();
+  if(r.width<4||r.height<4)return null;
+  const cs=getComputedStyle(old);
+  const ov=document.createElement('div');
+  ov.className='xf-ov';
+  ov.dataset.pid=pid;
+  ov.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;z-index:30;pointer-events:none;overflow:hidden;opacity:1`;
+  (document.fullscreenElement||document.body).appendChild(ov);
+  // Fuori dalla cella le regole CSS della cella non valgono più: si copiano quelle che contano.
+  Object.assign(old.style,{position:'absolute',left:'0',top:'0',width:'100%',height:'100%',display:'block',
+    objectFit:cs.objectFit,background:cs.backgroundColor,transform:cs.transform,transformOrigin:cs.transformOrigin});
+  ov.appendChild(old);           // spostato nello stesso istante: continua a riprodurre
+  p.vidEl=null;                  // la griglia non deve fermarlo né smontarlo
+  old._xfFired=true;             // se finisce durante la dissolvenza non deve fare "avanti"
+  return {el:old,ov,secs,uid:cell.getAttribute('data-file-uid'),raf:0,done:false};
+}
+function _xfRun(pid,xf){
+  _xfActive[pid]=xf;
+  const p=P(pid),inc=p.vidEl;
+  const go=()=>{
+    if(xf.done||xf.started)return;
+    xf.started=true;
+    const t0=performance.now(),ms=xf.secs*1000;
+    // Timer e non requestAnimationFrame: con Maniac coperto o ridotto a icona i
+    // fotogrammi d'animazione si fermano, la dissolvenza restava a metà e il file
+    // nuovo senza volume. Il tempo si misura dall'orologio, quindi anche con i
+    // timer rallentati arriva alla fine; e comunque una chiusura di sicurezza c'è.
+    const step=()=>{
+      if(xf.done)return;
+      const k=Math.min(1,(performance.now()-t0)/ms),e=k*k*(3-2*k);
+      xf.ov.style.opacity=String(1-e);
+      if(!xf.el._imgMode){try{xf.el.volume=Math.max(0,Math.min(1,_xfBaseVol(p)*(1-e)));}catch(_){}}
+      const cur=P(pid).vidEl;
+      if(cur&&cur._xfGain!=null){cur._xfGain=e;applyPlayerVol(P(pid));}
+      if(k<1)xf.raf=setTimeout(step,33);else _xfEnd(pid,xf);
+    };
+    step();
+    xf.hard=setTimeout(()=>_xfEnd(pid,xf),ms+1500);
+  };
+  // Si sfuma quando il nuovo ha davvero un'immagine: prima resta visibile il vecchio,
+  // così un file lento a partire non lascia vedere il nero.
+  if(!inc||inc._imgMode||inc.tagName!=='VIDEO'||inc.readyState>=3)go();
+  else{
+    const once=()=>{inc.removeEventListener('playing',once);inc.removeEventListener('canplay',once);go();};
+    inc.addEventListener('playing',once);inc.addEventListener('canplay',once);
+    xf.wait=setTimeout(go,3000);
+  }
+}
+function _xfEnd(pid,xf){
+  if(xf.done)return;
+  xf.done=true;
+  clearTimeout(xf.raf);clearTimeout(xf.wait);clearTimeout(xf.hard);
+  const el=xf.el;
+  try{if(!el._imgMode&&el.tagName==='VIDEO'){el.pause();
+    // La catena audio di questo elemento non serve più: la si chiude.
+    const ch=S.audioContexts[xf.uid];
+    if(ch&&ch.src&&ch.src.mediaElement===el){try{ch.ctx.close();}catch(_){}delete S.audioContexts[xf.uid];}
+    el.removeAttribute('src');el.load();}}catch(_){}
+  try{xf.ov.remove();}catch(_){}
+  if(_xfActive[pid]===xf)delete _xfActive[pid];
+  const p=P(pid);
+  if(p.vidEl&&p.vidEl._xfGain!=null){p.vidEl._xfGain=null;applyPlayerVol(p);}
+}
+
 function applyPlayerVol(p){
   if(!p||!p.vidEl)return;
-  const v=(p.vol/100)*((p.muted||S.muted)?0:1);
+  const g=p.vidEl._xfGain;
+  const v=(p.vol/100)*((p.muted||S.muted)?0:1)*(g==null?1:g);
   try{p.vidEl.volume=v;}catch(e){}
   const f=p.playlist[p.idx];
   if(f){const ch=S.audioContexts[f.uid]; if(ch&&ch.volGain){try{ch.volGain.gain.value=v;}catch(e){}}}
@@ -4598,10 +4687,21 @@ function createCell(pid){
     });
     vid.addEventListener('ended',()=>{
       if(isLive)return;
+      // già passato al successivo con la dissolvenza: niente secondo "avanti"
+      if(vid._xfFired)return;
       // G15: ensure controls remain interactive
       try{cell.style.pointerEvents='';vid.style.pointerEvents='';}catch(_){}
       if(p.loop){vid.currentTime=0;vid.play().catch(()=>{});}
       else if(p.playlist.length>1)playerNext(pid);
+    });
+    // Con la dissolvenza il file successivo parte S.crossfadeSec prima della fine,
+    // così i due si sovrappongono invece di passare per il nero.
+    if(!isLive&&!isImg)vid.addEventListener('timeupdate',()=>{
+      const secs=_xfSecs();
+      if(!secs||vid._xfFired||p.loop||p.playlist.length<2||p.vidEl!==vid)return;
+      const d=vid.duration;
+      if(!isFinite(d)||d<secs*2+1)return;
+      if(vid.currentTime>=d-secs){vid._xfFired=true;playerNext(pid);}
     });
     vid.addEventListener('error',()=>{
       if(isLive)return;
@@ -6792,6 +6892,12 @@ function renderTab(){
       </div>
       <div class="sg"><div class="sg-lbl">${t('startMode')}</div>
         <div class="seg"><button class="seg-b ${pb.startMode==='linear'?'on':''}" onclick="S.playback.startMode='linear';saveConfig();renderPanel()">${t('linear')||'Lineare'}</button><button class="seg-b ${pb.startMode==='random'?'on':''}" onclick="S.playback.startMode='random';saveConfig();renderPanel()">${t('random')||'Casuale'}</button></div>
+      </div>
+      <div class="sg"><div class="sg-lbl">Dissolvenza tra un file e l'altro</div>
+        <select onchange="S.crossfadeSec=+this.value;saveConfig()">
+          ${[[0,'Spenta'],[0.5,'0,5 secondi'],[1,'1 secondo'],[2,'2 secondi'],[3,'3 secondi'],[5,'5 secondi'],[8,'8 secondi']].map(([v,l])=>`<option value="${v}" ${(+S.crossfadeSec||0)===v?'selected':''}>${l}</option>`).join('')}
+        </select>
+        <div style="margin-top:4px;font-size:10px;color:var(--t3);line-height:1.4">Il file successivo entra sfumando, immagine e volume, invece di tagliare: vale per video, audio e immagini, in ogni riquadro, a fine file e con Avanti/Indietro. Con più video piccoli insieme stanca meno l'occhio.</div>
       </div>
       <div class="sg"><div class="sg-lbl">Titolo all'avvio</div>
         <div class="sg-row"><span class="sg-txt">Visualizza titolo all'inizio della riproduzione</span><div class="sw ${S.titleAtStart?'on':''}" onclick="S.titleAtStart=!S.titleAtStart;this.classList.toggle('on',S.titleAtStart);saveConfig()"><div class="dot"></div></div></div>
@@ -15566,6 +15672,7 @@ async function _saveConfigNow(){
     discordUrl:S.discordUrl||'',
     translatorLang:S.translatorLang||'it',
     wheelNotch:S.wheelNotch||12,
+    crossfadeSec:S.crossfadeSec||0,
     wheelLerp:S.wheelLerp||0.30,
     exploreZoom:S.exploreZoom||140,
     subsEngine:S.subsEngine||'whisper',
@@ -15643,6 +15750,7 @@ async function loadConfig(){
   S.discordUrl=cfg.discordUrl||'https://discord.gg/xEykckGac';
   S.translatorLang=cfg.translatorLang||'it';
   S.wheelNotch=Math.max(6,Math.min(100,+cfg.wheelNotch||12));
+  S.crossfadeSec=Math.max(0,Math.min(10,+cfg.crossfadeSec||0));
   S.wheelLerp=Math.max(0.10,Math.min(0.60,+cfg.wheelLerp||0.30));
   // Default: faster-whisper (locale, ~5× realtime, niente API key). Più veloce di
   // ai-sub Gemini per video > 5 min e senza rate limits.

@@ -5,6 +5,15 @@ scheda **Info → Controlla aggiornamenti**.
 
 ## 1.1.8 — 2026-11-24
 
+### Crossfade fra un file e l'altro
+- Nuova impostazione **Riproduzione → Dissolvenza tra un file e l'altro**
+  (da 0,5 a 8 secondi, spenta di default). Il file successivo entra sfumando,
+  immagine e volume insieme, invece di tagliare. Vale per video, audio e
+  immagini, in ogni riquadro: a fine file la dissolvenza parte qualche secondo
+  prima della fine, così i due si sovrappongono senza passare per il nero; con
+  Avanti/Indietro parte subito. Gli altri riquadri non vengono toccati: con più
+  video piccoli insieme il passaggio stanca meno l'occhio.
+
 ### Downloader che non si blocca più
 - Con tanti download insieme l'app si fermava per secondi interi: a ogni
   avanzamento ridisegnava l'intera lista con tutte le anteprime, e quelle di X
