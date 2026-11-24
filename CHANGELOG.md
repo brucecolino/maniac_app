@@ -19,10 +19,24 @@ scheda **Info → Controlla aggiornamenti**.
 - **Tutti i video di un profilo.** Incolla il link di un profilo
   (`x.com/nome`): Maniac scorre la scheda Media con il tuo account, ti mostra i
   video con anteprima, durata e data, salta quelli già scaricati e mette in coda
-  quelli che scegli, nella cartella «X @nome». La coda rispetta "Download
-  concorrenti"; dopo un riavvio i video non ancora partiti restano in pausa, da
-  riprendere.
-- "Download concorrenti" arriva fino a 100 (prima 10).
+  quelli che scegli, nella cartella «X @nome».
+- **Filtri per scaricare tanti video insieme**: fino a quando (ultima settimana,
+  mese, 3/6 mesi, anno o da una data), durata minima e massima, parole chiave
+  (ne basta una, hashtag compresi), parole da escludere, GIF sì o no. Si
+  scelgono prima di leggere il profilo, e il periodo ferma anche la lettura;
+  sull'elenco restano modificabili e Maniac li ricorda.
+
+### Coda dei download
+- **"Download concorrenti" è un limite vero**, per tutti i download (fino a 10,
+  predefinito 10): oltre il limite la riga resta "In attesa di un posto
+  libero" e parte appena un altro finisce. Annullarla mentre aspetta la toglie
+  dalla coda.
+- La coda sopravvive a un riavvio: i download rimasti a metà o in attesa
+  ripartono da soli, sempre dentro il limite.
+- L'elenco non perde più righe: era salvato tagliato a 100, e una coda più
+  lunga (un profilo grande) perdeva in silenzio i video oltre il centesimo.
+- "Riprendi" e "Riavvia" usano la qualità preferita salvata invece di
+  richiederla ogni volta.
 - Errori di X spiegati: post sensibile, account protetto, post senza video,
   sessione scaduta.
 

@@ -113,7 +113,7 @@ contextBridge.exposeInMainWorld('maniac', {
     login:  (force) => ipcRenderer.invoke('xauth:login', { force: !!force }),
     logout: () => ipcRenderer.invoke('xauth:logout'),
     // Tutti i video di un profilo: elenco dei post, poi ognuno va a yt-dlp.
-    scanProfile: (url, scanId, max) => ipcRenderer.invoke('xprofile:scan', { url, scanId, max }),
+    scanProfile: (url, scanId, max, since) => ipcRenderer.invoke('xprofile:scan', { url, scanId, max, since }),
     cancelScan:  (scanId) => ipcRenderer.invoke('xprofile:cancel', scanId),
     onScanProgress: (cb) => ipcRenderer.on('xprofile:progress', (_e, d) => cb(d)),
   },

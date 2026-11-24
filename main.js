@@ -1033,7 +1033,7 @@ function _xCollectVideos(json, screenName, into) {
 
 const _xScans = new Map(); // scanId -> { cancel() }
 ipcMain.handle('xprofile:cancel', (_e, scanId) => { const j = _xScans.get(scanId); if (j) j.cancel(); return { ok: true }; });
-ipcMain.handle('xprofile:scan', async (_e, { url, scanId, max } = {}) => {
+ipcMain.handle('xprofile:scan', async (_e, { url, scanId, max, since } = {}) => {
   const name = _xProfileName(url);
   if (!name) return { ok: false, error: 'Non è il link di un profilo X.' };
   if (!(await _xConnected())) {
@@ -1095,6 +1095,13 @@ ipcMain.handle('xprofile:scan', async (_e, { url, scanId, max } = {}) => {
       break;
     }
     if (timelineSeen && !pending.size && Date.now() - lastNew > 12000) break;
+    // La scheda Media va dal più recente al più vecchio: oltre la data scelta
+    // non serve scorrere (tre post più vecchi bastano a dire che ci siamo).
+    if (since > 0) {
+      let older = 0;
+      for (const it of found.values()) { const t = Date.parse(it.date || ''); if (t && t < since) older++; }
+      if (older >= 3) break;
+    }
     await win.webContents.executeJavaScript('window.scrollTo(0, document.documentElement.scrollHeight); true').catch(() => {});
     prog({ found: found.size, note: 'Scorro il profilo @' + name + '…' });
   }
