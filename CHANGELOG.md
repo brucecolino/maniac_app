@@ -3,6 +3,25 @@
 Tutte le versioni pubblicate di Maniac. L'app controlla questa lista dalla
 scheda **Info → Controlla aggiornamenti**.
 
+## 1.1.8 — 2026-11-24
+
+### Downloader che non si blocca più
+- Con tanti download insieme l'app si fermava per secondi interi: a ogni
+  avanzamento ridisegnava l'intera lista con tutte le anteprime, e quelle di X
+  arrivano a piena risoluzione. Ora gli aggiornamenti si applicano a lotti
+  (quattro volte al secondo), si ridisegnano solo le righe cambiate e le
+  anteprime di X si chiedono piccole. Nella stessa prova (106 righe, 50
+  download) il blocco più lungo è sceso da 2,5 secondi a meno di mezzo.
+- **Link copiati a raffica**: si analizzano al massimo due alla volta e, dal
+  terzo in poi, senza una notifica per ognuno; alla fine ne arriva una sola col
+  totale. Il riquadro "Link rilevato" ora li somma ("50 link rilevati ·
+  Scarica tutti (50)") invece di mostrare solo l'ultimo.
+- Gli avanzamenti rispettano i filtri attivi della lista.
+
+### Filtri dei profili X
+- Durata minima e massima con un numero qualsiasi, in **secondi o minuti**
+  (1 s, 10 s, 2,5 minuti…).
+
 ## 1.1.7 — 2026-11-24
 
 ### Download da X

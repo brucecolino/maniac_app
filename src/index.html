@@ -1357,6 +1357,9 @@ input[type=range]::-webkit-slider-thumb{margin-top:-4.5px}
 .xp-f{display:flex;flex-direction:column;gap:4px;font:400 11px 'Inter';color:var(--t2);min-width:0}
 .xp-f .m-input{width:100%;box-sizing:border-box}
 .xp-fchk{flex-direction:row;align-items:center;gap:6px;align-self:end;padding-bottom:6px;cursor:pointer}
+.xp-dur{display:flex;gap:4px}
+.xp-dur input{flex:1 1 60px;min-width:0}
+.xp-dur select{flex:0 0 auto;width:auto!important}
 [data-theme="light"] .xp-filters{background:#fff;border-color:rgba(0,0,0,.12)}
 .xp-opts label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
 .xp-opts a{color:var(--accent-hi);cursor:pointer}
@@ -7879,7 +7882,7 @@ function _dlWake(){while(_dlSlot.wait.length&&_dlSlot.active<_dlMaxConc()){_dlSl
 function _dlPatchRow(id,patch){
   const l=_dlLoad();const d=l.find(x=>x.id===id);if(!d)return null;
   Object.assign(d,patch);_dlSave(l);
-  if(S.panel==='downloader'){const el=document.getElementById('dlList');if(el)el.innerHTML=_dlRenderList(_dlSorted(l));}
+  if(S.panel==='downloader')_dlPatchRows(l,[id]);
   return d;
 }
 async function _dlStartLimited(params){
@@ -8021,7 +8024,7 @@ function _dlRenderList(list){
     const canResume=(d.status==='Paused'||d.status==='Error'||d.status==='Canceled');
     const title=(d.title||d.url||'').replace(/</g,'&lt;');
     const grad=_gradFor(title||d.id||'x');
-    const _thumbInner=d.thumb?`<img src="${d.thumb}" loading="lazy" style="width:100%;height:100%;object-fit:cover">`:(isTor?`<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color:rgba(255,255,255,.7)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm-1-3.07c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v.93z"/></svg>`:'');
+    const _thumbInner=d.thumb?`<img src="${_dlThumbSrc(d.thumb)}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">`:(isTor?`<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color:rgba(255,255,255,.7)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm-1-3.07c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v.93z"/></svg>`:'');
     const thumbHtml=hideT?'':`<div class="m2-dl-thumb" style="background:${grad}">${_thumbInner}</div>`;
     const errOverlay=(d.status==='Error')?`<div class="m2-dl-err" title="Mostra log" onclick="dlShowError('${d.id}')">${icon('warn',{size:'sm'})}</div>`:'';
     const pct=Math.max(0,Math.min(100,d.percent||0));
@@ -8312,10 +8315,14 @@ function wireDownloadPanel(){
       if(window.maniac.downloadPickQuality)window.maniac.downloadPickQuality(data.id,pol||{kind:'best'});
     });
   }
-  window.maniac.onDownloadProgress(evt=>{
-    const list=_dlLoad();
-    const d=list.find(x=>x.id===evt.id);
-    if(!d)return;
+  // Gli avanzamenti arrivano anche decine di volte al secondo: si applicano a lotti
+  // (una lettura, un salvataggio e un ridisegno ogni 250 ms). Ridisegnare tutta la
+  // lista a ogni evento, anteprime comprese, bloccava l'interfaccia per secondi
+  // quando partivano tanti download insieme.
+  window.maniac.onDownloadProgress(evt=>_dlQueueEvt('dl',evt));
+  if(window.maniac.onTorrentProgress)window.maniac.onTorrentProgress(evt=>_dlQueueEvt('tor',evt));
+}
+function _dlApplyEvt(d,evt){
     if(evt.percent!=null)d.percent=evt.percent;
     if(evt.speed)d.speed=evt.speed;
     if(evt.eta)d.eta=evt.eta;
@@ -8336,15 +8343,8 @@ function wireDownloadPanel(){
     if(evt.status==='Canceled'&&!d._loggedError){
       try{ if(typeof logError==='function')logError('Download annullato: '+(d.title||d.url),''); }catch(_){}
     }
-    _dlSave(list);
-    if(S.panel==='downloader'){const el=document.getElementById('dlList');if(el)el.innerHTML=_dlRenderList(_dlSorted(list));}
-  });
-  if(window.maniac.onTorrentProgress){
-    window.maniac.onTorrentProgress(evt=>{
-      const list=_dlLoad();
-      // Match by torId first, then id
-      const d=list.find(x=>x.torId===evt.id||x.id===evt.id);
-      if(!d)return;
+}
+function _dlApplyTorEvt(d,evt){
       if(evt.percent!=null)d.percent=evt.percent*(evt.percent>1?1:100);
       if(evt.percent!=null&&evt.percent<=1)d.percent=evt.percent*100;
       if(evt.speed!=null)d.speed=evt.speed;
@@ -8360,10 +8360,51 @@ function wireDownloadPanel(){
       if(evt.name&&!d._titleEdited)d.title=evt.name;
       if(evt.filePath)d.filePath=evt.filePath;
       if(evt.folderPath)d.folderPath=evt.folderPath;
-      _dlSave(list);
-      if(S.panel==='downloader'){const el=document.getElementById('dlList');if(el)el.innerHTML=_dlRenderList(_dlSorted(list));}
-    });
+}
+const _dlEvQ=[];let _dlEvT=null;
+function _dlQueueEvt(kind,evt){_dlEvQ.push([kind,evt]);if(!_dlEvT)_dlEvT=setTimeout(_dlFlushEvts,250);}
+// Gli eventi si applicano nell'ordine in cui sono arrivati: lo stato finale è lo stesso
+// di prima, cambia solo quante volte si legge, si salva e si ridisegna.
+function _dlFlushEvts(){
+  _dlEvT=null;
+  if(!_dlEvQ.length)return;
+  const evs=_dlEvQ.splice(0);
+  const list=_dlLoad();const changed=new Set();
+  for(const [kind,evt] of evs){
+    const d=kind==='tor'?list.find(x=>x.torId===evt.id||x.id===evt.id):list.find(x=>x.id===evt.id);
+    if(!d)continue;
+    (kind==='tor'?_dlApplyTorEvt:_dlApplyEvt)(d,evt);
+    changed.add(d.id);
   }
+  if(!changed.size)return;
+  _dlSave(list);
+  if(S.panel==='downloader')_dlPatchRows(list,[...changed]);
+}
+function _dlView(list){return _dlSorted(_dlFiltered(list));}
+// Ridisegna solo le righe cambiate e tiene l'anteprima già decodificata se è la stessa
+// immagine. Se cambiano le righe visibili o il loro ordine, ridisegna tutto.
+function _dlPatchRows(list,ids){
+  const el=document.getElementById('dlList');
+  if(!el||S.dlHidden)return;
+  const view=_dlView(list);
+  const rows=[...el.children].filter(r=>r.classList.contains('m2-dl-row'));
+  const same=rows.length===view.length&&rows.every((r,i)=>r.dataset.dlid===view[i].id);
+  if(!same){el.innerHTML=_dlRenderList(view);return;}
+  const want=new Set(ids);
+  view.forEach((d,i)=>{
+    if(!want.has(d.id))return;
+    const tmp=document.createElement('div');tmp.innerHTML=_dlRenderList([d]);
+    const nr=tmp.firstElementChild;if(!nr)return;
+    const oi=rows[i].querySelector('.m2-dl-thumb img'),ni=nr.querySelector('.m2-dl-thumb img');
+    if(oi&&ni&&oi.getAttribute('src')===ni.getAttribute('src'))ni.replaceWith(oi);
+    rows[i].replaceWith(nr);
+  });
+}
+// X dà le anteprime a piena risoluzione (name=orig): per un riquadro di 56 px basta
+// la versione piccola, che si scarica e si decodifica in una frazione del tempo.
+function _dlThumbSrc(u){
+  if(!u||!/^https:\/\/pbs\.twimg\.com\//.test(u))return u;
+  return /[?&]name=/.test(u)?u.replace(/([?&]name=)[^&]*/,'$1small'):u+(u.includes('?')?'&':'?')+'name=small';
 }
 function dlUpdateCfg(){
   const cfg=_dlCfg();
@@ -8593,9 +8634,13 @@ function _xpDur(s){if(!s)return '';s=Math.round(s);const m=Math.floor(s/60),x=s%
 // Filtri per scegliere quali video scaricare insieme: valgono per ogni elenco di
 // video con testo, data e durata (oggi i profili X). Restano per la volta dopo.
 const _XP_DAYS=[[0,'Tutto'],[7,'Ultima settimana'],[30,'Ultimo mese'],[90,'Ultimi 3 mesi'],[180,'Ultimi 6 mesi'],[365,'Ultimo anno'],['date','Dal giorno…']];
-const _XP_MIN=[[0,'Qualsiasi'],[30,'30 s'],[60,'1 min'],[120,'2 min'],[300,'5 min'],[600,'10 min'],[1200,'20 min'],[1800,'30 min']];
-const _XP_MAX=[[0,'Nessun limite'],[60,'1 min'],[300,'5 min'],[600,'10 min'],[1200,'20 min'],[1800,'30 min'],[3600,'1 ora']];
-function _xpFiltersLoad(){let f={};try{f=JSON.parse(localStorage.getItem('xpFilters')||'{}')||{};}catch(_){}return Object.assign({days:0,since:'',minDur:0,maxDur:0,words:'',notWords:'',gif:true},f);}
+// Durate: un numero qualsiasi in secondi o minuti (1 s, 10 s, 90 s, 12 min…).
+// Il filtro lavora sempre in secondi; l'unità serve solo a scriverlo comodo.
+function _xpFiltersLoad(){let f={};try{f=JSON.parse(localStorage.getItem('xpFilters')||'{}')||{};}catch(_){}
+  f=Object.assign({days:0,since:'',minDur:0,maxDur:0,minUnit:1,maxUnit:60,words:'',notWords:'',gif:true},f);
+  if(f.minUnit!==1&&f.minUnit!==60)f.minUnit=1;
+  if(f.maxUnit!==1&&f.maxUnit!==60)f.maxUnit=60;
+  return f;}
 function _xpFiltersSave(f){try{localStorage.setItem('xpFilters',JSON.stringify(f));}catch(_){}}
 function _xpNorm(s){return String(s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
 function _xpWords(s){return String(s||'').split(/[,;]+/).map(w=>_xpNorm(w).trim()).filter(Boolean);}
@@ -8617,10 +8662,12 @@ function _xpMatch(it,f){
 }
 function _xpFiltersHtml(f){
   const sel=(k,opts)=>`<select class="m-input" data-f="${k}">${opts.map(([v,l])=>`<option value="${v}"${String(f[k])===String(v)?' selected':''}>${l}</option>`).join('')}</select>`;
+  const dur=(k,u,ph)=>{const v=f[k]?+(f[k]/f[u]).toFixed(2):'';
+    return `<div class="xp-dur"><input type="text" inputmode="decimal" class="m-input" data-f="${k}" value="${v}" placeholder="${ph}">${sel(u,[[1,'secondi'],[60,'minuti']])}</div>`;};
   return `<div class="xp-filters">
     <label class="xp-f"><span>Fino a quando</span>${sel('days',_XP_DAYS)}${f.days==='date'?`<input type="date" class="m-input" data-f="since" value="${_xpEsc(f.since||'')}">`:''}</label>
-    <label class="xp-f"><span>Durata minima</span>${sel('minDur',_XP_MIN)}</label>
-    <label class="xp-f"><span>Durata massima</span>${sel('maxDur',_XP_MAX)}</label>
+    <label class="xp-f"><span>Durata minima</span>${dur('minDur','minUnit','qualsiasi')}</label>
+    <label class="xp-f"><span>Durata massima</span>${dur('maxDur','maxUnit','nessun limite')}</label>
     <label class="xp-f"><span>Parole chiave (ne basta una)</span><input class="m-input" data-f="words" value="${_xpEsc(f.words)}" placeholder="es. solo, #anal"></label>
     <label class="xp-f"><span>Escludi se contiene</span><input class="m-input" data-f="notWords" value="${_xpEsc(f.notWords)}" placeholder="es. trailer, promo"></label>
     <label class="xp-f xp-fchk"><input type="checkbox" data-f="gif" ${f.gif?'checked':''}> Includi le GIF</label>
@@ -8632,11 +8679,17 @@ function _xpMountFilters(box,f,onChange){
   box.innerHTML=_xpFiltersHtml(f);
   let t=null;
   box.querySelectorAll('[data-f]').forEach(el=>{
-    const k=el.dataset.f, typing=el.tagName==='INPUT'&&el.type==='text';
+    const k=el.dataset.f, typing=el.tagName==='INPUT'&&(el.type==='text'||el.type==='number');
     el.addEventListener(typing?'input':'change',()=>{
+      const unit=k==='minDur'||k==='minUnit'?'minUnit':'maxUnit', durK=unit==='minUnit'?'minDur':'maxDur';
       if(el.type==='checkbox')f[k]=el.checked;
       else if(k==='days')f[k]=el.value==='date'?'date':+el.value;
-      else if(k==='minDur'||k==='maxDur')f[k]=+el.value;
+      else if(k==='minDur'||k==='maxDur')f[k]=Math.max(0,(parseFloat(String(el.value).replace(',','.'))||0)*f[unit]);
+      else if(k==='minUnit'||k==='maxUnit'){
+        // cambiando unità resta il numero scritto: "10" secondi diventa "10" minuti
+        const num=parseFloat(String((box.querySelector('[data-f="'+durK+'"]')||{}).value||'').replace(',','.'))||0;
+        f[k]=+el.value;f[durK]=num*f[k];
+      }
       else f[k]=el.value;
       _xpFiltersSave(f);
       if(k==='days'){_xpMountFilters(box,f,onChange);box.querySelector('[data-f="'+(f.days==='date'?'since':'days')+'"]').focus();}
@@ -8694,7 +8747,7 @@ async function xProfileDialog(url){
           <label><input type="checkbox" data-o="dir" ${useDir?'checked':''}> Nella cartella «X @${_xpEsc(name)}»</label>
           <a data-o="all">Tutti</a><a data-o="none">Nessuno</a>`;
       grid.innerHTML=vis.length?vis.map(i=>{const it=items[i];return `<label class="xp-it ${sel.has(i)?'':'off'}" data-i="${i}" title="${_xpEsc(it.text||'')}">
-          <input type="checkbox" ${sel.has(i)?'checked':''}>${it.thumb?`<img loading="lazy" src="${_xpEsc(it.thumb)}" alt="">`:'<img alt="">'}
+          <input type="checkbox" ${sel.has(i)?'checked':''}>${it.thumb?`<img loading="lazy" decoding="async" src="${_xpEsc(_dlThumbSrc(it.thumb))}" alt="">`:'<img alt="">'}
           <div class="xp-tx">${_xpEsc(it.text||'(senza testo)')}</div>
           <div class="xp-m">${[it.gif?'GIF':_xpDur(it.duration),it.date?new Date(it.date).toLocaleDateString():'',had(it)?'già scaricato':''].filter(Boolean).join(' · ')}</div></label>`;}).join('')
         :'<div class="xp-note">Nessun video corrisponde ai filtri.</div>';
@@ -9510,6 +9563,11 @@ function _maybeShowFirstRun(){
 function _showLinkInterceptorBanner(data){
   if(!data||!data.url)return;
   const url=data.url;
+  // I link copiati di fila si sommano: prima ogni nuovo link sostituiva il riquadro,
+  // e copiandone cinquanta restava solo l'ultimo.
+  const L=window.__lnkList=window.__lnkList||[];
+  if(!L.some(x=>x.url===url))L.push(data);
+  const many=L.length>1;
   // Rimuovi banner precedente se identico/per la stessa url
   const old=document.getElementById('linkIntercept'); if(old)old.remove();
   const bn=document.createElement('div');
@@ -9517,11 +9575,11 @@ function _showLinkInterceptorBanner(data){
   bn.style.cssText='position:fixed;top:42px;right:14px;z-index:9999;width:380px;max-width:calc(100vw - 28px);background:var(--s1);border:1px solid var(--p);border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.4);padding:14px;display:flex;flex-direction:column;gap:10px;animation:linkInBan .25s ease-out;font:500 12px/1.4 \'Inter\'';
   const thumb=data.thumbnail?`<img src="${data.thumbnail}" style="width:80px;height:48px;border-radius:5px;object-fit:cover;flex:0 0 80px;background:#000" onerror="this.style.display='none'">`:'';
   const sizeStr=(typeof data.size==='number'&&data.size>0)?(()=>{const u=['B','KB','MB','GB'];let i=0,n=data.size;while(n>=1024&&i<3){n/=1024;i++;}return n.toFixed(n>=10||i===0?0:1)+' '+u[i];})():'';
-  const title=(data.title||'Video rilevato').replace(/</g,'&lt;');
+  const title=((data.title||'Video rilevato')+(many?' · e altri '+(L.length-1):'')).replace(/</g,'&lt;');
   bn.innerHTML=`
     <div style="display:flex;align-items:center;gap:6px;font:700 10px/1 'Inter';color:var(--p);text-transform:uppercase;letter-spacing:.06em">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" width="14" height="14"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-      Link rilevato dagli appunti
+      ${many?L.length+' link rilevati dagli appunti':'Link rilevato dagli appunti'}
     </div>
     <div style="display:flex;gap:10px">
       ${thumb}
@@ -9532,26 +9590,32 @@ function _showLinkInterceptorBanner(data){
       </div>
     </div>
     <div style="display:flex;gap:6px;justify-content:flex-end">
-      <button id="lnkIgnore" class="m2-btn">Ignora</button>
-      <button id="lnkOpenWiz" class="m2-btn">Wizard…</button>
-      <button id="lnkAdd" class="m2-btn primary">Scarica</button>
+      <button id="lnkIgnore" class="m2-btn">${many?'Ignora tutti':'Ignora'}</button>
+      ${many?'':'<button id="lnkOpenWiz" class="m2-btn">Wizard…</button>'}
+      <button id="lnkAdd" class="m2-btn primary">${many?'Scarica tutti ('+L.length+')':'Scarica'}</button>
     </div>`;
   document.body.appendChild(bn);
-  const close=()=>{bn.remove();};
+  const close=()=>{L.length=0;bn.remove();};
   bn.querySelector('#lnkIgnore').onclick=close;
   bn.querySelector('#lnkAdd').onclick=()=>{
     try{
-      const inp=document.getElementById('dlUrl'); if(inp)inp.value=url;
-      if(typeof dlStart==='function')dlStart(url);
+      if(many){
+        // Partono tutti in coda: il limite dei download concorrenti decide quanti insieme.
+        L.slice().forEach(x=>{try{dlStart(x.url,{auto:true});}catch(_){}});
+        toast(L.length+' download in coda');
+      }else{
+        const inp=document.getElementById('dlUrl'); if(inp)inp.value=url;
+        if(typeof dlStart==='function')dlStart(url);
+      }
     }catch(_){}
     close();
   };
-  bn.querySelector('#lnkOpenWiz').onclick=()=>{
+  if(!many)bn.querySelector('#lnkOpenWiz').onclick=()=>{
     if(typeof dlWizardOpen==='function')dlWizardOpen(url);
     close();
   };
   // auto-dismiss dopo 30s se l'utente non interagisce
-  setTimeout(()=>{ if(document.getElementById('linkIntercept')===bn)close(); },30000);
+  setTimeout(()=>{ if(document.getElementById('linkIntercept')===bn)close(); },many?60000:30000);
 }
 
 // Helper: il toggle "master" interceptorAutoStart implica auto-start sia per

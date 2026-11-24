@@ -1447,6 +1447,10 @@ ipcMain.handle('download:start', async (_e, { id, url, quality, format, outputDi
       _dlProcs.set(id, proc);
       send({ status: 'Downloading' });
       let lastTitle = '', lastErrLine = '', lastFilePath = '';
+      // yt-dlp scrive la percentuale molte volte al secondo: all'interfaccia ne bastano
+      // quattro (stati, titoli, file ed errori passano sempre subito).
+      let lastPctAt = 0;
+      const pctTooSoon = (pct) => { const now = Date.now(); if (pct < 100 && now - lastPctAt < 250) return true; lastPctAt = now; return false; };
       proc.stdout.on('data', buf => {
         const lines = buf.toString().split(/\r?\n/);
         for (const line of lines) {
@@ -1457,6 +1461,7 @@ ipcMain.handle('download:start', async (_e, { id, url, quality, format, outputDi
           if (tm) { lastFilePath = tm[1].trim(); lastTitle = path.basename(lastFilePath); send({ title: lastTitle, filePath: lastFilePath }); continue; }
           const pm = line.match(/\[download\]\s+([\d.]+)%\s+of\s+~?\s*([\d.]+)\s*([KMGT]?i?B)\s+at\s+([\d.]+\w+\/s)\s+ETA\s+([\d:]+)/i);
           if (pm) {
+            if (pctTooSoon(parseFloat(pm[1]))) continue;
             const num = parseFloat(pm[2]);
             const unit = (pm[3] || '').toUpperCase();
             const mult = { 'B':1, 'KB':1024, 'KIB':1024, 'MB':1024*1024, 'MIB':1024*1024, 'GB':1024**3, 'GIB':1024**3, 'TB':1024**4, 'TIB':1024**4 }[unit] || 1;
@@ -1465,6 +1470,7 @@ ipcMain.handle('download:start', async (_e, { id, url, quality, format, outputDi
             continue;
           }
           const pm2 = line.match(/\[download\]\s+([\d.]+)%/);
+          if (pm2 && pctTooSoon(parseFloat(pm2[1]))) continue;
           if (pm2) { send({ percent: parseFloat(pm2[1]), status: 'Downloading' }); continue; }
           if (/^ERROR:/i.test(line)) lastErrLine = line;
         }
@@ -3829,7 +3835,9 @@ async function _downloadIconToTemp(url) {
   if (!url) return null;
   try {
     const https = require('https');
-    const dest = path.join(userDataPath, 'tmp-clip-icon.jpg');
+    // Quattro file a rotazione: con due analisi insieme nessuna sovrascrive l'icona dell'altra.
+    _clipIconSlot = (_clipIconSlot + 1) % 4;
+    const dest = path.join(userDataPath, 'tmp-clip-icon-' + _clipIconSlot + '.jpg');
     return await new Promise((resolve) => {
       const tryGet = (u, n=0) => {
         https.get(u, { headers: { 'User-Agent': 'Maniac/1.0' } }, res => {
@@ -3848,26 +3856,60 @@ async function _downloadIconToTemp(url) {
   } catch(_) { return null; }
 }
 
-async function _handleClipboardUrl(url) {
+// Tanti link copiati di fila: si analizzano al massimo due per volta e, dal terzo in
+// poi, niente analisi né notifica per ognuno (passano subito all'app), con una sola
+// notifica col totale alla fine. Cinquanta analisi e cinquanta notifiche insieme
+// rallentavano tutto il PC.
+const _clipQ = [];
+let _clipActive = 0, _clipBurst = 0, _clipBurstT = null, _clipIconSlot = 0;
+function _queueClipboardUrl(url) {
+  _clipQ.push(url);
+  _clipBurst++;
+  clearTimeout(_clipBurstT);
+  _clipBurstT = setTimeout(_clipBurstEnd, 8000);
+  _pumpClipboard();
+}
+function _pumpClipboard() {
+  while (_clipActive < 2 && _clipQ.length) {
+    const url = _clipQ.shift();
+    _clipActive++;
+    _handleClipboardUrl(url, { quick: _clipBurst > 2 })
+      .catch(() => {})
+      .finally(() => { _clipActive--; _pumpClipboard(); });
+  }
+}
+function _clipBurstEnd() {
+  const n = _clipBurst;
+  _clipBurst = 0;
+  if (n <= 2) return;
+  try {
+    if (Notification.isSupported()) {
+      new Notification({ title: 'Maniac · Link rilevati', body: n + ' link video copiati dagli appunti',
+                         icon: path.join(__dirname, 'assets', 'maniac_logo.ico'), silent: true }).show();
+    }
+  } catch(_) {}
+}
+
+async function _handleClipboardUrl(url, { quick } = {}) {
   // Anti-loop: stessa URL notificata negli ultimi 60s → skip
   const last = _clipNotifiedAt.get(url) || 0;
   if (Date.now() - last < 60_000) return;
   _clipNotifiedAt.set(url, Date.now());
 
-  const meta = await _probeUrlMeta(url);
+  const meta = quick ? null : await _probeUrlMeta(url);
   let title = (meta && meta.title) || 'Video rilevato';
-  if (!(meta && meta.title) && _isXUrl(url) && !(await _xConnected().catch(() => false))) {
+  if (!quick && !(meta && meta.title) && _isXUrl(url) && !(await _xConnected().catch(() => false))) {
     title = 'Post di X: se è un contenuto sensibile serve il login (Impostazioni → Downloader → Account X)';
   }
   const sizeStr = meta ? _humanSize(meta.filesize) : '';
-  const iconPath = meta && meta.thumbnail ? await _downloadIconToTemp(meta.thumbnail) : null;
+  const iconPath = !quick && meta && meta.thumbnail ? await _downloadIconToTemp(meta.thumbnail) : null;
 
   // Manda evento al renderer (per pre-fill UI / toast in-app)
   try { mainWindow?.webContents.send('clipboard:videoDetected', { url, title, thumbnail: meta?.thumbnail || null, size: meta?.filesize || null }); } catch(_) {}
 
-  // Notifica OS (popup vicino orologio Windows)
+  // Notifica OS (popup vicino orologio Windows); in una raffica ne arriva una sola alla fine
   try {
-    if (Notification.isSupported()) {
+    if (!quick && Notification.isSupported()) {
       const body = sizeStr ? `${title} · ${sizeStr}` : title;
       const n = new Notification({
         title: 'Maniac · Video rilevato',
@@ -3894,7 +3936,7 @@ function _restartClipboardWatcher(){
     if (!txt || txt === _clipLast) return;
     _clipLast = txt;
     if (!_isKnownVideoUrl(txt)) return;
-    _handleClipboardUrl(txt);
+    _queueClipboardUrl(txt);
   }, 1500);
 }
 
