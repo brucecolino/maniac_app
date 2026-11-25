@@ -3,6 +3,19 @@
 Tutte le versioni pubblicate di Maniac. L'app controlla questa lista dalla
 scheda **Info → Controlla aggiornamenti**.
 
+## 1.2.1 — 2026-11-25
+
+### Maniac Vision
+- I video si vedono **interi** di default, senza tagli. "Riempi" (niente bande
+  nere, bordi del video tagliati) è un'opzione in **Impostazioni → Riproduzione
+  → Maniac Vision**, e resta anche il tasto **C**.
+- **Riquadri sfumati**: niente più bordi netti fra un video e l'altro. I riquadri
+  si sovrappongono un poco e lì uno svanisce mentre l'altro compare, in
+  orizzontale e in verticale; nell'incrocio centrale si fondono tutti e quattro.
+  La fusione è per somma, quindi nella zona comune la luce resta al 100%. La
+  sfumatura si regola (nessuna, leggera, media, ampia, molto ampia); i lati sul
+  bordo dello schermo restano netti.
+
 ## 1.2.0 — 2026-11-25
 
 ### Maniac Vision

@@ -1063,8 +1063,10 @@ body.maniac-vision .vc{outline:none!important;border:0!important;border-radius:0
 body.maniac-vision .vc>*:not(.video-area):not(.sub-ov),body.maniac-vision .vc>.sub-ov.title-start-ov{display:none!important}
 body.maniac-vision .vc .video-area{background:#000!important}
 body.maniac-vision .vc .video-area>*:not(video):not(img){display:none!important}
-body.maniac-vision .vc .video-area>video,body.maniac-vision .vc .video-area>img{object-fit:cover!important;background:#000!important}
-body.maniac-vision.mv-fit .vc .video-area>video,body.maniac-vision.mv-fit .vc .video-area>img{object-fit:contain!important}
+body.maniac-vision .vc .video-area>video,body.maniac-vision .vc .video-area>img{object-fit:contain!important;background:#000!important}
+body.maniac-vision.mv-fill .vc .video-area>video,body.maniac-vision.mv-fill .vc .video-area>img{object-fit:cover!important}
+/* riquadri sfumati: si fondono per somma, così dove si sovrappongono la luce resta al 100% */
+body.maniac-vision #vGrid{isolation:isolate}
 body.maniac-vision .sub-ov{bottom:6%}
 body.maniac-vision.mv-idle,body.maniac-vision.mv-idle *{cursor:none!important}
 #mvHint{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:9002;padding:8px 14px;border-radius:8px;background:rgba(0,0,0,.72);color:#fff;font:500 12px 'Inter';letter-spacing:.02em;pointer-events:none;opacity:1;transition:opacity .6s}
@@ -4139,7 +4141,7 @@ async function toggleManiacVision(force){
   Object.keys(_xfActive).forEach(k=>_xfEnd(+k,_xfActive[k]));
   document.body.classList.toggle('maniac-vision',on);
   if(on){
-    document.body.classList.toggle('mv-fit',S.mvFit==='contain');
+    document.body.classList.toggle('mv-fill',S.mvFit==='cover');
     try{
       // Un singolo riquadro a schermo intero (tasto F) va prima chiuso.
       if(document.fullscreenElement&&document.fullscreenElement!==document.documentElement)await document.exitFullscreen();
@@ -4148,14 +4150,41 @@ async function toggleManiacVision(force){
     _mvHint('Maniac Vision · Esc per uscire · C riempi / adatta');
     _mvPoke();
   }else{
-    document.body.classList.remove('mv-idle','mv-fit');
+    document.body.classList.remove('mv-idle','mv-fill');
     clearTimeout(_mvIdleT);
     const h=document.getElementById('mvHint');if(h)h.remove();
     if(window.__mvFs&&document.fullscreenElement){try{await document.exitFullscreen();}catch(_){}}
     window.__mvFs=false;
   }
   const b=document.getElementById('btnVision');if(b)b.classList.toggle('on',on);
+  _mvLayout();
 }
+// Riquadri sfumati: ogni riquadro sborda un po' nei vicini e lì svanisce, mentre il
+// vicino compare (rampe complementari). La fusione è per somma (plus-lighter): in
+// ogni punto della zona comune i due video pesano in tutto il 100%, anche nell'incrocio
+// centrale dei quattro. I lati sul bordo dello schermo restano netti.
+function _mvFeatherPct(){const v=S.mvFeather;return v==null?12:Math.max(0,Math.min(30,+v||0));}
+function _mvLayout(){
+  const g=document.getElementById('vGrid');if(!g)return;
+  const cells=[...g.children].filter(c=>c.classList&&c.classList.contains('vc'));
+  cells.forEach(c=>{c.style.margin='';c.style.maskImage=c.style.webkitMaskImage='';c.style.maskComposite=c.style.webkitMaskComposite='';c.style.mixBlendMode='';});
+  const pct=_mvFeatherPct();
+  if(!_mvActive()||!pct||cells.length<2)return;
+  const gr=g.getBoundingClientRect(),rects=cells.map(c=>c.getBoundingClientRect());
+  const o=Math.max(1,Math.round(Math.min(...rects.map(r=>Math.min(r.width,r.height)))*pct/200));
+  const ramp=(dir,a,b)=>`linear-gradient(${dir},${a?`transparent 0,#000 ${2*o}px`:'#000 0'},${b?`#000 calc(100% - ${2*o}px),transparent 100%`:'#000 100%'})`;
+  cells.forEach((c,i)=>{
+    const r=rects[i];
+    const L=r.left-gr.left>1,R=gr.right-r.right>1,T=r.top-gr.top>1,B=gr.bottom-r.bottom>1;
+    c.style.margin=`${T?-o:0}px ${R?-o:0}px ${B?-o:0}px ${L?-o:0}px`;
+    c.style.maskImage=c.style.webkitMaskImage=`${ramp('to right',L,R)},${ramp('to bottom',T,B)}`;
+    c.style.maskComposite='intersect';c.style.webkitMaskComposite='source-in';
+    c.style.mixBlendMode='plus-lighter';
+  });
+}
+let _mvResizeT=null;
+window.addEventListener('resize',()=>{if(!_mvActive())return;clearTimeout(_mvResizeT);_mvResizeT=setTimeout(_mvLayout,120);});
+
 // Uscire dallo schermo intero (Esc, F11) chiude anche Maniac Vision.
 document.addEventListener('fullscreenchange',()=>{
   if(!document.fullscreenElement&&window.__mvFs&&_mvActive()){window.__mvFs=false;toggleManiacVision(false);}
@@ -4171,9 +4200,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){e.preventDefault();e.stopPropagation();toggleManiacVision(false);return;}
   if((e.key==='c'||e.key==='C')&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
     e.preventDefault();e.stopPropagation();
-    S.mvFit=S.mvFit==='contain'?'cover':'contain';
-    document.body.classList.toggle('mv-fit',S.mvFit==='contain');
-    _mvHint(S.mvFit==='contain'?'Adatta: video interi, con bande nere':'Riempi: nessuna banda, i bordi del video si tagliano');
+    S.mvFit=S.mvFit==='cover'?'contain':'cover';
+    document.body.classList.toggle('mv-fill',S.mvFit==='cover');
+    _mvHint(S.mvFit==='cover'?'Riempi: nessuna banda, i bordi del video si tagliano':'Adatta: video interi');
     try{saveConfig();}catch(_){}
   }
 },true);
@@ -4205,7 +4234,13 @@ function _xfCapture(pid,f){
   ov.className='xf-ov';
   ov.dataset.pid=pid;
   ov.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;z-index:${_mvActive()?9001:30};pointer-events:none;overflow:hidden;opacity:1`;
-  (document.fullscreenElement||document.body).appendChild(ov);
+  if(_mvActive()){
+    // Dentro la griglia (che in Vision è fissa a 0,0) e con la stessa maschera del riquadro,
+    // così anche il file che esce sfuma sui bordi invece di avere uno spigolo netto.
+    ov.style.maskImage=ov.style.webkitMaskImage=cell.style.maskImage;
+    ov.style.maskComposite=cell.style.maskComposite;ov.style.webkitMaskComposite=cell.style.webkitMaskComposite;
+    document.getElementById('vGrid').appendChild(ov);
+  }else (document.fullscreenElement||document.body).appendChild(ov);
   // Fuori dalla cella le regole CSS della cella non valgono più: si copiano quelle che contano.
   Object.assign(old.style,{position:'absolute',left:'0',top:'0',width:'100%',height:'100%',display:'block',
     objectFit:cs.objectFit,background:cs.backgroundColor,transform:cs.transform,transformOrigin:cs.transformOrigin});
@@ -5051,6 +5086,7 @@ function renderGrid(){
   renderPlayerTrigs();
   applyVideoFilters();
   updatePlayIcons();
+  if(_mvActive())_mvLayout();
 }
 
 function renderPlayerTrigs(){
@@ -6999,6 +7035,18 @@ function renderTab(){
           ${[[0,'Spenta'],[0.5,'0,5 secondi'],[1,'1 secondo'],[2,'2 secondi'],[3,'3 secondi'],[5,'5 secondi'],[8,'8 secondi']].map(([v,l])=>`<option value="${v}" ${(+S.crossfadeSec||0)===v?'selected':''}>${l}</option>`).join('')}
         </select>
         <div style="margin-top:4px;font-size:10px;color:var(--t3);line-height:1.4">Il file successivo entra sfumando, immagine e volume, invece di tagliare: vale per video, audio e immagini, in ogni riquadro, a fine file e con Avanti/Indietro. Con più video piccoli insieme stanca meno l'occhio.</div>
+      </div>
+      <div class="sg"><div class="sg-lbl">Maniac Vision (tasto V)</div>
+        <div class="sg-row"><span class="sg-txt">Video nei riquadri</span>
+          <select onchange="S.mvFit=this.value;document.body.classList.toggle('mv-fill',S.mvFit==='cover');saveConfig()">
+            <option value="contain" ${S.mvFit!=='cover'?'selected':''}>Interi (adatta)</option>
+            <option value="cover" ${S.mvFit==='cover'?'selected':''}>Riempi, tagliando i bordi</option>
+          </select></div>
+        <div class="sg-row"><span class="sg-txt">Sfumatura tra i riquadri</span>
+          <select onchange="S.mvFeather=+this.value;_mvLayout();saveConfig()">
+            ${[[0,'Nessuna (bordi netti)'],[6,'Leggera'],[12,'Media'],[20,'Ampia'],[30,'Molto ampia']].map(([v,l])=>`<option value="${v}" ${_mvFeatherPct()===v?'selected':''}>${l}</option>`).join('')}
+          </select></div>
+        <div style="margin-top:4px;font-size:10px;color:var(--t3);line-height:1.4">Solo i video, a schermo intero. Esc, V o doppio clic per uscire; C alterna interi / riempi.</div>
       </div>
       <div class="sg"><div class="sg-lbl">Titolo all'avvio</div>
         <div class="sg-row"><span class="sg-txt">Visualizza titolo all'inizio della riproduzione</span><div class="sw ${S.titleAtStart?'on':''}" onclick="S.titleAtStart=!S.titleAtStart;this.classList.toggle('on',S.titleAtStart);saveConfig()"><div class="dot"></div></div></div>
@@ -15776,7 +15824,8 @@ async function _saveConfigNow(){
     translatorLang:S.translatorLang||'it',
     wheelNotch:S.wheelNotch||12,
     crossfadeSec:S.crossfadeSec||0,
-    mvFit:S.mvFit==='contain'?'contain':'cover',
+    mvFit:S.mvFit==='cover'?'cover':'contain',
+    mvFeather:_mvFeatherPct(),
     wheelLerp:S.wheelLerp||0.30,
     exploreZoom:S.exploreZoom||140,
     subsEngine:S.subsEngine||'whisper',
@@ -15855,7 +15904,8 @@ async function loadConfig(){
   S.translatorLang=cfg.translatorLang||'it';
   S.wheelNotch=Math.max(6,Math.min(100,+cfg.wheelNotch||12));
   S.crossfadeSec=Math.max(0,Math.min(10,+cfg.crossfadeSec||0));
-  S.mvFit=cfg.mvFit==='contain'?'contain':'cover';
+  S.mvFit=cfg.mvFit==='cover'?'cover':'contain';
+  S.mvFeather=cfg.mvFeather==null?12:Math.max(0,Math.min(30,+cfg.mvFeather||0));
   S.wheelLerp=Math.max(0.10,Math.min(0.60,+cfg.wheelLerp||0.30));
   // Default: faster-whisper (locale, ~5× realtime, niente API key). Più veloce di
   // ai-sub Gemini per video > 5 min e senza rate limits.
