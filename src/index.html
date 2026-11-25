@@ -3349,7 +3349,9 @@ async function _dropToPlaylist(e,pid){
 }
 function addFileByPathInto(pid,path,name,opts){
   const n=name||path.split(/[\\/]/).pop();
-  const url='file:///'+path.replace(/\\/g,'/').replace(/^\/+/,'');
+  // mkUrl e non 'file:///'+path: con # o % nel nome (es. "#tag", "top 11%")
+  // l'indirizzo si spezzava e il lettore cercava un file inesistente.
+  const url=mkUrl(path);
   addRecentFile(path,n,opts);
   addToPlayer(pid,n,url,path,opts);
 }
@@ -3502,6 +3504,13 @@ function persistFileTags(){
   S._fileTags=map;
   clearTimeout(S._fileTagsSaveT);
   S._fileTagsSaveT=setTimeout(()=>{ try{API.fileTagsSave(map);}catch(e){} },400);
+}
+// Indirizzo da dare al lettore. Per un file locale si ricalcola sempre dal percorso:
+// così guariscono anche le voci già in playlist salvate con un indirizzo non codificato.
+function _fileSrc(f){
+  if(!f)return '';
+  if(f.path&&/^([A-Za-z]:[\\/]|\\\\)/.test(f.path)&&(!f.url||/^file:/i.test(f.url)))return mkUrl(f.path);
+  return f.url||'';
 }
 function mkUrl(path,fallback){
   if(path){
@@ -3755,7 +3764,7 @@ function loadFileIntoPlayer(pid){
   }
   setTimeout(()=>{
     if(p.vidEl){
-      const targetUrl=f.url||mkUrl(f.path);
+      const targetUrl=_fileSrc(f)||mkUrl(f.path);
       // Wire error handler: in caso di MEDIA_ERR_SRC_NOT_SUPPORTED (codec/file mancante)
       // mostriamo diagnostica chiara invece di silent fail.
       if(!p.vidEl._maniacErrorBound){
@@ -4560,7 +4569,7 @@ function createCell(pid){
       // Immagine → wrapper <img> trattato come video 10s con timer virtuale
       vid=document.createElement('img');
       // f.url è già percent-encoded da mkUrl(): NON ri-codificare (porterebbe %5B→%255B).
-      try{ vid.src = f.url || ''; }catch(e){ vid.src=f.url||''; }
+      try{ vid.src = _fileSrc(f); }catch(e){ vid.src=f.url||''; }
       vid.style.cssText='width:100%;height:100%;object-fit:contain;display:block;background:#000';
       vid.draggable=false;
       // Shim minimale per compat con il resto del codice
@@ -4619,7 +4628,7 @@ function createCell(pid){
       const isHttp=/^https?:/i.test(f.url);
       // f.url è già percent-encoded da mkUrl() per i file locali: NON ri-codificare
       // (encodeURI doppio porta %5B→%255B, file non trovato → MEDIA_ELEMENT_ERROR).
-      vid.src = f.url;
+      vid.src = _fileSrc(f);
       if(isHttp){try{vid.crossOrigin='anonymous';}catch(e){}}
     }
     if(!isImg){ vid.autoplay=isLive;vid.playsInline=true; }
@@ -11983,7 +11992,7 @@ async function importSubsFile(pid){
   try{
     const fs=require?require('fs'):null;
     const txt = fs ? fs.readFileSync(r.path,'utf8') :
-      await fetch('file:///'+r.path.replace(/\\/g,'/')).then(x=>x.text());
+      await fetch(mkUrl(r.path)).then(x=>x.text());
     const vtt=/\.vtt$/i.test(r.path)?txt:_srtToVtt(txt);
     const blob=new Blob([vtt],{type:'text/vtt'});
     const url=URL.createObjectURL(blob);
@@ -15184,7 +15193,7 @@ function _dropAddFile(f, target, fi){
     if(tp.vidEl){try{tp.vidEl.srcObject=null;tp.vidEl.removeAttribute('src');}catch(e){}}
     if(tp.idx>=tp.playlist.length)tp.idx=Math.max(0,tp.playlist.length-1);
   }
-  const url=f.path?'file:///'+f.path.replace(/\\/g,'/').replace(/^\/+/,''):URL.createObjectURL(f);
+  const url=f.path?mkUrl(f.path):URL.createObjectURL(f);
   addToPlayer(pid,f.name,url,f.path||f.name);
   if(fi===0){
     tp.idx=tp.playlist.length-1;

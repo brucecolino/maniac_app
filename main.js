@@ -580,7 +580,7 @@ ipcMain.handle('media:transcode', async (_e, { id, srcPath } = {}) => {
   const args = ['-y', '-i', srcPath];
   if (vcodec) { args.push('-c:v', vcodec); if (vcodec === 'libx264') args.push('-preset', 'veryfast', '-crf', '23', '-pix_fmt', 'yuv420p'); }
   if (acodec) { args.push('-c:a', acodec); if (acodec === 'aac') args.push('-b:a', '192k'); }
-  args.push('-movflags', '+faststart', '-max_muxing_queue_size', '1024', outPath);
+  args.push('-movflags', '+faststart', '-max_muxing_queue_size', '1024', '-f', 'mp4', outPath);
 
   const tmpOut = outPath + '.part';
   args[args.length - 1] = tmpOut;

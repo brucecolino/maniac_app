@@ -3,6 +3,18 @@
 Tutte le versioni pubblicate di Maniac. L'app controlla questa lista dalla
 scheda **Info → Controlla aggiornamenti**.
 
+## 1.1.9 — 2026-11-25
+
+### File con # o % nel nome
+- Video con `#` o `%` nel titolo ("#tag", "top 11%", tipici dei post di X)
+  davano "Formato/codec non supportato" se aperti trascinandoli su un
+  riquadro, da una cartella o dall'esplora file: l'indirizzo non veniva
+  codificato, si spezzava al `#` e il lettore cercava un file inesistente.
+  Ora si aprono, e si sistemano da sole anche le voci già in playlist.
+- La conversione di riserva con ffmpeg (per i formati che il lettore non
+  legge) non funzionava mai: finiva sempre con "Error opening output files:
+  Invalid argument". Corretta.
+
 ## 1.1.8 — 2026-11-24
 
 ### Crossfade fra un file e l'altro
