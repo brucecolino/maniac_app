@@ -1055,6 +1055,20 @@ input[type=range]::-webkit-slider-thumb{margin-top:-4.5px}
 .vc video.magnified{transform-origin:var(--mag-ox,50%) var(--mag-oy,50%);transform:scale(var(--mag-z,1));transition:transform .08s linear}
 .sub-ov{position:absolute;bottom:48px;left:0;right:0;text-align:center;color:var(--sub-color,#fff);font:600 var(--sub-size,18px)/1.3 'Inter';text-shadow:0 2px 4px rgba(0,0,0,.95),0 0 8px rgba(0,0,0,.9);padding:0 40px;pointer-events:none;z-index:45;white-space:pre-wrap}
 .sub-ov.title-start-ov{font:inherit}
+/* ═══ MANIAC VISION ═══ solo i video: la griglia copre tutta la finestra, senza
+   spazi, bordi, barre o pulsanti. Restano i sottotitoli, se accesi. */
+body.maniac-vision #vGrid{position:fixed;inset:0;width:100vw;height:100vh;z-index:9000;gap:0;background:#000}
+body.maniac-vision #vGrid .drag-ov{display:none!important}
+body.maniac-vision .vc{outline:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#000!important}
+body.maniac-vision .vc>*:not(.video-area):not(.sub-ov),body.maniac-vision .vc>.sub-ov.title-start-ov{display:none!important}
+body.maniac-vision .vc .video-area{background:#000!important}
+body.maniac-vision .vc .video-area>*:not(video):not(img){display:none!important}
+body.maniac-vision .vc .video-area>video,body.maniac-vision .vc .video-area>img{object-fit:cover!important;background:#000!important}
+body.maniac-vision.mv-fit .vc .video-area>video,body.maniac-vision.mv-fit .vc .video-area>img{object-fit:contain!important}
+body.maniac-vision .sub-ov{bottom:6%}
+body.maniac-vision.mv-idle,body.maniac-vision.mv-idle *{cursor:none!important}
+#mvHint{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:9002;padding:8px 14px;border-radius:8px;background:rgba(0,0,0,.72);color:#fff;font:500 12px 'Inter';letter-spacing:.02em;pointer-events:none;opacity:1;transition:opacity .6s}
+#mvHint.out{opacity:0}
 .meter{position:relative;height:16px;background:var(--s3);border-radius:3px;overflow:hidden;contain:layout paint style;isolation:isolate}
 .meter-fill{height:100%;width:0%;background:#4CAF7D;will-change:width;contain:layout paint size}
 .meter-gate{position:absolute;top:-2px;bottom:-2px;width:2px;background:#E05565;pointer-events:none}
@@ -1878,6 +1892,9 @@ input[type=range]::-webkit-slider-thumb{margin-top:-4.5px}
     <button class="ib" id="btnCmdp" onclick="openCommandPalette()" title="Cerca comandi (Ctrl+K)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" width="14" height="14"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
     </button>
+    <button class="ib" id="btnVision" onclick="toggleManiacVision()" title="Maniac Vision: solo i video, a tutto schermo (V)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
     <button class="ib" id="btnTheme" onclick="toggleTheme()">
       <svg id="themeIco" viewBox="0 0 24 24" fill="currentColor" width="15" height="15"></svg>
     </button>
@@ -2515,7 +2532,8 @@ const DEFAULT_SHORTCUTS={
   next:'PageDown',prev:'PageUp',eq:'Ctrl+e',playlist:'Ctrl+l',shuffle:'r',loop:'l',
   screenshot:'Shift+s',speedUp:']',speedDown:'[',multi:'Ctrl+m',
   history:'Ctrl+h',switchPlayer:'Tab',
-  multiNext:'Ctrl+Shift+ArrowRight',multiPrev:'Ctrl+Shift+ArrowLeft'
+  multiNext:'Ctrl+Shift+ArrowRight',multiPrev:'Ctrl+Shift+ArrowLeft',
+  vision:'v'
 };
 function multiNextAll(){for(let i=0;i<S.multi;i++){if(P(i).playlist.length)playerNext(i);}}
 function multiPrevAll(){for(let i=0;i<S.multi;i++){if(P(i).playlist.length)playerPrev(i);}}
@@ -3824,6 +3842,14 @@ function _handleMediaError(p,pid,videoEl){
   window._mediaErrLast=window._mediaErrLast||{};
   if(window._mediaErrLast[k]&&now-window._mediaErrLast[k]<2000)return;
   window._mediaErrLast[k]=now;
+  // In Maniac Vision niente finestre sopra i video: il file si salta e resta nei log.
+  // Il contatore evita di girare a vuoto se nessun file della playlist si apre.
+  if(_mvActive()){
+    try{ logError && logError(`[Player ${pid+1}] ${codeMsg}: ${fname}`, (detail||'')+(filePath?'\nPath: '+filePath:'')); }catch(_){}
+    p._mvFails=(p._mvFails||0)+1;
+    if(p.playlist.length>1&&p._mvFails<=p.playlist.length)setTimeout(()=>playerNext(pid),300);
+    return;
+  }
   // Tentativo di transcodifica con ffmpeg PRIMA di arrendersi: i codec come
   // HEVC/AC3/DTS o il container MKV non sono supportati da Chromium ma il file
   // è valido. code 3=DECODE, 4=SRC_NOT_SUPPORTED → proviamo a convertirlo.
@@ -3839,6 +3865,7 @@ function _handleMediaError(p,pid,videoEl){
 }
 
 function _showMediaErrorModal(codeMsg,fname,filePath,detail){
+  if(_mvActive())return;
   if(typeof toast==='function')toast(`${codeMsg} — ${fname}`);
   if(!(filePath && window.maniac))return;
   const ov=document.createElement('div'); ov.className='mdl-ov';
@@ -4087,6 +4114,70 @@ function applyEqToPlayer(p){
   c.boostGain.gain.value=(p.boost||100)/100;
 }
 
+// ═══ MANIAC VISION ═══
+// Solo i video: la griglia (1, 2, 3 o 4 riquadri) copre tutta la finestra a schermo
+// intero, senza interfaccia, spazi né bordi. V o il pulsante con l'occhio per entrare;
+// Esc, V o doppio clic per uscire; C alterna "riempi" (ritaglia) e "adatta" (bande nere).
+// Le scorciatoie di riproduzione continuano a funzionare.
+function _mvActive(){return document.body.classList.contains('maniac-vision');}
+let _mvIdleT=null;
+function _mvPoke(){
+  document.body.classList.remove('mv-idle');
+  clearTimeout(_mvIdleT);
+  if(_mvActive())_mvIdleT=setTimeout(()=>document.body.classList.add('mv-idle'),1800);
+}
+function _mvHint(text){
+  let h=document.getElementById('mvHint');
+  if(!h){h=document.createElement('div');h.id='mvHint';document.body.appendChild(h);}
+  h.textContent=text;h.classList.remove('out');
+  clearTimeout(h._t);h._t=setTimeout(()=>h.classList.add('out'),2600);
+}
+async function toggleManiacVision(force){
+  const on=force!=null?!!force:!_mvActive();
+  if(on===_mvActive())return;
+  // Le dissolvenze in corso sono agganciate alle coordinate di prima: si chiudono.
+  Object.keys(_xfActive).forEach(k=>_xfEnd(+k,_xfActive[k]));
+  document.body.classList.toggle('maniac-vision',on);
+  if(on){
+    document.body.classList.toggle('mv-fit',S.mvFit==='contain');
+    try{
+      // Un singolo riquadro a schermo intero (tasto F) va prima chiuso.
+      if(document.fullscreenElement&&document.fullscreenElement!==document.documentElement)await document.exitFullscreen();
+      if(!document.fullscreenElement){await document.documentElement.requestFullscreen();window.__mvFs=true;}
+    }catch(_){}
+    _mvHint('Maniac Vision · Esc per uscire · C riempi / adatta');
+    _mvPoke();
+  }else{
+    document.body.classList.remove('mv-idle','mv-fit');
+    clearTimeout(_mvIdleT);
+    const h=document.getElementById('mvHint');if(h)h.remove();
+    if(window.__mvFs&&document.fullscreenElement){try{await document.exitFullscreen();}catch(_){}}
+    window.__mvFs=false;
+  }
+  const b=document.getElementById('btnVision');if(b)b.classList.toggle('on',on);
+}
+// Uscire dallo schermo intero (Esc, F11) chiude anche Maniac Vision.
+document.addEventListener('fullscreenchange',()=>{
+  if(!document.fullscreenElement&&window.__mvFs&&_mvActive()){window.__mvFs=false;toggleManiacVision(false);}
+});
+document.addEventListener('mousemove',()=>{if(_mvActive())_mvPoke();},{passive:true});
+document.addEventListener('dblclick',e=>{
+  if(!_mvActive())return;
+  e.preventDefault();e.stopPropagation();toggleManiacVision(false);
+},true);
+document.addEventListener('keydown',e=>{
+  if(!_mvActive())return;
+  if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'))return;
+  if(e.key==='Escape'){e.preventDefault();e.stopPropagation();toggleManiacVision(false);return;}
+  if((e.key==='c'||e.key==='C')&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
+    e.preventDefault();e.stopPropagation();
+    S.mvFit=S.mvFit==='contain'?'cover':'contain';
+    document.body.classList.toggle('mv-fit',S.mvFit==='contain');
+    _mvHint(S.mvFit==='contain'?'Adatta: video interi, con bande nere':'Riempi: nessuna banda, i bordi del video si tagliano');
+    try{saveConfig();}catch(_){}
+  }
+},true);
+
 // ═══ CROSSFADE ═══
 // Il passaggio da un file all'altro sfuma invece di tagliare. Il video uscente viene
 // spostato in uno strato sopra la sua cella (continua a muoversi e a suonare), sotto
@@ -4113,7 +4204,7 @@ function _xfCapture(pid,f){
   const ov=document.createElement('div');
   ov.className='xf-ov';
   ov.dataset.pid=pid;
-  ov.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;z-index:30;pointer-events:none;overflow:hidden;opacity:1`;
+  ov.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;z-index:${_mvActive()?9001:30};pointer-events:none;overflow:hidden;opacity:1`;
   (document.fullscreenElement||document.body).appendChild(ov);
   // Fuori dalla cella le regole CSS della cella non valgono più: si copiano quelle che contano.
   Object.assign(old.style,{position:'absolute',left:'0',top:'0',width:'100%',height:'100%',display:'block',
@@ -4678,6 +4769,7 @@ function createCell(pid){
 
     vid.addEventListener('loadedmetadata',()=>{
       f.duration=vid.duration||0;
+      p._mvFails=0;
       if(S.panel==='playlist'&&S.panelPlayer===pid)renderPanel();
       // Per stream live (webcam/IP cam) NON instradiamo l'audio attraverso la
       // Web Audio API: la MediaElementSource introduce buffering / latenza che
@@ -7101,6 +7193,7 @@ function renderTab(){
       ['Avanti 10s','fwd10'],['Indietro 10s','back10'],['Avanti 1min','fwdMin'],['Indietro 1min','backMin'],
       ['File successivo','next'],['File precedente','prev'],
       ['Multi-Next (tutti i player)','multiNext'],['Multi-Prev (tutti i player)','multiPrev'],
+      ['Maniac Vision (solo i video)','vision'],
       ['Equalizzatore','eq'],['Playlist','playlist'],['Casuale','shuffle'],['Loop','loop'],
       ['Multi-view','multi'],['Cronologia','history'],['Cambia player attivo','switchPlayer']
     ];
@@ -15610,6 +15703,7 @@ document.addEventListener('keydown',e=>{
   else if(matchShortcut(e,s.multi)){e.preventDefault();cycleMulti();}
   else if(matchShortcut(e,s.multiNext)){e.preventDefault();multiNextAll();}
   else if(matchShortcut(e,s.multiPrev)){e.preventDefault();multiPrevAll();}
+  else if(matchShortcut(e,s.vision)){e.preventDefault();toggleManiacVision();}
   else if(matchShortcut(e,s.next)){e.preventDefault();mainNext();}
   else if(matchShortcut(e,s.prev)){e.preventDefault();mainPrev();}
   else if(matchShortcut(e,s.history)){e.preventDefault();S.panel==='history'?closePanel():openPanel('history');}
@@ -15682,6 +15776,7 @@ async function _saveConfigNow(){
     translatorLang:S.translatorLang||'it',
     wheelNotch:S.wheelNotch||12,
     crossfadeSec:S.crossfadeSec||0,
+    mvFit:S.mvFit==='contain'?'contain':'cover',
     wheelLerp:S.wheelLerp||0.30,
     exploreZoom:S.exploreZoom||140,
     subsEngine:S.subsEngine||'whisper',
@@ -15760,6 +15855,7 @@ async function loadConfig(){
   S.translatorLang=cfg.translatorLang||'it';
   S.wheelNotch=Math.max(6,Math.min(100,+cfg.wheelNotch||12));
   S.crossfadeSec=Math.max(0,Math.min(10,+cfg.crossfadeSec||0));
+  S.mvFit=cfg.mvFit==='contain'?'contain':'cover';
   S.wheelLerp=Math.max(0.10,Math.min(0.60,+cfg.wheelLerp||0.30));
   // Default: faster-whisper (locale, ~5× realtime, niente API key). Più veloce di
   // ai-sub Gemini per video > 5 min e senza rate limits.

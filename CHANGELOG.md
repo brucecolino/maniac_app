@@ -3,6 +3,18 @@
 Tutte le versioni pubblicate di Maniac. L'app controlla questa lista dalla
 scheda **Info → Controlla aggiornamenti**.
 
+## 1.2.0 — 2026-11-25
+
+### Maniac Vision
+- Nuova modalità che toglie tutta l'interfaccia e mostra solo i video, a
+  schermo intero, senza bordi né spazi: con 1, 2, 3 o 4 riquadri. Si attiva
+  con **V** o col pulsante a forma di occhio in alto; si esce con **Esc**, **V**
+  o un doppio clic. **C** alterna "riempi" (nessuna banda nera, i bordi del
+  video si tagliano) e "adatta" (video interi). Le scorciatoie di
+  riproduzione continuano a funzionare e il cursore sparisce da solo.
+- In Maniac Vision un file che non si apre non mostra finestre: si passa al
+  successivo e l'errore resta nei log.
+
 ## 1.1.9 — 2026-11-25
 
 ### File con # o % nel nome
