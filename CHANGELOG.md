@@ -3,6 +3,14 @@
 Tutte le versioni pubblicate di Maniac. L'app controlla questa lista dalla
 scheda **Info → Controlla aggiornamenti**.
 
+## 1.2.2 — 2026-11-26
+
+### Maniac Vision nella finestra
+- Maniac Vision ora parte **nella finestra così com'è**: i video la riempiono,
+  senza interfaccia, ma senza prendersi tutto lo schermo. **F** o il **doppio
+  clic** mettono e tolgono lo schermo intero restando in Vision; **Esc** toglie
+  prima lo schermo intero e poi esce; **V** entra ed esce.
+
 ## 1.2.1 — 2026-11-25
 
 ### Maniac Vision

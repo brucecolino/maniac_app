@@ -1894,7 +1894,7 @@ body.maniac-vision.mv-idle,body.maniac-vision.mv-idle *{cursor:none!important}
     <button class="ib" id="btnCmdp" onclick="openCommandPalette()" title="Cerca comandi (Ctrl+K)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" width="14" height="14"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
     </button>
-    <button class="ib" id="btnVision" onclick="toggleManiacVision()" title="Maniac Vision: solo i video, a tutto schermo (V)">
+    <button class="ib" id="btnVision" onclick="toggleManiacVision()" title="Maniac Vision: solo i video, senza interfaccia (V) · F per lo schermo intero">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
     </button>
     <button class="ib" id="btnTheme" onclick="toggleTheme()">
@@ -4117,9 +4117,11 @@ function applyEqToPlayer(p){
 }
 
 // ═══ MANIAC VISION ═══
-// Solo i video: la griglia (1, 2, 3 o 4 riquadri) copre tutta la finestra a schermo
-// intero, senza interfaccia, spazi né bordi. V o il pulsante con l'occhio per entrare;
-// Esc, V o doppio clic per uscire; C alterna "riempi" (ritaglia) e "adatta" (bande nere).
+// Solo i video: la griglia (1, 2, 3 o 4 riquadri) copre tutta la finestra, senza
+// interfaccia, spazi né bordi. Parte nella finestra così com'è; F (o il tasto dello
+// schermo intero scelto nelle scorciatoie) e il doppio clic mettono e tolgono lo schermo
+// intero restando in Vision. V o il pulsante con l'occhio per entrare e uscire; Esc
+// toglie prima lo schermo intero, poi esce. C alterna video interi e "riempi".
 // Le scorciatoie di riproduzione continuano a funzionare.
 function _mvActive(){return document.body.classList.contains('maniac-vision');}
 let _mvIdleT=null;
@@ -4142,12 +4144,9 @@ async function toggleManiacVision(force){
   document.body.classList.toggle('maniac-vision',on);
   if(on){
     document.body.classList.toggle('mv-fill',S.mvFit==='cover');
-    try{
-      // Un singolo riquadro a schermo intero (tasto F) va prima chiuso.
-      if(document.fullscreenElement&&document.fullscreenElement!==document.documentElement)await document.exitFullscreen();
-      if(!document.fullscreenElement){await document.documentElement.requestFullscreen();window.__mvFs=true;}
-    }catch(_){}
-    _mvHint('Maniac Vision · Esc per uscire · C riempi / adatta');
+    // Un singolo riquadro a schermo intero (tasto F) va chiuso: Vision mostra tutta la griglia.
+    try{if(document.fullscreenElement&&document.fullscreenElement!==document.documentElement)await document.exitFullscreen();}catch(_){}
+    _mvHint('Maniac Vision · F schermo intero · Esc per uscire · C interi / riempi');
     _mvPoke();
   }else{
     document.body.classList.remove('mv-idle','mv-fill');
@@ -4185,19 +4184,37 @@ function _mvLayout(){
 let _mvResizeT=null;
 window.addEventListener('resize',()=>{if(!_mvActive())return;clearTimeout(_mvResizeT);_mvResizeT=setTimeout(_mvLayout,120);});
 
-// Uscire dallo schermo intero (Esc, F11) chiude anche Maniac Vision.
+// Schermo intero dentro Vision: si entra e si esce senza lasciare Vision.
+async function _mvToggleFullscreen(){
+  try{
+    if(document.fullscreenElement){await document.exitFullscreen();}
+    else{await document.documentElement.requestFullscreen();window.__mvFs=true;_mvHint('Schermo intero · Esc per tornare alla finestra');}
+  }catch(_){}
+}
+let _mvFsLeftAt=0;
 document.addEventListener('fullscreenchange',()=>{
-  if(!document.fullscreenElement&&window.__mvFs&&_mvActive()){window.__mvFs=false;toggleManiacVision(false);}
+  if(!document.fullscreenElement){if(window.__mvFs)_mvFsLeftAt=Date.now();window.__mvFs=false;}
+  if(_mvActive())setTimeout(_mvLayout,60);
 });
 document.addEventListener('mousemove',()=>{if(_mvActive())_mvPoke();},{passive:true});
 document.addEventListener('dblclick',e=>{
   if(!_mvActive())return;
-  e.preventDefault();e.stopPropagation();toggleManiacVision(false);
+  e.preventDefault();e.stopPropagation();_mvToggleFullscreen();
 },true);
 document.addEventListener('keydown',e=>{
   if(!_mvActive())return;
   if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'))return;
-  if(e.key==='Escape'){e.preventDefault();e.stopPropagation();toggleManiacVision(false);return;}
+  if(e.key==='Escape'){
+    e.preventDefault();e.stopPropagation();
+    // A schermo intero Esc riporta alla finestra (Chromium lo fa da sé: qui non si
+    // esce anche da Vision con lo stesso tasto).
+    if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});return;}
+    if(Date.now()-_mvFsLeftAt<400)return;
+    toggleManiacVision(false);return;
+  }
+  if(matchShortcut(e,S.shortcuts&&S.shortcuts.fullscreen)||((e.key==='f'||e.key==='F')&&!e.ctrlKey&&!e.altKey&&!e.metaKey)){
+    e.preventDefault();e.stopPropagation();_mvToggleFullscreen();return;
+  }
   if((e.key==='c'||e.key==='C')&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
     e.preventDefault();e.stopPropagation();
     S.mvFit=S.mvFit==='cover'?'contain':'cover';
@@ -7046,7 +7063,7 @@ function renderTab(){
           <select onchange="S.mvFeather=+this.value;_mvLayout();saveConfig()">
             ${[[0,'Nessuna (bordi netti)'],[6,'Leggera'],[12,'Media'],[20,'Ampia'],[30,'Molto ampia']].map(([v,l])=>`<option value="${v}" ${_mvFeatherPct()===v?'selected':''}>${l}</option>`).join('')}
           </select></div>
-        <div style="margin-top:4px;font-size:10px;color:var(--t3);line-height:1.4">Solo i video, a schermo intero. Esc, V o doppio clic per uscire; C alterna interi / riempi.</div>
+        <div style="margin-top:4px;font-size:10px;color:var(--t3);line-height:1.4">Solo i video, nella finestra. F o doppio clic per lo schermo intero; Esc toglie lo schermo intero e poi esce; V entra ed esce; C alterna interi / riempi.</div>
       </div>
       <div class="sg"><div class="sg-lbl">Titolo all'avvio</div>
         <div class="sg-row"><span class="sg-txt">Visualizza titolo all'inizio della riproduzione</span><div class="sw ${S.titleAtStart?'on':''}" onclick="S.titleAtStart=!S.titleAtStart;this.classList.toggle('on',S.titleAtStart);saveConfig()"><div class="dot"></div></div></div>
