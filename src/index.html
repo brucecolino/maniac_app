@@ -2710,7 +2710,7 @@ async function act_openFile(){
     });
     if(total>0){
       const p=P(target);
-      p.idx=startLen;
+      p.idx=_shuffleStart(p,startLen);
       loadFileIntoPlayer(target);
       if(r.items.some(it=>it.type==='folder'))toast(`Aggiunti ${total} file`);
     }
@@ -2742,7 +2742,7 @@ async function act_openFolder(){
       if(S.panel==='playlist'&&S.panelPlayer===target)renderPanel();
       toast(`Aggiunti ${sorted.length} file dalla cartella`);
       const p=P(target);
-      if(p.playlist.length>startLen){p.idx=startLen;loadFileIntoPlayer(target);}
+      if(p.playlist.length>startLen){p.idx=_shuffleStart(p,startLen);loadFileIntoPlayer(target);}
       saveConfig();
     }
   }
@@ -2786,7 +2786,8 @@ function autoFillEmptyPlayer(pid){
   // Raccogli i path già in uso in qualsiasi player
   const used=new Set();
   for(let i=0;i<S.multi;i++){P(i).playlist.forEach(f=>used.add(f.path));}
-  const next=q.find(f=>!used.has(f.path));
+  const avail=q.filter(f=>!used.has(f.path));
+  const next=p.shuffle?avail[Math.floor(Math.random()*avail.length)]:avail[0];
   if(!next)return false;
   addFileByPathInto(pid,next.path,next.name);
   p.idx=p.playlist.length-1;
@@ -2832,14 +2833,16 @@ async function act_importPlaylist(){
       const pid=pl.idx|0;if(pid<0||pid>3)return;
       ensurePlayers(pid+1);
       if(pid>=S.multi){S.multi=pid+1;renderMultiDots();}
-      const pp=P(pid);(pl.items||[]).forEach(it=>{pp.playlist.push(newFile(it.name,mkUrl(it.path,it.url),it.path));if(it.tags)pp.playlist[pp.playlist.length-1].tags=it.tags;tot++;});
+      const pp=P(pid),st=pp.playlist.length;(pl.items||[]).forEach(it=>{pp.playlist.push(newFile(it.name,mkUrl(it.path,it.url),it.path));if(it.tags)pp.playlist[pp.playlist.length-1].tags=it.tags;tot++;});
+      if(st===0&&pp.playlist.length)pp.idx=_shuffleStart(pp,0);
     });
     renderGrid();toast((t('imported')||'Importati')+' '+tot+' file');
-  } else if(Array.isArray(raw)){
-    raw.forEach(it=>addFileByPath(it.path,it.name));
-    toast((t('imported')||'Importati')+' '+raw.length+' file');
-  } else if(Array.isArray(raw&&raw.items)){
-    raw.items.forEach(it=>addFileByPath(it.path,it.name));
+  } else if(Array.isArray(raw)||Array.isArray(raw&&raw.items)){
+    const list=Array.isArray(raw)?raw:raw.items;
+    const tp=activeP(),st=tp.playlist.length;
+    list.forEach(it=>addFileByPath(it.path,it.name));
+    if(st===0&&tp.shuffle&&tp.playlist.length>1){tp.idx=_shuffleStart(tp,0);loadFileIntoPlayer(tp.id);}
+    if(Array.isArray(raw))toast((t('imported')||'Importati')+' '+raw.length+' file');
   }
 }
 
@@ -3351,6 +3354,7 @@ function _filePath(f){
 
 // Helper drop to specific playlist player
 async function _dropToPlaylist(e,pid){
+  const startLen=P(pid).playlist.length;
   const items=Array.from(e.dataTransfer.items||[]);
   const files=Array.from(e.dataTransfer.files||[]);
   for(const item of items){
@@ -3363,6 +3367,7 @@ async function _dropToPlaylist(e,pid){
     else if(f){const u=URL.createObjectURL(f);P(pid).playlist.push(newFile(f.name,u,null));}
   }
   if(!items.length)files.forEach(f=>{const fp=_filePath(f); if(fp)addFileByPathInto(pid,fp,f.name,{silent:true}); else{const u=URL.createObjectURL(f);P(pid).playlist.push(newFile(f.name,u,null));}});
+  if(startLen===0)P(pid).idx=_shuffleStart(P(pid),0);
   renderGrid();
   saveConfig();
   if(S.panel==='playlist'&&S.panelPlayer===pid)renderPanel();
@@ -3934,6 +3939,18 @@ function _attemptTranscode(p,pid,f,codeMsg,detail){
   });
 }
 
+// Riproduzione casuale e file appena aggiunti (apri file/cartella, trascinamento, import):
+// si parte da uno a caso fra quelli nuovi invece che dal primo in ordine alfabetico.
+// Il file scelto entra nella cronologia del casuale, così "Avanti" non lo ripropone subito.
+function _shuffleStart(p,startLen){
+  const n=p.playlist.length-startLen;
+  if(!p.shuffle||n<2)return startLen;
+  const i=startLen+Math.floor(Math.random()*n);
+  const f=p.playlist[i];
+  if(f&&f.path)p._shufHistory=(p._shufHistory||[]).concat(f.path).slice(-200);
+  p._shufStack=(p._shufStack||[]).concat(i).slice(-100);
+  return i;
+}
 function playerNext(pid){
   const p=P(pid);
   // Player vuoto: "Avanti" eredita la playlist da un altro player.
@@ -15337,7 +15354,7 @@ document.addEventListener('mouseover',e=>{
 });
 
 // ═══ DRAG & DROP — drop su una cella va in quel player ═══
-function _dropAddFile(f, target, fi){
+function _dropAddFile(f, target, fi, batch){
   const pid=(target!==null)?target:(() => {
     let t=S.activePlayer;
     if(S.multi>1){for(let j=0;j<S.multi;j++){if(P(j).playlist.length===0){t=j;break;}}}
@@ -15352,8 +15369,9 @@ function _dropAddFile(f, target, fi){
     if(tp.idx>=tp.playlist.length)tp.idx=Math.max(0,tp.playlist.length-1);
   }
   const url=f.path?mkUrl(f.path):URL.createObjectURL(f);
-  addToPlayer(pid,f.name,url,f.path||f.name);
-  if(fi===0){
+  // In un blocco di più file si aggiunge in silenzio: parte uno solo, scelto alla fine.
+  addToPlayer(pid,f.name,url,f.path||f.name,batch?{silent:true}:undefined);
+  if(fi===0&&!batch){
     tp.idx=tp.playlist.length-1;
     S.activePlayer=pid;
     loadFileIntoPlayer(pid);
@@ -15433,12 +15451,13 @@ async function handleDrop(e){
     return t;
   })();
   const startLen=P(pidTarget).playlist.length;
-  collected.forEach((f,fi)=>_dropAddFile(f,target,fi));
+  const batch=collected.length>1;
+  collected.forEach((f,fi)=>_dropAddFile(f,target,fi,batch));
   // Ensure playback starts from first new file
   setTimeout(()=>{
     const tp=P(pidTarget);
     if(tp.playlist.length>startLen){
-      tp.idx=startLen;
+      tp.idx=_shuffleStart(tp,startLen);
       S.activePlayer=pidTarget;
       loadFileIntoPlayer(pidTarget);
     }
