@@ -147,8 +147,12 @@ async function scanMediaAsync(rootDir, withSize = false) {
   return out;
 }
 
+// La configurazione letta qui per l'accelerazione hardware serve anche alla prima
+// richiesta dell'interfaccia: niente seconda lettura e decodifica all'avvio.
+let _cfgBoot = null;
 try {
   const _cfgRaw = fs.existsSync(configFile) ? JSON.parse(fs.readFileSync(configFile,'utf8')) : null;
+  _cfgBoot = _cfgRaw;
   if (_cfgRaw && _cfgRaw.hwAccel === false) {
     app.disableHardwareAcceleration();
   }
@@ -371,6 +375,7 @@ ipcMain.handle('import-playlist-dialog', async () => {
 });
 
 ipcMain.handle('config-load', () => {
+  if (_cfgBoot) { const c = _cfgBoot; _cfgBoot = null; return c; }
   try { if (fs.existsSync(configFile)) return JSON.parse(fs.readFileSync(configFile, 'utf8')); } catch (e) {}
   return {};
 });
@@ -379,7 +384,8 @@ ipcMain.handle('config-save', async (_e, cfg) => {
   // corrotto se il processo termina a metà scrittura.
   try {
     const tmp = configFile + '.tmp';
-    await fs.promises.writeFile(tmp, JSON.stringify(cfg, null, 2), 'utf8');
+    _cfgBoot = null;
+    await fs.promises.writeFile(tmp, JSON.stringify(cfg), 'utf8');
     await fs.promises.rename(tmp, configFile);
     return { success: true };
   } catch (e) { return { success: false, error: e.message }; }
@@ -2712,7 +2718,7 @@ ipcMain.handle('os:open-default-apps', async () => {
 let _venvStatusCache = null;
 ipcMain.handle('ai:venv-check', async (_e, { force } = {}) => {
   if (_venvStatusCache && !force) return _venvStatusCache;
-  _venvStatusCache = await pyBridge.venvCheck();
+  _venvStatusCache = await pyBridge.venvCheck(!!force);
   return _venvStatusCache;
 });
 ipcMain.handle('ai:python-path', () => ({ path: pyBridge.resolvePython() }));
@@ -3879,15 +3885,8 @@ function _pumpClipboard() {
   }
 }
 function _clipBurstEnd() {
-  const n = _clipBurst;
+  // Il riepilogo della raffica lo mostra l'interfaccia (vedi _dlNotify).
   _clipBurst = 0;
-  if (n <= 2) return;
-  try {
-    if (Notification.isSupported()) {
-      new Notification({ title: 'Maniac · Link rilevati', body: n + ' link video copiati dagli appunti',
-                         icon: path.join(__dirname, 'assets', 'maniac_logo.ico'), silent: true }).show();
-    }
-  } catch(_) {}
 }
 
 async function _handleClipboardUrl(url, { quick } = {}) {
@@ -3904,27 +3903,27 @@ async function _handleClipboardUrl(url, { quick } = {}) {
   const sizeStr = meta ? _humanSize(meta.filesize) : '';
   const iconPath = !quick && meta && meta.thumbnail ? await _downloadIconToTemp(meta.thumbnail) : null;
 
-  // Manda evento al renderer (per pre-fill UI / toast in-app)
-  try { mainWindow?.webContents.send('clipboard:videoDetected', { url, title, thumbnail: meta?.thumbnail || null, size: meta?.filesize || null }); } catch(_) {}
-
-  // Notifica OS (popup vicino orologio Windows); in una raffica ne arriva una sola alla fine
-  try {
-    if (!quick && Notification.isSupported()) {
-      const body = sizeStr ? `${title} · ${sizeStr}` : title;
-      const n = new Notification({
-        title: 'Maniac · Video rilevato',
-        body,
-        icon: iconPath || path.join(__dirname, 'assets', 'maniac_logo.ico'),
-        silent: false
-      });
-      n.on('click', () => {
-        _showMainWindow();
-        try { mainWindow?.webContents.send('clipboard:videoDetected', { url, title, thumbnail: meta?.thumbnail || null, size: meta?.filesize || null, openWizard: true }); } catch(_){}
-      });
-      n.show();
-    }
-  } catch(_) {}
+  // All'interfaccia: lei sa se il download parte da solo e decide l'avviso
+  // ("download avviato" o "video rilevato"), raggruppando quelli a raffica.
+  void sizeStr; void iconPath;
+  try { mainWindow?.webContents.send('clipboard:videoDetected', { url, title, thumbnail: meta?.thumbnail || null, size: meta?.filesize || null, quick: !!quick }); } catch(_) {}
 }
+
+// Avviso di sistema chiesto dall'interfaccia. onlyIfAway: solo se Maniac non è in primo
+// piano (ridotta a icona, nascosta nel tray o dietro un'altra finestra).
+ipcMain.handle('ui:notify', async (_e, { title, body, iconUrl, onlyIfAway, action, url } = {}) => {
+  try {
+    if (!Notification.isSupported()) return { shown: false };
+    const away = !mainWindow || mainWindow.isDestroyed() || !mainWindow.isVisible() || mainWindow.isMinimized() || !mainWindow.isFocused();
+    if (onlyIfAway && !away) return { shown: false, reason: 'in primo piano' };
+    const icon = iconUrl && /^https?:/i.test(iconUrl) ? await _downloadIconToTemp(iconUrl).catch(() => null) : null;
+    const n = new Notification({ title: String(title || 'Maniac').slice(0, 120), body: String(body || '').slice(0, 240),
+                                 icon: icon || path.join(__dirname, 'assets', 'maniac_logo.ico'), silent: true });
+    n.on('click', () => { _showMainWindow(); try { mainWindow?.webContents.send('ui:notifyClick', { action, url }); } catch(_) {} });
+    n.show();
+    return { shown: true };
+  } catch (e) { return { shown: false, error: e.message }; }
+});
 
 function _restartClipboardWatcher(){
   if (_clipTimer) { clearInterval(_clipTimer); _clipTimer = null; }

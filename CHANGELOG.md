@@ -3,6 +3,38 @@
 Tutte le versioni pubblicate di Maniac. L'app controlla questa lista dalla
 scheda **Info → Controlla aggiornamenti**.
 
+## 1.2.3 — 2026-11-26
+
+### Più leggera all'avvio
+- Il controllo dei moduli di intelligenza artificiale, fatto a ogni avvio,
+  importava davvero TensorFlow, PyTorch, DeepFace e gli altri solo per sapere se
+  c'erano: **8-9 secondi e ~600 MB di RAM**. Ora guarda solo se sono installati e
+  con che versione: **mezzo secondo e 18 MB**. Il controllo completo resta per il
+  pulsante "Ricontrolla".
+- La cronologia salvava a ogni voce una copia intera delle playlist di tutti i
+  riquadri: il file di configurazione era arrivato a **7,4 MB**, letto all'avvio e
+  riscritto a ogni video che parte. Ora ogni playlist si salva una volta sola:
+  **610 KB**, con la cronologia identica. Lettura da 62 a 5 ms, ogni salvataggio da
+  75 a 9 ms.
+
+### Downloader
+- **Svuota lista** e **Rimuovi terminati** in alto. I file già scaricati restano
+  sul disco.
+- **Selezione dinamica**: clic su una riga per selezionarla, trascina per
+  selezionarne tante, Maiusc+clic per un intervallo, Ctrl+A per tutte, Esc per
+  togliere la selezione. Con una selezione compare una barra con Pausa, Riprendi,
+  **Rimuovi dalla lista** e **Sposta i file nel Cestino** (recuperabili).
+- **Avvisi di sistema** quando Maniac non è in primo piano: quando un link copiato
+  viene preso (attivo di default) e, se lo accendi in Impostazioni → Downloader,
+  quando un download finisce. A raffica ne arrivano due e poi uno col totale.
+
+### Riproduzione
+- Con la **riproduzione casuale** attiva, anche il primo video di una cartella o di
+  un gruppo di file aggiunti (apri, trascina, importa, riempimento dei riquadri
+  vuoti) è scelto a caso.
+- I **recenti** tornano a riempirsi: prima li registrava solo "Apri file", e i video
+  trascinati sui riquadri non comparivano mai. Ora entra ogni file che parte.
+
 ## 1.2.2 — 2026-11-26
 
 ### Maniac Vision nella finestra

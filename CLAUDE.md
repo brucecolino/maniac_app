@@ -77,7 +77,7 @@ Everything is a single HTML file with one `<script>` block (~9k lines of JS).
 
 - `py-bridge.js` exposes `resolvePython()`, `runScript(name, args)`, `spawnWorker(name, args)`, `venvCheck()`, `installOptionalPackages([])`.
 - Every CLI prints **one final line** of JSON `{ok, ...}` via `print(json.dumps(...))`. Long-running ones additionally emit JSONL progress events on intermediate lines.
-- `bootstrap.py --check` is the single source of truth for "what's installed". Renderer's `initVenvCheck()` (~line 9460) auto-installs `mutagen`/`pyacoustid` once per 24h via `ai:install-optional`.
+- `bootstrap.py --check` is the single source of truth for "what's installed". It only checks presence + version (`importlib.util.find_spec` / `importlib.metadata`), ~0.5 s; importing TF/torch/DeepFace took 8-9 s and ~600 MB on every app start. `--check --deep` really imports them (used by the "Ricontrolla" button, `ai:venv-check {force:true}`). Renderer's `initVenvCheck()` (~line 9460) auto-installs `mutagen`/`pyacoustid` once per 24h via `ai:install-optional`.
 - ML weights (`yolov8n.pt`, `resnet18_places365.pth.tar`) live in `models/ml/` and are lazy-downloaded by `analyze.py` on first use.
 - External binaries in `tools/` (`ffmpeg`, `exiftool`, `mediainfo`) are bundled as `extraResources`; `bootstrap.py probe_external_tools()` resolves them.
 
@@ -124,7 +124,8 @@ If the wizard returns nothing, the warmup probably timed out — see `_scEnsureS
 
 | Path | Content |
 |------|---------|
-| `userData/maniac-config.json` | UI state, settings, tags, recents, downloads, favorites |
+| `userData/maniac-config.json` | UI state, settings, tags, recents, favorites. History snapshots are stored compactly: each distinct playlist once in `historyPlaylists`, entries point to it via `filesRef` (`_histPack`/`_histUnpack`); in memory `S.history` keeps full `files` arrays |
+| renderer `localStorage.downloads` | download rows (pending rows are never trimmed; last 300 finished kept) |
 | `userData/maniac-file-tags.json` | per-file tags keyed by absolute path |
 | `userData/maniac-analysis-history.json` | analyzed elements (faces/places/objects) |
 | `userData/faces.db` (SQLite) | face/entity embeddings for `match`/`add` |

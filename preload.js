@@ -107,6 +107,9 @@ contextBridge.exposeInMainWorld('maniac', {
 
   // Download (yt-dlp / VibraVid)
   downloadStart: (opts) => ipcRenderer.invoke('download:start', opts),
+  // Avviso di sistema (solo se Maniac non è in primo piano, con onlyIfAway) e suo clic.
+  uiNotify: (opts) => ipcRenderer.invoke('ui:notify', opts),
+  onUiNotifyClick: (cb) => ipcRenderer.on('ui:notifyClick', (_e, d) => cb(d)),
   // Sessione X di Maniac: serve per i post segnati come sensibili.
   xauth: {
     status: () => ipcRenderer.invoke('xauth:status'),

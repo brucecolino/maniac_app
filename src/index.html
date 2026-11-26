@@ -1398,6 +1398,18 @@ body.maniac-vision.mv-idle,body.maniac-vision.mv-idle *{cursor:none!important}
 .m2-dl-size{text-align:right;font:600 12px/1 'JetBrains Mono',monospace;color:var(--t1);white-space:nowrap;letter-spacing:.02em}
 .m2-dl-acts{justify-content:flex-end}
 .m2-dl-row:hover{background:var(--s2)}
+.m2-dl-row{user-select:none;cursor:default}
+.m2-dl-row.sel,.m2-dl-row.sel:hover{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+[data-theme="light"] .m2-dl-row.sel,[data-theme="light"] .m2-dl-row.sel:hover{background:#E9E0F6}
+.m2-dl-selbar{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow:hidden;min-height:38px;box-sizing:border-box;padding:5px 10px;margin-bottom:8px;border:1px solid var(--accent);border-radius:8px;background:var(--s2);font:500 12px 'Inter';color:var(--t2)}
+.m2-dl-selbar b{color:var(--accent-hi)}
+.m2-dl-selbar.idle{border-color:var(--bd);background:transparent;color:var(--t3);font:400 11px 'Inter';white-space:nowrap;text-overflow:ellipsis}
+[data-theme="light"] .m2-dl-selbar.idle{background:transparent;border-color:#D9D2E3}
+.m2-dl-selbar .sp{flex:1}
+.m2-dl-selbar .m2-btn{height:26px;padding:0 10px;font-size:11px}
+.m2-dl-selbar .m2-btn.danger{color:var(--err,#e55)}
+[data-theme="light"] .m2-dl-selbar{background:#FFFFFF}
+[data-theme="light"] .m2-dl-selbar b{color:#4a2e75}
 .m2-dl-thumbwrap{position:relative;width:56px;height:36px;flex:0 0 56px;border-radius:4px;overflow:hidden;background:var(--s3)}
 .m2-dl-thumb{width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .m2-dl-thumb img{width:100%;height:100%;object-fit:cover;display:block}
@@ -4025,11 +4037,20 @@ function pushHistory(pid){
   // Ordine cronologico discendente (ts più recente primo)
   S.history.sort((a,b)=>(b.ts||0)-(a.ts||0));
   if(S.history.length>50)S.history.length=50;
+  // Anche i recenti si aggiornano qui, quando un file parte davvero: prima li registrava
+  // solo "Apri file", e i video trascinati sui riquadri non comparivano mai.
+  if(cur.path&&!/^(https?|blob):/i.test(cur.path)){
+    const prev=(S.recent||[]).find(r=>r.path===cur.path);
+    addRecentFile(cur.path,cur.name,{silent:true});
+    const r0=S.recent[0]; if(r0&&!r0.thumb&&prev&&prev.thumb)r0.thumb=prev.thumb;
+  }
   saveConfig();
   if(S.panel==='history')renderPanel();
+  if(S.panel==='file')renderPanel();
   // Genera miniatura in cache persistente (punto 10)
   _ensureThumbCache(cur.path,cur.url,p.vidEl).then(dataUrl=>{
     if(!dataUrl)return;
+    const rr=(S.recent||[]).find(r=>r.path===cur.path); if(rr&&!rr.thumb)rr.thumb=dataUrl;
     const e=S.history.find(h=>h.path===cur.path); if(e){e.thumb=dataUrl;saveConfig();if(S.panel==='history')renderPanel();}
   }).catch(()=>{});
 }
@@ -7436,6 +7457,8 @@ function renderTab(){
       <div class="sg-row"><span class="sg-txt">Cattura automatica clipboard (URL/magnet)</span><div class="sw ${dc.clipboardCapture?'on':''}" onclick="S.downloaderCfg.clipboardCapture=!S.downloaderCfg.clipboardCapture;this.classList.toggle('on',S.downloaderCfg.clipboardCapture);saveConfig();toggleClipboardMonitor()"><div class="dot"></div></div></div>
       <div class="sg-row"><span class="sg-txt">Avvia automaticamente i download intercettati (notifica system tray)</span><div class="sw ${dc.interceptorAutoStart?'on':''}" onclick="S.downloaderCfg.interceptorAutoStart=!S.downloaderCfg.interceptorAutoStart;this.classList.toggle('on',S.downloaderCfg.interceptorAutoStart);saveConfig()"><div class="dot"></div></div></div>
       <div class="sg-row"><span class="sg-txt">Avvia magnet dal browser senza chiedere</span><div class="sw ${dc.interceptorAutoStartTorrent!==false?'on':''}" onclick="S.downloaderCfg.interceptorAutoStartTorrent=!(S.downloaderCfg.interceptorAutoStartTorrent!==false);this.classList.toggle('on',S.downloaderCfg.interceptorAutoStartTorrent!==false);saveConfig()"><div class="dot"></div></div></div>
+      <div class="sg-row"><span class="sg-txt">Avviso quando un link copiato viene preso (se Maniac non è in primo piano)</span><div class="sw ${dc.notifyStart!==false?'on':''}" onclick="S.downloaderCfg.notifyStart=!(S.downloaderCfg.notifyStart!==false);this.classList.toggle('on',S.downloaderCfg.notifyStart!==false);saveConfig()"><div class="dot"></div></div></div>
+      <div class="sg-row"><span class="sg-txt">Avviso quando un download finisce (se Maniac non è in primo piano)</span><div class="sw ${dc.notifyDone?'on':''}" onclick="S.downloaderCfg.notifyDone=!S.downloaderCfg.notifyDone;this.classList.toggle('on',!!S.downloaderCfg.notifyDone);saveConfig()"><div class="dot"></div></div></div>
       <div class="sg-row"><span class="sg-txt">Avvia URL video copiati senza chiedere</span><div class="sw ${dc.interceptorAutoStartUrl?'on':''}" onclick="S.downloaderCfg.interceptorAutoStartUrl=!S.downloaderCfg.interceptorAutoStartUrl;this.classList.toggle('on',S.downloaderCfg.interceptorAutoStartUrl);saveConfig()"><div class="dot"></div></div></div>
       <div class="sg-row"><span class="sg-txt">Apri Wizard se URL non trova video</span><div class="sw ${dc.autoWizardOnFail!==false?'on':''}" onclick="S.downloaderCfg.autoWizardOnFail=!(S.downloaderCfg.autoWizardOnFail!==false);this.classList.toggle('on',S.downloaderCfg.autoWizardOnFail!==false);saveConfig()"><div class="dot"></div></div></div>
       <div class="sg-row"><span class="sg-txt">Mostra anteprime downloader</span><div class="sw ${!(S.hideThumbs&&S.hideThumbs.downloader)?'on':''}" onclick="toggleThumbs('downloader');this.classList.toggle('on',!(S.hideThumbs&&S.hideThumbs.downloader));if(S.panel==='downloader')renderPanel()"><div class="dot"></div></div></div>
@@ -8255,6 +8278,8 @@ function renderDownload(){
       <div style="display:flex;align-items:center;gap:8px">
         ${iconBtn('<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>','Pausa selezionati','dlPauseSelected()')}
         ${iconBtn('<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M8 5v14l11-7z"/></svg>','Riprendi selezionati','dlResumeSelected()')}
+        ${iconBtn('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M20 6L9 17l-5-5"/><path d="M4 21h16"/></svg>','Rimuovi dalla lista i terminati (completati, in errore, annullati)','dlClearDone()')}
+        ${iconBtn('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>','Svuota tutta la lista (i file scaricati restano sul disco)','dlClearHistory()')}
         <div class="m2-seg">
           <button class="${cur==='all'?'on':''}" onclick="_dlSetFilter('all')">Tutti</button>
           <button class="${cur==='active'?'on':''}" onclick="_dlSetFilter('active')">Attivi</button>
@@ -8271,6 +8296,7 @@ function renderDownload(){
         ${iconBtn(ICON_IMG,(S.hideThumbs&&S.hideThumbs.downloader)?'Mostra anteprime':'Nascondi anteprime',"toggleThumbs('downloader');renderPanel()")}
       </div>
     </div>
+    <div id="dlSelBar">${_dlSelBarHtml()}</div>
     <div id="dlList">${S.dlHidden?'':_dlRenderList(_dlSorted(fl))}</div>
   </div>`;
   return h;
@@ -8356,8 +8382,8 @@ function _dlRenderList(list){
     acts.push(`<button class="m2-dl-act m2-dl-act-trash" title="Rimuovi" onclick="dlRemove('${d.id}')" style="color:var(--err,#e55)">${icon('trash',{size:'sm'})}</button>`);
     const sizeBytes=d.size||d.length||0;
     const sizeStr=sizeBytes>0?fmtSizeMB(sizeBytes):(d.status==='Done'?'?':'…');
-    const selChk=`<input type="checkbox" ${d._sel?'checked':''} onclick="event.stopPropagation();dlToggleSelect('${d.id}')" style="margin-right:6px;flex:0 0 auto" title="Seleziona per pausa/riprendi massiva">`;
-    return `<div class="m2-dl-row" data-dlid="${d.id}" oncontextmenu="event.preventDefault();dlOptionsCtx(event,'${d.id}')" ondblclick="if(event.target.closest('.m2-dl-act')||event.target.closest('input'))return;dlOpenInFreePlayer('${d.id}')">
+    const selChk=`<input type="checkbox" ${d._sel?'checked':''} onclick="event.preventDefault();event.stopPropagation()" style="margin-right:6px;flex:0 0 auto" title="Seleziona (clic, trascina, Maiusc per un intervallo, Ctrl+A per tutti)">`;
+    return `<div class="m2-dl-row${d._sel?' sel':''}" data-dlid="${d.id}" oncontextmenu="event.preventDefault();dlOptionsCtx(event,'${d.id}')" ondblclick="if(event.target.closest('.m2-dl-act')||event.target.closest('input'))return;dlOpenInFreePlayer('${d.id}')">
       ${selChk}
       <div class="m2-dl-thumbwrap">${thumbHtml}${errOverlay}</div>
       <div class="m2-dl-info">
@@ -8554,11 +8580,110 @@ async function dlUpdateBin(){
   else toast('Errore aggiornamento: '+(r&&r.error||'?'));
 }
 function dlClearDone(){
-  const list=_dlLoad().filter(d=>!(d.status==='Done'||d.status==='Error'||d.status==='Canceled'));
+  const all=_dlLoad();
+  const list=all.filter(d=>!(d.status==='Done'||d.status==='Error'||d.status==='Canceled'));
+  const n=all.length-list.length;
   _dlSave(list);
   if(S.panel==='downloader')renderPanel();
-  toast('Download terminati eliminati');
+  toast(n?(n+' download terminati tolti dalla lista (i file restano sul disco)'):'Nessun download terminato da togliere');
 }
+// ── Selezione dinamica ──
+// Clic su una riga (non sui pulsanti) la seleziona o deseleziona; tenendo premuto e
+// passando sulle altre righe le porta allo stesso stato; Maiusc+clic seleziona
+// l'intervallo; Ctrl+A tutte le righe visibili; Esc toglie la selezione.
+const _DL_ACTIVE=s=>s==='Downloading'||s==='Queued'||s==='Preparing'||s==='Seeding';
+let _dlSelAnchor=null,_dlDrag=null;
+function _dlSelCount(list){return (list||_dlLoad()).filter(d=>d._sel).length;}
+function _dlSelBarHtml(){
+  const list=_dlLoad(),n=_dlSelCount(list);
+  // La barra c'è sempre, con la stessa altezza: se comparisse solo al primo clic
+  // spingerebbe giù la lista, e il mouse ancora premuto finirebbe sulla riga sopra.
+  if(!n)return list.length?`<div class="m2-dl-selbar idle">Clic su una riga per selezionarla · trascina per selezionarne tante · Maiusc+clic per un intervallo · Ctrl+A tutte</div>`:'';
+  const vis=_dlView(list).length;
+  return `<div class="m2-dl-selbar"><span><b>${n}</b> selezionat${n===1?'o':'i'}</span>
+    ${n<vis?`<button class="m2-btn" onclick="dlSelectAll(true)">Tutti (${vis})</button>`:''}
+    <button class="m2-btn" onclick="dlSelectAll(false)">Nessuno</button>
+    <span class="sp"></span>
+    <button class="m2-btn" onclick="dlPauseSelected()">Pausa</button>
+    <button class="m2-btn" onclick="dlResumeSelected()">Riprendi</button>
+    <button class="m2-btn" onclick="dlRemoveSelected(false)" title="I file già scaricati restano sul disco">Rimuovi dalla lista</button>
+    <button class="m2-btn danger" onclick="dlRemoveSelected(true)" title="I file finiscono nel Cestino di Windows: si possono recuperare">Sposta i file nel Cestino</button></div>`;
+}
+function _dlSelRefresh(list,ids){
+  if(S.panel!=='downloader')return;
+  if(ids)_dlPatchRows(list,ids);
+  const b=document.getElementById('dlSelBar');if(b)b.innerHTML=_dlSelBarHtml();
+}
+function _dlSetSel(ids,val){
+  const list=_dlLoad(),want=new Set(ids),ch=[];
+  list.forEach(d=>{if(want.has(d.id)&&!!d._sel!==!!val){d._sel=!!val;ch.push(d.id);}});
+  if(!ch.length)return;
+  _dlSave(list);_dlSelRefresh(list,ch);
+}
+function dlSelectAll(on){
+  const list=_dlLoad();
+  const ids=on?_dlView(list).map(d=>d.id):list.filter(d=>d._sel).map(d=>d.id);
+  _dlSetSel(ids,!!on);
+}
+function _dlSelectRange(a,b){
+  const ids=_dlView(_dlLoad()).map(d=>d.id),i=ids.indexOf(a),j=ids.indexOf(b);
+  if(i<0||j<0){_dlSetSel([b],true);return;}
+  _dlSetSel(ids.slice(Math.min(i,j),Math.max(i,j)+1),true);
+}
+async function _dlStopAll(list){
+  for(const d of list){
+    if(!_DL_ACTIVE(d.status))continue;
+    try{
+      if(d.torrent){if(d.torId&&window.maniac.torrentRemove)await window.maniac.torrentRemove(d.torId);}
+      else if(window.maniac.downloadCancel)await window.maniac.downloadCancel(d.id);
+    }catch(_){}
+  }
+}
+async function dlRemoveSelected(trash){
+  const list=_dlLoad(),sel=list.filter(d=>d._sel);
+  if(!sel.length){toast('Nessun download selezionato');return;}
+  const files=trash?sel.filter(d=>d.filePath&&d.status==='Done'):[];
+  if(trash&&!files.length){toast('Fra i selezionati non ci sono file scaricati da spostare');return;}
+  const ok=await themedConfirm(trash
+    ?{title:'Sposta nel Cestino',message:'Spostare nel Cestino di Windows '+files.length+' file scaricat'+(files.length===1?'o':'i')+' e togliere dalla lista i '+sel.length+' selezionati? Dal Cestino si possono recuperare.',confirmText:'Sposta nel Cestino',cancelText:'Annulla',danger:true}
+    :{title:'Rimuovi dalla lista',message:'Togliere dalla lista '+sel.length+' download? Quelli in corso vengono fermati. I file già scaricati restano sul disco.',confirmText:'Rimuovi',cancelText:'Annulla'});
+  if(!ok)return;
+  await _dlStopAll(sel);
+  let moved=0,failed=0;
+  for(const d of files){
+    try{const r=await window.maniac.download.trashFile(d.filePath);if(r&&r.ok)moved++;else failed++;}catch(_){failed++;}
+  }
+  const ids=new Set(sel.map(d=>d.id));
+  _dlSave(_dlLoad().filter(d=>!ids.has(d.id)));
+  _dlSelAnchor=null;
+  if(S.panel==='downloader')renderPanel();
+  toast(trash?(moved+' file nel Cestino'+(failed?', '+failed+' non spostati (già spostati o in uso)':'')+' · '+sel.length+' righe tolte'):(sel.length+' download tolti dalla lista'));
+}
+document.addEventListener('mousedown',e=>{
+  if(e.button!==0||S.panel!=='downloader')return;
+  const row=e.target.closest&&e.target.closest('#dlList .m2-dl-row');if(!row)return;
+  if(e.target.closest('button,a,.m2-dl-act,.m2-dl-err,.m2-dl-xlink,input[type=text]'))return;
+  e.preventDefault();
+  const id=row.dataset.dlid;
+  if(e.shiftKey&&_dlSelAnchor){_dlSelectRange(_dlSelAnchor,id);return;}
+  const d=_dlLoad().find(x=>x.id===id);if(!d)return;
+  const val=!d._sel;
+  _dlSetSel([id],val);
+  _dlSelAnchor=id;
+  _dlDrag={val,seen:new Set([id])};
+},true);
+document.addEventListener('mouseover',e=>{
+  if(!_dlDrag)return;
+  const row=e.target.closest&&e.target.closest('#dlList .m2-dl-row');if(!row)return;
+  const id=row.dataset.dlid;if(_dlDrag.seen.has(id))return;
+  _dlDrag.seen.add(id);_dlSetSel([id],_dlDrag.val);
+});
+document.addEventListener('mouseup',()=>{_dlDrag=null;});
+document.addEventListener('keydown',e=>{
+  if(S.panel!=='downloader'||(e.target&&/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)))return;
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.altKey&&(e.key==='a'||e.key==='A')){e.preventDefault();e.stopPropagation();dlSelectAll(true);}
+  else if(e.key==='Escape'&&_dlSelCount()&&!document.querySelector('.mdl-ov.show')){e.preventDefault();dlSelectAll(false);}
+},true);
 function _dlGetPolicy(){try{return JSON.parse(localStorage.getItem('dlQualityPolicy')||'null');}catch(e){return null;}}
 function _dlSavePolicy(p){try{localStorage.setItem('dlQualityPolicy',JSON.stringify(p));}catch(e){}}
 function showQualityChoice(data){
@@ -8613,6 +8738,8 @@ function wireDownloadPanel(){
   if(window.maniac.onTorrentProgress)window.maniac.onTorrentProgress(evt=>_dlQueueEvt('tor',evt));
 }
 function _dlApplyEvt(d,evt){
+    if(evt.status==='Done'&&d.status!=='Done'&&(S.downloaderCfg||{}).notifyDone)
+      setTimeout(()=>_dlNotify('done','Maniac · Download completato',(evt.title||d.title||d.url||'').replace(/\.[a-z0-9]{2,4}$/i,''),d.thumb,'downloader'),0);
     if(evt.percent!=null)d.percent=evt.percent;
     if(evt.speed)d.speed=evt.speed;
     if(evt.eta)d.eta=evt.eta;
@@ -8635,6 +8762,8 @@ function _dlApplyEvt(d,evt){
     }
 }
 function _dlApplyTorEvt(d,evt){
+      if((evt.status==='Done'||evt.status==='Seeding')&&d.status!=='Done'&&d.status!=='Seeding'&&(S.downloaderCfg||{}).notifyDone)
+        setTimeout(()=>_dlNotify('done','Maniac · Download completato',evt.name||d.title||'Torrent',null,'downloader'),0);
       if(evt.percent!=null)d.percent=evt.percent*(evt.percent>1?1:100);
       if(evt.percent!=null&&evt.percent<=1)d.percent=evt.percent*100;
       if(evt.speed!=null)d.speed=evt.speed;
@@ -9412,10 +9541,8 @@ function dlResumeSelected(){
   toast(n?(n+' download ripresi'):'Nessun download selezionato in pausa');
 }
 function dlToggleSelect(id){
-  const list=_dlLoad();const d=list.find(x=>x.id===id);
-  if(!d)return;
-  d._sel=!d._sel; _dlSave(list);
-  if(S.panel==='downloader'){const el=document.getElementById('dlList');if(el)el.innerHTML=_dlRenderList(_dlSorted(_dlFiltered(list)));}
+  const d=_dlLoad().find(x=>x.id===id);
+  if(d)_dlSetSel([id],!d._sel);
 }
 // G3: open completed download in player
 async function dlOpen(id){
@@ -9480,16 +9607,13 @@ function _dlImproveTitle(d){
   d._titleEdited=false;
 }
 async function dlClearHistory(){
-  const ok=await themedConfirm({title:'Cancella download',message:'Cancellare TUTTI i download dalla lista (inclusi quelli in corso)?',confirmText:'Cancella tutto',cancelText:'Annulla',danger:true});
-  if(!ok)return;
-  // Cancel any in-flight
   const list=_dlLoad();
-  for(const d of list){
-    if((d.status==='Downloading'||d.status==='Queued')&&window.maniac&&window.maniac.downloadCancel){
-      try{await window.maniac.downloadCancel(d.id);}catch(e){}
-    }
-  }
+  if(!list.length){toast('La lista è già vuota');return;}
+  const ok=await themedConfirm({title:'Svuota lista download',message:'Togliere tutti i '+list.length+' download dalla lista? Quelli in corso vengono fermati. I file già scaricati restano sul disco.',confirmText:'Svuota',cancelText:'Annulla',danger:true});
+  if(!ok)return;
+  await _dlStopAll(list);
   _dlSave([]);
+  toast('Lista download svuotata');
   if(S.panel==='downloader')renderPanel();
 }
 
@@ -9908,6 +10032,31 @@ function _showLinkInterceptorBanner(data){
   setTimeout(()=>{ if(document.getElementById('linkIntercept')===bn)close(); },many?60000:30000);
 }
 
+// Avvisi di sistema dei download, quando Maniac non è in primo piano. In una raffica
+// (tanti link copiati o tanti download che finiscono insieme) ne arrivano due e poi uno
+// solo col totale, invece di cinquanta di fila.
+const _dlNotif={start:{n:0,t:null},found:{n:0,t:null},done:{n:0,t:null}};
+const _DL_NOTIF_SUM={start:['Maniac · Download avviati',' download avviati dagli appunti'],
+  found:['Maniac · Link rilevati',' link video copiati dagli appunti'],done:['Maniac · Download completati',' download completati']};
+function _dlNotify(kind,title,body,iconUrl,action,url){
+  if(!window.maniac||!window.maniac.uiNotify)return;
+  const b=_dlNotif[kind];b.n++;
+  clearTimeout(b.t);
+  b.t=setTimeout(()=>{
+    const extra=b.n-2;b.n=0;
+    if(extra>0)window.maniac.uiNotify({title:_DL_NOTIF_SUM[kind][0],body:'Altri '+extra+_DL_NOTIF_SUM[kind][1],onlyIfAway:true,action:'downloader'});
+  },6000);
+  if(b.n<=2)window.maniac.uiNotify({title,body,iconUrl,onlyIfAway:true,action,url});
+}
+try{
+  if(window.maniac&&window.maniac.onUiNotifyClick)window.maniac.onUiNotifyClick(d=>{
+    try{
+      if(d&&d.action==='wizard'&&d.url&&typeof dlWizardOpen==='function')dlWizardOpen(d.url);
+      else openPanel('downloader');
+    }catch(_){}
+  });
+}catch(_){}
+
 // Helper: il toggle "master" interceptorAutoStart implica auto-start sia per
 // URL che per torrent (a meno che il toggle specifico sia esplicitamente off).
 function _autoStartUrlEnabled(){
@@ -9933,12 +10082,15 @@ try {
           dlWizardOpen(url);
           return;
         }
+        const nice=(data.title&&data.title!=='Video rilevato')?data.title:url;
         if (_autoStartUrlEnabled()) {
           if (typeof dlStart === 'function') { dlStart(url, {auto:true}); toast('Download avviato: '+url.slice(0,60)); }
+          if ((S.downloaderCfg||{}).notifyStart!==false) _dlNotify('start','Maniac · Download avviato',nice,data.thumbnail,'downloader');
           return;
         }
         // Mostra banner JDownloader-style
         _showLinkInterceptorBanner(data);
+        if ((S.downloaderCfg||{}).notifyStart!==false) _dlNotify('found','Maniac · Video rilevato',nice,data.thumbnail,'wizard',url);
       } catch(_){}
     });
   }
@@ -15794,6 +15946,59 @@ document.addEventListener('keydown',e=>{
   else if(matchShortcut(e,s.switchPlayer)){e.preventDefault();if(S.multi>1){S.activePlayer=(S.activePlayer+1)%S.multi;renderGrid();$('shufBtn').classList.toggle('on',activeP().shuffle);$('loopBtn').classList.toggle('on',activeP().loop);}}
 });
 
+// ═══ CRONOLOGIA COMPATTA ═══
+// Ogni voce della cronologia tiene l'istantanea delle playlist di tutti i riquadri, per
+// poter ripristinare la sessione. Sono quasi sempre le stesse playlist ripetute voce dopo
+// voce: 50 voci arrivavano a 14 mila righe e 6 MB, letti all'avvio e riscritti a ogni
+// video che parte. Su disco ogni playlist diversa si scrive una volta (historyPlaylists)
+// e le voci la richiamano per chiave; in memoria la cronologia resta com'era.
+const _histKeyCache=new WeakMap();
+function _histKey(files){
+  let k=_histKeyCache.get(files);
+  if(k)return k;
+  let h=2166136261;
+  for(const f of files){
+    const s=(f.path||f.url||'')+'\u0001'+(f.name||'')+'\u0002';
+    for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}
+  }
+  k=(h>>>0).toString(36)+'_'+files.length;
+  _histKeyCache.set(files,k);
+  return k;
+}
+function _histPack(hist){
+  const pool={};
+  const out=(hist||[]).map(e=>{
+    if(!e||!Array.isArray(e.snapshot))return e;
+    return Object.assign({},e,{snapshot:e.snapshot.map(s=>{
+      if(!s||!Array.isArray(s.files)||!s.files.length)return s;
+      const k=_histKey(s.files);
+      if(!pool[k])pool[k]=s.files.map(f=>[f.name||'',f.path||'',f.path?'':(f.url||''),f.duration||0]);
+      const r=Object.assign({},s);delete r.files;r.filesRef=k;
+      return r;
+    })});
+  });
+  return {history:out,historyPlaylists:pool};
+}
+function _histUnpack(hist,pool){
+  if(!Array.isArray(hist))return [];
+  if(!pool||typeof pool!=='object')return hist;
+  const cache={};
+  hist.forEach(e=>{
+    if(!e||!Array.isArray(e.snapshot))return;
+    e.snapshot=e.snapshot.map(s=>{
+      if(!s||!s.filesRef)return s;
+      const k=s.filesRef;
+      if(!cache[k]){
+        cache[k]=(pool[k]||[]).map(a=>({name:a[0],path:a[1]||null,url:a[2]||(a[1]?mkUrl(a[1]):''),duration:a[3]||0}));
+        _histKeyCache.set(cache[k],k);
+      }
+      const r=Object.assign({},s);delete r.filesRef;r.files=cache[k];
+      return r;
+    });
+  });
+  return hist;
+}
+
 // ═══ CONFIG PERSISTENCE ═══
 // saveConfig è invocata da ~180 punti: serializza l'intero stato (history,
 // playlist, tag, download…) + scrive su disco. Debounce per coalizzare le
@@ -15829,7 +16034,7 @@ async function _saveConfigNow(){
       eqB:p.eqB,eqM:p.eqM,eqH:p.eqH,boost:p.boost,voice:p.voice,
       speed:p.speed,autoplay:p.autoplay,playMode:p.playMode,muted:p.muted
     })),
-    history:S.history,
+    ..._histPack(S.history),
     toolbarIcons:S.toolbarIcons,
     titleAtStart:S.titleAtStart, titleAtStartPath:S.titleAtStartPath,
     tagMultiSel:S.tagMultiSel,
@@ -15908,7 +16113,7 @@ async function loadConfig(){
     document.documentElement.style.setProperty('--sub-color',S.subsColor);
   }catch(_){}
   if(cfg.audioIn)S.audioIn={...S.audioIn,...cfg.audioIn};
-  S.history=Array.isArray(cfg.history)?cfg.history:[];
+  S.history=_histUnpack(Array.isArray(cfg.history)?cfg.history:[],cfg.historyPlaylists);
   if(cfg.toolbarIcons)S.toolbarIcons={...S.toolbarIcons,...cfg.toolbarIcons};
   S.titleAtStart=!!cfg.titleAtStart;
   S.titleAtStartPath=!!cfg.titleAtStartPath;
