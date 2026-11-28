@@ -107,6 +107,8 @@ contextBridge.exposeInMainWorld('maniac', {
 
   // Download (yt-dlp / VibraVid)
   downloadStart: (opts) => ipcRenderer.invoke('download:start', opts),
+  // Numero di questa istanza (1 = principale) e quante ne sono ammesse.
+  instance: () => ipcRenderer.invoke('app:instance'),
   // Avviso di sistema (solo se Maniac non è in primo piano, con onlyIfAway) e suo clic.
   uiNotify: (opts) => ipcRenderer.invoke('ui:notify', opts),
   onUiNotifyClick: (cb) => ipcRenderer.on('ui:notifyClick', (_e, d) => cb(d)),

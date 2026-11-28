@@ -1,16 +1,65 @@
 const { app, BrowserWindow, ipcMain, dialog, Menu, shell, Tray, nativeImage, clipboard, Notification } = require('electron');
 
-// ─── Single-instance lock + magnet protocol handler ───
-// Quando l'utente clicca un magnet: nel browser, Windows lancia Maniac con il magnet
-// come argv extra. Senza single-instance lock, partirebbe una seconda istanza.
-const _gotInstanceLock = app.requestSingleInstanceLock();
+// ─── Istanze: una principale + fino a 3 aggiuntive (massimo 4) ───
+// La principale tiene il lock di Electron: riceve i magnet/link aperti dal browser,
+// sorveglia gli appunti, sta nel tray e aggiorna yt-dlp. Rilanciando Maniac senza
+// argomenti parte un'istanza aggiuntiva (2, 3, 4) con la SUA sessione di Chromium
+// (localStorage, cookie, cache: LevelDB accetta un solo processo) e la SUA
+// configurazione, copiate dalla principale al primo avvio. Le istanze aggiuntive non
+// sorvegliano gli appunti (ogni link partirebbe quattro volte) e non fanno lavori
+// automatici. Con quattro istanze aperte, un nuovo avvio porta in primo piano la principale.
+const _MAX_INSTANCES = 4;
+const _instance = (() => {
+  const p = require('path'), f = require('fs');
+  const base = app.getPath('userData');
+  const dir = p.join(base, 'instances');
+  try { f.mkdirSync(dir, { recursive: true }); } catch (_) {}
+  const slotFile = n => p.join(dir, 'slot-' + n + '.pid');
+  const alive = pid => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+  const slotAlive = n => { try { const pid = +f.readFileSync(slotFile(n), 'utf8'); return pid > 0 && pid !== process.pid && alive(pid); } catch (_) { return false; } };
+  const args = process.argv.slice(1);
+  // Un avvio con un magnet/link (dal browser) va sempre alla principale.
+  const payload = args.some(a => /^(maniac|magnet):/i.test(a || '') || /^https?:\/\//i.test(a || ''));
+  const busy = [2, 3, 4].filter(slotAlive).length;
+  const wantExtra = !payload && busy < _MAX_INSTANCES - 1;
+  const gotLock = app.requestSingleInstanceLock({ extra: wantExtra });
+  if (gotLock) {
+    try { f.writeFileSync(slotFile(1), String(process.pid)); } catch (_) {}
+    return { n: 1, slotFile };
+  }
+  if (!wantExtra) return { n: 0 };
+  for (let n = 2; n <= _MAX_INSTANCES; n++) {
+    if (slotAlive(n)) continue;
+    try { f.unlinkSync(slotFile(n)); } catch (_) {}
+    // 'wx': se due avvii scelgono lo stesso posto nello stesso istante, uno solo vince.
+    try { f.writeFileSync(slotFile(n), String(process.pid), { flag: 'wx' }); } catch (_) { continue; }
+    const idir = p.join(dir, String(n)), sess = p.join(idir, 'session');
+    const fresh = !f.existsSync(sess);
+    if (fresh) {
+      try { f.mkdirSync(sess, { recursive: true }); } catch (_) {}
+      // Al primo avvio si parte dalle impostazioni della principale: cartella dei
+      // download, preferenze, login di X.
+      for (const sub of ['Local Storage', p.join('Partitions', 'maniac-x')]) {
+        try { f.cpSync(p.join(base, sub), p.join(sess, sub), { recursive: true, force: true, errorOnExist: false }); } catch (_) {}
+      }
+      try { f.rmSync(p.join(sess, 'Local Storage', 'leveldb', 'LOCK'), { force: true }); } catch (_) {}
+      try { f.copyFileSync(p.join(base, 'maniac-config.json'), p.join(idir, 'maniac-config.json')); } catch (_) {}
+    }
+    app.setPath('sessionData', sess);
+    return { n, slotFile, idir, fresh };
+  }
+  return { n: 0 };
+})();
+const _gotInstanceLock = _instance.n >= 1;
 if (!_gotInstanceLock) {
   app.quit();
 } else {
-  // Registriamo Maniac come default per magnet:. Se l'app non è installata,
-  // Windows può richiedere accept manuale dalla "Default apps".
-  try { app.setAsDefaultProtocolClient('magnet'); } catch(_){}
-  try { app.setAsDefaultProtocolClient('maniac'); } catch(_){}
+  // Registriamo Maniac come default per magnet: (solo la principale li riceve).
+  // Se l'app non è installata, Windows può richiedere accept manuale dalla "Default apps".
+  if (_instance.n === 1) {
+    try { app.setAsDefaultProtocolClient('magnet'); } catch(_){}
+    try { app.setAsDefaultProtocolClient('maniac'); } catch(_){}
+  }
 
   // Estrae l'URL "vero" da un argomento maniac://download?url=… (se presente)
   function _parseManiacProtocol(s) {
@@ -20,7 +69,9 @@ if (!_gotInstanceLock) {
     return params.get('url') || params.get('u') || params.get('magnet') || null;
   }
 
-  app.on('second-instance', (_event, argv /*, _cwd */) => {
+  app.on('second-instance', (_event, argv, _cwd, extra) => {
+    // È partita un'istanza aggiuntiva: niente da fare qui, non va portata avanti questa.
+    if (extra && extra.extra) return;
     try {
       const maniacArg = (argv || []).find(a => /^maniac:/i.test(a || ''));
       const magnet = (argv || []).find(a => /^magnet:/i.test(a || ''));
@@ -91,7 +142,13 @@ const pyBridge = require('./py-bridge');
 Menu.setApplicationMenu(null);
 
 const userDataPath = app.getPath('userData');
-const configFile = path.join(userDataPath, 'maniac-config.json');
+// Le istanze aggiuntive hanno la loro configurazione (copiata dalla principale al primo
+// avvio): scrivere tutte nello stesso file vorrebbe dire sovrascriversi a vicenda.
+const configFile = (_instance.n > 1 && _instance.idir) ? path.join(_instance.idir, 'maniac-config.json') : path.join(userDataPath, 'maniac-config.json');
+app.on('will-quit', () => {
+  try { if (_instance.slotFile) { const sf = _instance.slotFile(_instance.n); if (+fs.readFileSync(sf, 'utf8') === process.pid) fs.unlinkSync(sf); } } catch (_) {}
+});
+ipcMain.handle('app:instance', () => ({ n: _instance.n, max: _MAX_INSTANCES, fresh: !!_instance.fresh }));
 
 // ── Percorsi scrivibili a runtime ──────────────────────────────────────
 // In packaged la cartella resources/ è in sola lettura: modelli, chiave
@@ -237,6 +294,11 @@ function createWindow() {
       webviewTag: true
     }
   });
+  if (_instance.n > 1) {
+    // Nella barra delle applicazioni le istanze si distinguono dal numero.
+    mainWindow.setTitle('Maniac ' + _instance.n);
+    mainWindow.on('page-title-updated', e => e.preventDefault());
+  }
   mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
   mainWindow.once('ready-to-show', () => mainWindow.show());
   if (process.argv.includes('--dev')) mainWindow.webContents.openDevTools({ mode: 'detach' });
@@ -1148,7 +1210,7 @@ async function _resolveYtDlp(vibraVidPath, progressCb) {
     if (found === _ytDlpLocal) {
       const meta = _metaRead();
       const age = Date.now() - (meta.lastUpdate || 0);
-      if (age > _UPDATE_INTERVAL_MS) {
+      if (age > _UPDATE_INTERVAL_MS && _instance.n === 1) {
         // Async self-update; don't block
         (async () => {
           const ok = await _selfUpdate(_ytDlpLocal);
@@ -3371,7 +3433,7 @@ ipcMain.handle('eporner:search',         async (_e, query) => await _runEporner(
 ipcMain.handle('eporner:byCategory',     async (_e, cat)   => await _runEporner(['by-cat', '--c', String(cat || '')]));
 // Auto-seed al primo avvio (se DB non esiste).
 app.whenReady().then(() => {
-  setTimeout(() => {
+  if (_instance.n === 1) setTimeout(() => {
     if (!fs.existsSync(_epornerDb)) { _runEporner(['seed']).catch(()=>{}); }
   }, 8000);
 });
@@ -3705,9 +3767,11 @@ function _loadTrayPrefs(){
   if (typeof _trayPrefs.exitToTray  !== 'boolean') _trayPrefs.exitToTray  = false;
 }
 function _saveTrayPrefs(){
+  if (_instance.n > 1) return;
   try { fs.writeFileSync(_trayPrefsFile, JSON.stringify(_trayPrefs), 'utf8'); } catch(_) {}
 }
 _loadTrayPrefs();
+if (_instance.n > 1) Object.assign(_trayPrefs, { minimizeToTray: false, closeToTray: false, exitToTray: false, clipboardEnabled: false });
 
 function _showMainWindow(){
   if (!mainWindow) { createWindow(); return; }
@@ -3927,6 +3991,7 @@ ipcMain.handle('ui:notify', async (_e, { title, body, iconUrl, onlyIfAway, actio
 
 function _restartClipboardWatcher(){
   if (_clipTimer) { clearInterval(_clipTimer); _clipTimer = null; }
+  if (_instance.n > 1) return;
   if (!_trayPrefs.clipboardEnabled) return;
   _clipLast = (clipboard.readText() || '').trim();
   _clipTimer = setInterval(() => {
@@ -3940,12 +4005,14 @@ function _restartClipboardWatcher(){
 }
 
 ipcMain.handle('clipboard:setEnabled', async (_e, on) => {
+  // Le istanze aggiuntive non sorvegliano mai gli appunti: lo fa solo la principale.
+  if (_instance.n > 1) return { ok: true, enabled: false, extraInstance: true };
   _trayPrefs.clipboardEnabled = !!on;
   _saveTrayPrefs();
   _restartClipboardWatcher();
   return { ok: true, enabled: _trayPrefs.clipboardEnabled };
 });
-ipcMain.handle('clipboard:isEnabled', async () => ({ enabled: !!_trayPrefs.clipboardEnabled }));
+ipcMain.handle('clipboard:isEnabled', async () => ({ enabled: _instance.n === 1 && !!_trayPrefs.clipboardEnabled }));
 ipcMain.handle('tray:setMinimizeToTray', async (_e, on) => {
   _trayPrefs.minimizeToTray = !!on;
   _saveTrayPrefs();
@@ -4361,11 +4428,13 @@ ipcMain.handle('smartlib:rescan', async (_e, folderPath) => {
 
 app.whenReady().then(() => {
   createWindow();
-  _wireWindowMinimizeToTray();
-  try { _buildTray(); } catch(e) { _logErr('tray-build', e); }
+  if (_instance.n === 1) {
+    _wireWindowMinimizeToTray();
+    try { _buildTray(); } catch(e) { _logErr('tray-build', e); }
+  }
   _restartClipboardWatcher();
-  // Avvia Smart Library (carica cartelle + watcher)
-  try { _smartStartAll(); } catch(e) { _logErr('smartlib-start', e); }
+  // Avvia Smart Library (carica cartelle + watcher): un solo osservatore, nella principale
+  if (_instance.n === 1) { try { _smartStartAll(); } catch(e) { _logErr('smartlib-start', e); } }
   // Se l'app è stata lanciata DAL CLICK su un magnet:/URL nel browser, argv
   // contiene l'URL → inoltralo al renderer non appena è pronto.
   // Fix race: se did-finish-load è già scattato (cold-start veloce),

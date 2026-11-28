@@ -1055,6 +1055,8 @@ input[type=range]::-webkit-slider-thumb{margin-top:-4.5px}
 .vc video.magnified{transform-origin:var(--mag-ox,50%) var(--mag-oy,50%);transform:scale(var(--mag-z,1));transition:transform .08s linear}
 .sub-ov{position:absolute;bottom:48px;left:0;right:0;text-align:center;color:var(--sub-color,#fff);font:600 var(--sub-size,18px)/1.3 'Inter';text-shadow:0 2px 4px rgba(0,0,0,.95),0 0 8px rgba(0,0,0,.9);padding:0 40px;pointer-events:none;z-index:45;white-space:pre-wrap}
 .sub-ov.title-start-ov{font:inherit}
+.inst-badge{order:9;margin-left:6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--accent);color:#fff;font:700 11px/18px 'Inter';text-align:center;box-sizing:border-box}
+[data-theme="light"] .inst-badge{background:#4a2e75;color:#fff}
 /* ═══ MANIAC VISION ═══ solo i video: la griglia copre tutta la finestra, senza
    spazi, bordi, barre o pulsanti. Restano i sottotitoli, se accesi. */
 body.maniac-vision #vGrid{position:fixed;inset:0;width:100vw;height:100vh;z-index:9000;gap:0;background:#000}
@@ -1873,6 +1875,7 @@ body.maniac-vision.mv-idle,body.maniac-vision.mv-idle *{cursor:none!important}
 <!-- TITLEBAR -->
 <div class="tb">
   <div class="logo">
+    <span id="instBadge" class="inst-badge" style="display:none" title="Istanza di Maniac"></span>
     <div class="logo-box"><img src="../assets/maniac_logo.png" alt="M" onerror="this.onerror=null;this.src='assets/maniac_logo.png'"></div>
   </div>
 
@@ -17204,13 +17207,25 @@ window.addEventListener('DOMContentLoaded', ()=>{
     const l=_dlLoad();const ids=[];
     l.forEach(d=>{if(!d.torrent&&(d.status==='Queued'||d.status==='Preparing'||d.status==='Downloading')){d.status='Queued';d.note='In attesa di un posto libero';ids.push(d.id);}});
     if(!ids.length)return;
+    if(window.__inst&&window.__inst.n>1&&window.__inst.fresh)return;
     _dlSave(l);
     // Senza il pannello aperto nessuno ascolta l'avanzamento: le righe resterebbero ferme.
     wireDownloadPanel();
     ids.forEach(id=>{try{dlRetry(id);}catch(_){}});
   }catch(e){}},1500);
   // Organizer automatico: parte solo se l'utente lo ha acceso per una libreria.
-  setTimeout(()=>{try{_loAutoInit();}catch(e){}}, 5000);
+  setTimeout(()=>{try{if(!window.__inst||window.__inst.n<=1)_loAutoInit();}catch(e){}}, 5000);
+  (async()=>{try{
+    const r=window.maniac&&window.maniac.instance?await window.maniac.instance():null;
+    window.__inst=r||{n:1};
+    if(r&&r.n>1){
+      const b=document.getElementById('instBadge');
+      if(b){b.textContent=r.n;b.title='Istanza '+r.n+' di Maniac (al massimo '+r.max+')';b.style.display='';}
+      // Al primo avvio la sessione è copiata dalla principale: la lista dei suoi
+      // download non riguarda questa finestra (e non va ripresa qui).
+      if(r.fresh){try{localStorage.removeItem('downloads');}catch(_){}}
+    }
+  }catch(_){}})();
   // Browser detection per cookies (popola la dropdown nelle Impostazioni)
   setTimeout(async ()=>{
     try{

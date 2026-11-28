@@ -55,6 +55,10 @@ node -e "const fs=require('fs');const m=fs.readFileSync('src/index.html','utf8')
 └────────────────────────────────────────────────────┘
 ```
 
+### Multiple instances (max 4)
+
+- The first process holds Electron's single-instance lock (instance 1, the primary): it receives magnet/URL launches, watches the clipboard, owns the tray, Smart Library watchers and yt-dlp self-update. Launching Maniac again without a payload starts an extra instance 2-4 (`_instance` at the top of `main.js`): slot claimed via `userData/instances/slot-N.pid` (PID liveness, `wx` to avoid races), `app.setPath('sessionData', instances/N/session)` because Chromium's LevelDB/cookies can't be shared, and its own `instances/N/maniac-config.json`. On first creation both are seeded from the primary (Local Storage, `Partitions/maniac-x`, config) and the copied download list is dropped. Extras never watch the clipboard and don't run auto-organize. With 4 running, a new launch focuses the primary. Renderer: `window.maniac.instance()` → `{n,max,fresh}`, badge `#instBadge`.
+
 ### Renderer (`src/index.html`)
 
 Everything is a single HTML file with one `<script>` block (~9k lines of JS).
