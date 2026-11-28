@@ -55,6 +55,10 @@ node -e "const fs=require('fs');const m=fs.readFileSync('src/index.html','utf8')
 └────────────────────────────────────────────────────┘
 ```
 
+### Multiple instances (max 4)
+
+- The first process holds Electron's single-instance lock (instance 1, the primary): it receives magnet/URL launches, watches the clipboard, owns the tray, Smart Library watchers and yt-dlp self-update. Launching Maniac again without a payload starts an extra instance 2-4 (`_instance` at the top of `main.js`): slot claimed via `userData/instances/slot-N.pid` (PID liveness, `wx` to avoid races), `app.setPath('sessionData', instances/N/session)` because Chromium's LevelDB/cookies can't be shared, and its own `instances/N/maniac-config.json`. On first creation both are seeded from the primary (Local Storage, `Partitions/maniac-x`, config) and the copied download list is dropped. Extras never watch the clipboard and don't run auto-organize. With 4 running, a new launch focuses the primary. Renderer: `window.maniac.instance()` → `{n,max,fresh}`, badge `#instBadge`.
+
 ### Renderer (`src/index.html`)
 
 Everything is a single HTML file with one `<script>` block (~9k lines of JS).
@@ -77,7 +81,7 @@ Everything is a single HTML file with one `<script>` block (~9k lines of JS).
 
 - `py-bridge.js` exposes `resolvePython()`, `runScript(name, args)`, `spawnWorker(name, args)`, `venvCheck()`, `installOptionalPackages([])`.
 - Every CLI prints **one final line** of JSON `{ok, ...}` via `print(json.dumps(...))`. Long-running ones additionally emit JSONL progress events on intermediate lines.
-- `bootstrap.py --check` is the single source of truth for "what's installed". Renderer's `initVenvCheck()` (~line 9460) auto-installs `mutagen`/`pyacoustid` once per 24h via `ai:install-optional`.
+- `bootstrap.py --check` is the single source of truth for "what's installed". It only checks presence + version (`importlib.util.find_spec` / `importlib.metadata`), ~0.5 s; importing TF/torch/DeepFace took 8-9 s and ~600 MB on every app start. `--check --deep` really imports them (used by the "Ricontrolla" button, `ai:venv-check {force:true}`). Renderer's `initVenvCheck()` (~line 9460) auto-installs `mutagen`/`pyacoustid` once per 24h via `ai:install-optional`.
 - ML weights (`yolov8n.pt`, `resnet18_places365.pth.tar`) live in `models/ml/` and are lazy-downloaded by `analyze.py` on first use.
 - External binaries in `tools/` (`ffmpeg`, `exiftool`, `mediainfo`) are bundled as `extraResources`; `bootstrap.py probe_external_tools()` resolves them.
 
@@ -86,8 +90,11 @@ Everything is a single HTML file with one `<script>` block (~9k lines of JS).
 - `python/library_organizer.py`: `detect` assigns a role to every top-level folder (`category`, `category_performers`, `performers`, `unsorted`, `ignore`); `analyze` streams JSONL and ends with `{type:"done", items, summary, targets}`. It never moves files: the renderer sends the approved ops to `organizer:execute`, which writes the undo snapshot.
 - Identification order: OSHASH → scene code in the name → PHASH → StashDB title search (accepted only if the duration matches) → names in the filename (user performer folders, cast already seen in the library, then StashDB exact name/alias). Categories come from a naive Bayes classifier trained on the files the user already sorted, with confidence thresholds calibrated by cross-validation on that same library.
 - `python/videohash.py` reproduces Stash's OSHASH/PHASH bit for bit, including goimagehash's quickselect median and nfnt/resize's 8-bit bilinear. Don't "simplify" either: StashDB lookups stop matching.
-- Cache in `userData/library_organizer.sqlite` (hashes keyed by oshash, StashDB answers with TTL), so re-analysis is incremental.
-- Renderer: `openLibOrganizer()` wizard (`_lo*` functions, config in `S.libOrgCfg`, roles and hand-added categories saved per library root). Every preview row is selectable — rows without a destination included, so `_loBulkDest()` can send them somewhere, `tagAll` tags the ones that stay, and `addPerformers` registers unknown performers as analysis elements with their StashDB photo. Smoke test: `python/test_library_organizer_smoke.py` (no network, no ffmpeg).
+- `python/visualtag.py` turns a video into a 512-d CLIP embedding (8 frames, ViT-B/32 ONNX, model lazy-downloaded to `models/ml/clip/`). `Analyzer.visual()` trains a logistic regression on the user's *own* sorted folders and only speaks above thresholds calibrated by cross-validation - measured on a real library: 67% overall, 97% precision on the ~30% it is confident about. Off by default (`useVisual`); `visualDownload:false` uses the model only if already present (background runs, offline tests).
+- Duplicates: `find_duplicates()` groups by oshash (identical), phash within hamming 4 (re-encode) and same StashDB scene id from a strong match; keeper is the already-sorted or biggest file, the rest get `dup` and optionally go to `duplicatesFolder`.
+- Cache in `userData/library_organizer.sqlite` (hashes keyed by oshash, StashDB answers with TTL, CLIP embeddings in `clipemb`), so re-analysis is incremental.
+- Renderer: `openLibOrganizer()` wizard (`_lo*` functions, config in `S.libOrgCfg`, roles and hand-added categories saved per library root). Every preview row is selectable — rows without a destination included, so `_loBulkDest()` can send them somewhere, `tagAll` tags the ones that stay, and `addPerformers` registers unknown performers as analysis elements with their StashDB photo. `_loAutoInit/_loAutoRun` is the unattended pass (off by default, 'certain' only, never duplicates). Smoke test: `python/test_library_organizer_smoke.py` (no network, no ffmpeg, no model).
+- Workers emit JSONL with `ensure_ascii=False`: the app passes `PYTHONIOENCODING=utf-8`, and `library_organizer.py` also reconfigures stdout itself, so a hand-launched CLI doesn't emit cp1252 on Windows.
 
 ### StreamingCommunity flow
 
@@ -99,6 +106,13 @@ The site has a JS anti-bot challenge that ordinary `requests.get()` can't solve.
 4. Cookie header is exported to `SCWIZ_COOKIE` env so `python/sc_search.py` can also be invoked directly for downloads.
 
 If the wizard returns nothing, the warmup probably timed out — see `_scEnsureShell` retry budget.
+
+### X (Twitter) downloads
+
+- Sensitive (NSFW) posts need a logged-in session, and browser cookies are unusable (Chrome/Edge lock the DB while open and use app-bound encryption). Maniac keeps its own session in partition `persist:maniac-x`: `xauth:login` opens x.com's login page (the user types the password into X; Maniac never reads it) and waits for `auth_token` + `ct0`. For X URLs `_baseDownloadArgs` skips `--cookies-from-browser` (unless the user picked a browser explicitly) and `download:start` passes `--cookies <temp file>` built by `_xCookieFile()`, deleted in `finally`.
+- `_xFriendlyError` maps X errors to actionable text and `needXLogin`; the session is never cleared automatically (`xauth:login {force}` reopens the login page instead).
+- Profiles: yt-dlp can't list a timeline, so `xprofile:scan` loads `x.com/<name>/media` in a hidden window of that partition, reads the page's own GraphQL responses (`UserMedia`/`UserTweets`) through `webContents.debugger`, and `_xCollectVideos` walks them generically. The renderer (`xProfileDialog`, `_dlQueueBatch`) queues the chosen posts honouring `maxConcurrent`.
+- yt-dlp always runs with `--encoding utf-8` and stdout decoded as a UTF-8 stream: otherwise Windows prints filenames in the console code page and emoji titles end in "file non trovato".
 
 ### Download pipeline (yt-dlp)
 
@@ -114,7 +128,8 @@ If the wizard returns nothing, the warmup probably timed out — see `_scEnsureS
 
 | Path | Content |
 |------|---------|
-| `userData/maniac-config.json` | UI state, settings, tags, recents, downloads, favorites |
+| `userData/maniac-config.json` | UI state, settings, tags, recents, favorites. History snapshots are stored compactly: each distinct playlist once in `historyPlaylists`, entries point to it via `filesRef` (`_histPack`/`_histUnpack`); in memory `S.history` keeps full `files` arrays |
+| renderer `localStorage.downloads` | download rows (pending rows are never trimmed; last 300 finished kept) |
 | `userData/maniac-file-tags.json` | per-file tags keyed by absolute path |
 | `userData/maniac-analysis-history.json` | analyzed elements (faces/places/objects) |
 | `userData/faces.db` (SQLite) | face/entity embeddings for `match`/`add` |

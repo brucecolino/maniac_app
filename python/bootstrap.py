@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Diagnostica ambiente venv311 per Maniac.
-Uso: python bootstrap.py --check
+Uso: python bootstrap.py --check [--deep]
 Stampa una riga JSON finale con lo stato di ciascun modulo e delle dipendenze native.
+
+--check da solo guarda se i pacchetti sono installati e con che versione SENZA importarli:
+pochi millisecondi. Importare davvero TensorFlow, PyTorch, DeepFace & co. costava 8-9 s e
+~600 MB di RAM a ogni avvio dell'app. --deep li importa (pulsante "Ricontrolla").
 """
-import sys, os, json, shutil, argparse, importlib
+import sys, os, json, shutil, argparse, importlib, importlib.util, importlib.metadata
 
 def _ml_base_dir():
     # In packaged usa MANIAC_MODELS_DIR (userData, scrivibile); in dev <app>/models/ml.
@@ -26,6 +30,7 @@ MODULES = [
     ("ultralytics",    "ultralytics"),
     ("pymediainfo",    "pymediainfo"),
     ("yt_dlp",         "yt-dlp"),
+    ("onnxruntime",    "onnxruntime"),
 ]
 
 OPTIONAL_MODULES = [
@@ -33,7 +38,26 @@ OPTIONAL_MODULES = [
     ("acoustid", "pyacoustid"),
 ]
 
-def probe_module(mod):
+DEEP = False
+
+
+def probe_module(mod, dist=None):
+    if not DEEP:
+        try:
+            if importlib.util.find_spec(mod) is None:
+                return {"ok": False, "error": "non installato"}
+        except Exception as e:
+            return {"ok": False, "error": str(e)[:200]}
+        ver = None
+        for name in (dist, mod):
+            if not name:
+                continue
+            try:
+                ver = importlib.metadata.version(name)
+                break
+            except Exception:
+                pass
+        return {"ok": True, "version": ver}
     try:
         m = importlib.import_module(mod)
         ver = getattr(m, "__version__", None)
@@ -57,6 +81,18 @@ def probe_argos_packs():
         argos_dir = os.path.join(_ml_base_dir(), "argos")
         os.environ.setdefault("ARGOS_PACKAGES_DIR", argos_dir)
         os.environ.setdefault("ARGOS_TRANSLATE_PACKAGE_DIR", argos_dir)
+        if not DEEP:
+            # Senza importare argostranslate: ogni pacchetto è una cartella con metadata.json.
+            pairs = []
+            for d in (os.listdir(argos_dir) if os.path.isdir(argos_dir) else []):
+                meta = os.path.join(argos_dir, d, "metadata.json")
+                try:
+                    with open(meta, encoding="utf-8") as f:
+                        m = json.load(f)
+                    pairs.append(f"{m.get('from_code')}->{m.get('to_code')}")
+                except Exception:
+                    pass
+            return {"ok": True, "count": len(pairs), "pairs": pairs, "dir": argos_dir}
         from argostranslate import package
         installed = package.get_installed_packages()
         return {"ok": True, "count": len(installed),
@@ -119,14 +155,18 @@ def probe_ml_weights():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--deep", action="store_true", help="importa davvero i moduli (lento)")
     args = ap.parse_args()
+    global DEEP
+    DEEP = args.deep
 
     result = {
         "python": sys.version.split()[0],
         "executable": sys.executable,
         "platform": sys.platform,
-        "modules":  {pip_name: probe_module(imp) for imp, pip_name in MODULES},
-        "optional": {pip_name: probe_module(imp) for imp, pip_name in OPTIONAL_MODULES},
+        "deep": DEEP,
+        "modules":  {pip_name: probe_module(imp, pip_name) for imp, pip_name in MODULES},
+        "optional": {pip_name: probe_module(imp, pip_name) for imp, pip_name in OPTIONAL_MODULES},
         "ffmpeg": probe_ffmpeg(),
         "fpcalc": probe_fpcalc(),
         "argos_packs": probe_argos_packs(),

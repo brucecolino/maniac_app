@@ -3,6 +3,199 @@
 Tutte le versioni pubblicate di Maniac. L'app controlla questa lista dalla
 scheda **Info → Controlla aggiornamenti**.
 
+## 1.2.4 — 2026-11-28
+
+### Fino a 4 istanze
+- Rilanciando Maniac dall'icona si apre un'altra istanza, fino a 4. La prima resta
+  la principale: riceve i link dal browser, sorveglia gli appunti, sta nel tray e
+  aggiorna yt-dlp. Le istanze 2, 3 e 4 hanno il numero nella barra in alto e nel
+  titolo, e ognuna ha la sua configurazione, la sua lista di download e il suo
+  login a X (copiati dalla principale la prima volta). Non sorvegliano gli appunti
+  e non fanno lavori automatici. Con 4 aperte, un nuovo avvio porta in primo piano
+  la principale.
+
+### Nome del file nella barra di ogni player
+- Nello spazio libero della barra compare il nome del file, con l'estensione,
+  tagliato con "…" se è lungo; passandoci sopra si vede il percorso. In Maniac
+  Vision non compare nessuna scritta. Quando la barra è troppo stretta
+  (per esempio con 3 riquadri) il nome sale sopra i controlli. Si spegne da
+  Impostazioni → Generale → Icone barra player → Nome del file.
+
+## 1.2.3 — 2026-11-26
+
+### Più leggera all'avvio
+- Il controllo dei moduli di intelligenza artificiale, fatto a ogni avvio,
+  importava davvero TensorFlow, PyTorch, DeepFace e gli altri solo per sapere se
+  c'erano: **8-9 secondi e ~600 MB di RAM**. Ora guarda solo se sono installati e
+  con che versione: **mezzo secondo e 18 MB**. Il controllo completo resta per il
+  pulsante "Ricontrolla".
+- La cronologia salvava a ogni voce una copia intera delle playlist di tutti i
+  riquadri: il file di configurazione era arrivato a **7,4 MB**, letto all'avvio e
+  riscritto a ogni video che parte. Ora ogni playlist si salva una volta sola:
+  **610 KB**, con la cronologia identica. Lettura da 62 a 5 ms, ogni salvataggio da
+  75 a 9 ms.
+
+### Downloader
+- **Svuota lista** e **Rimuovi terminati** in alto. I file già scaricati restano
+  sul disco.
+- **Selezione dinamica**: clic su una riga per selezionarla, trascina per
+  selezionarne tante, Maiusc+clic per un intervallo, Ctrl+A per tutte, Esc per
+  togliere la selezione. Con una selezione compare una barra con Pausa, Riprendi,
+  **Rimuovi dalla lista** e **Sposta i file nel Cestino** (recuperabili).
+- **Avvisi di sistema** quando Maniac non è in primo piano: quando un link copiato
+  viene preso (attivo di default) e, se lo accendi in Impostazioni → Downloader,
+  quando un download finisce. A raffica ne arrivano due e poi uno col totale.
+
+### Riproduzione
+- Con la **riproduzione casuale** attiva, anche il primo video di una cartella o di
+  un gruppo di file aggiunti (apri, trascina, importa, riempimento dei riquadri
+  vuoti) è scelto a caso.
+- I **recenti** tornano a riempirsi: prima li registrava solo "Apri file", e i video
+  trascinati sui riquadri non comparivano mai. Ora entra ogni file che parte.
+
+## 1.2.2 — 2026-11-26
+
+### Maniac Vision nella finestra
+- Maniac Vision ora parte **nella finestra così com'è**: i video la riempiono,
+  senza interfaccia, ma senza prendersi tutto lo schermo. **F** o il **doppio
+  clic** mettono e tolgono lo schermo intero restando in Vision; **Esc** toglie
+  prima lo schermo intero e poi esce; **V** entra ed esce.
+
+## 1.2.1 — 2026-11-25
+
+### Maniac Vision
+- I video si vedono **interi** di default, senza tagli. "Riempi" (niente bande
+  nere, bordi del video tagliati) è un'opzione in **Impostazioni → Riproduzione
+  → Maniac Vision**, e resta anche il tasto **C**.
+- **Riquadri sfumati**: niente più bordi netti fra un video e l'altro. I riquadri
+  si sovrappongono un poco e lì uno svanisce mentre l'altro compare, in
+  orizzontale e in verticale; nell'incrocio centrale si fondono tutti e quattro.
+  La fusione è per somma, quindi nella zona comune la luce resta al 100%. La
+  sfumatura si regola (nessuna, leggera, media, ampia, molto ampia); i lati sul
+  bordo dello schermo restano netti.
+
+## 1.2.0 — 2026-11-25
+
+### Maniac Vision
+- Nuova modalità che toglie tutta l'interfaccia e mostra solo i video, a
+  schermo intero, senza bordi né spazi: con 1, 2, 3 o 4 riquadri. Si attiva
+  con **V** o col pulsante a forma di occhio in alto; si esce con **Esc**, **V**
+  o un doppio clic. **C** alterna "riempi" (nessuna banda nera, i bordi del
+  video si tagliano) e "adatta" (video interi). Le scorciatoie di
+  riproduzione continuano a funzionare e il cursore sparisce da solo.
+- In Maniac Vision un file che non si apre non mostra finestre: si passa al
+  successivo e l'errore resta nei log.
+
+## 1.1.9 — 2026-11-25
+
+### File con # o % nel nome
+- Video con `#` o `%` nel titolo ("#tag", "top 11%", tipici dei post di X)
+  davano "Formato/codec non supportato" se aperti trascinandoli su un
+  riquadro, da una cartella o dall'esplora file: l'indirizzo non veniva
+  codificato, si spezzava al `#` e il lettore cercava un file inesistente.
+  Ora si aprono, e si sistemano da sole anche le voci già in playlist.
+- La conversione di riserva con ffmpeg (per i formati che il lettore non
+  legge) non funzionava mai: finiva sempre con "Error opening output files:
+  Invalid argument". Corretta.
+
+## 1.1.8 — 2026-11-24
+
+### Crossfade fra un file e l'altro
+- Nuova impostazione **Riproduzione → Dissolvenza tra un file e l'altro**
+  (da 0,5 a 8 secondi, spenta di default). Il file successivo entra sfumando,
+  immagine e volume insieme, invece di tagliare. Vale per video, audio e
+  immagini, in ogni riquadro: a fine file la dissolvenza parte qualche secondo
+  prima della fine, così i due si sovrappongono senza passare per il nero; con
+  Avanti/Indietro parte subito. Gli altri riquadri non vengono toccati: con più
+  video piccoli insieme il passaggio stanca meno l'occhio.
+
+### Downloader che non si blocca più
+- Con tanti download insieme l'app si fermava per secondi interi: a ogni
+  avanzamento ridisegnava l'intera lista con tutte le anteprime, e quelle di X
+  arrivano a piena risoluzione. Ora gli aggiornamenti si applicano a lotti
+  (quattro volte al secondo), si ridisegnano solo le righe cambiate e le
+  anteprime di X si chiedono piccole. Nella stessa prova (106 righe, 50
+  download) il blocco più lungo è sceso da 2,5 secondi a meno di mezzo.
+- **Link copiati a raffica**: si analizzano al massimo due alla volta e, dal
+  terzo in poi, senza una notifica per ognuno; alla fine ne arriva una sola col
+  totale. Il riquadro "Link rilevato" ora li somma ("50 link rilevati ·
+  Scarica tutti (50)") invece di mostrare solo l'ultimo.
+- Gli avanzamenti rispettano i filtri attivi della lista.
+
+### Filtri dei profili X
+- Durata minima e massima con un numero qualsiasi, in **secondi o minuti**
+  (1 s, 10 s, 2,5 minuti…).
+
+## 1.1.7 — 2026-11-24
+
+### Download da X
+- **I link di X funzionano anche con Chrome aperto.** Prima yt-dlp provava a
+  leggere i cookie di Chrome, trovava il file bloccato e si fermava prima ancora
+  di contattare X: niente video e nemmeno il titolo. I post pubblici ora si
+  scaricano senza cookie.
+- **Account X dentro Maniac**, per i post segnati come sensibili (X li mostra
+  solo a chi ha fatto login). Da **Impostazioni → Downloader → Account X**, o dal
+  link "Collega account X e riprova" sulla riga in errore, si apre la pagina di
+  login di X: la password la scrivi a X, Maniac non la legge e non la salva. I
+  cookie di quella sessione vanno a yt-dlp solo per i link di X, in un file
+  temporaneo cancellato appena il download finisce.
+- **Tutti i video di un profilo.** Incolla il link di un profilo
+  (`x.com/nome`): Maniac scorre la scheda Media con il tuo account, ti mostra i
+  video con anteprima, durata e data, salta quelli già scaricati e mette in coda
+  quelli che scegli, nella cartella «X @nome».
+- **Filtri per scaricare tanti video insieme**: fino a quando (ultima settimana,
+  mese, 3/6 mesi, anno o da una data), durata minima e massima, parole chiave
+  (ne basta una, hashtag compresi), parole da escludere, GIF sì o no. Si
+  scelgono prima di leggere il profilo, e il periodo ferma anche la lettura;
+  sull'elenco restano modificabili e Maniac li ricorda.
+
+### Coda dei download
+- **"Download concorrenti" è un limite vero**, per tutti i download (fino a 10,
+  predefinito 10): oltre il limite la riga resta "In attesa di un posto
+  libero" e parte appena un altro finisce. Annullarla mentre aspetta la toglie
+  dalla coda.
+- La coda sopravvive a un riavvio: i download rimasti a metà o in attesa
+  ripartono da soli, sempre dentro il limite.
+- L'elenco non perde più righe: era salvato tagliato a 100, e una coda più
+  lunga (un profilo grande) perdeva in silenzio i video oltre il centesimo.
+- "Riprendi" e "Riavvia" usano la qualità preferita salvata invece di
+  richiederla ogni volta.
+- Errori di X spiegati: post sensibile, account protetto, post senza video,
+  sessione scaduta.
+
+### Correzioni
+- I titoli con emoji o simboli davano "file non trovato" a fine download: yt-dlp
+  scriveva il nome del file nella codifica della console di Windows, che le emoji
+  non le ha. Ora il nome letto coincide con quello su disco.
+- A fine download la riga mostra il nome del file finale, non quello della
+  traccia audio scaricata per ultima.
+- Organizer: un video illeggibile dalle immagini si riprova dopo una settimana
+  invece di restare escluso per sempre.
+
+## 1.1.6 — 2026-09-18
+
+### Organizer: riconosce anche quello che vede
+- Nuova opzione **Tipologia dalle immagini**. Guarda otto fotogrammi per video e
+  impara le *tue* tipologie anche dall'immagine, così finiscono in cartella pure
+  i file col nome che non dice niente (`68c4eb094c99….mp4`). Risponde solo
+  quando è abbastanza sicura: sotto la soglia tace e il video resta dov'è. Il
+  modello (335 MB) si scarica al primo uso e i risultati restano in cache, quindi
+  la prima analisi è lenta (circa mezzo secondo a video) e le successive no.
+  Quando nome e immagini dicono la stessa cosa, la proposta sale a "probabile".
+- **Doppioni**. Trova lo stesso video due volte in libreria — copia identica,
+  ricodifica (impronta visiva) o stessa scena su StashDB — tiene quello già
+  smistato o il più grande e segnala gli altri, con la spunta per mandarli tutti
+  in una cartella a parte.
+- **Sistemazione automatica**. Ogni tanto ricontrolla le cartelle da smistare e
+  mette a posto da solo quello che riconosce con certezza. Spento di default, non
+  tocca mai i doppioni e lascia sempre lo snapshot per annullare.
+
+### Correzioni
+- Il controllo aggiornamenti confronta i numeri di versione uno per uno: non
+  propone più di "aggiornare" alla 1.1.3 quando hai già la 1.1.4.
+- Nell'organizer classico la barra dice quanti file sono in tutto, non più solo
+  quanti ne ha letti finora.
+
 ## 1.1.5 — 2026-09-18
 
 ### Organizer: si decide meglio cosa fare di ogni video

@@ -107,6 +107,21 @@ contextBridge.exposeInMainWorld('maniac', {
 
   // Download (yt-dlp / VibraVid)
   downloadStart: (opts) => ipcRenderer.invoke('download:start', opts),
+  // Numero di questa istanza (1 = principale) e quante ne sono ammesse.
+  instance: () => ipcRenderer.invoke('app:instance'),
+  // Avviso di sistema (solo se Maniac non è in primo piano, con onlyIfAway) e suo clic.
+  uiNotify: (opts) => ipcRenderer.invoke('ui:notify', opts),
+  onUiNotifyClick: (cb) => ipcRenderer.on('ui:notifyClick', (_e, d) => cb(d)),
+  // Sessione X di Maniac: serve per i post segnati come sensibili.
+  xauth: {
+    status: () => ipcRenderer.invoke('xauth:status'),
+    login:  (force) => ipcRenderer.invoke('xauth:login', { force: !!force }),
+    logout: () => ipcRenderer.invoke('xauth:logout'),
+    // Tutti i video di un profilo: elenco dei post, poi ognuno va a yt-dlp.
+    scanProfile: (url, scanId, max, since) => ipcRenderer.invoke('xprofile:scan', { url, scanId, max, since }),
+    cancelScan:  (scanId) => ipcRenderer.invoke('xprofile:cancel', scanId),
+    onScanProgress: (cb) => ipcRenderer.on('xprofile:progress', (_e, d) => cb(d)),
+  },
   downloadCancel: (id) => ipcRenderer.invoke('download:cancel', id),
   downloadPickDir: () => ipcRenderer.invoke('download:pickDir'),
   downloadPickQuality: (id, policy) => ipcRenderer.invoke('download:pickQuality', { id, policy }),

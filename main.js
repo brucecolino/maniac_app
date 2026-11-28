@@ -1,16 +1,65 @@
 const { app, BrowserWindow, ipcMain, dialog, Menu, shell, Tray, nativeImage, clipboard, Notification } = require('electron');
 
-// ─── Single-instance lock + magnet protocol handler ───
-// Quando l'utente clicca un magnet: nel browser, Windows lancia Maniac con il magnet
-// come argv extra. Senza single-instance lock, partirebbe una seconda istanza.
-const _gotInstanceLock = app.requestSingleInstanceLock();
+// ─── Istanze: una principale + fino a 3 aggiuntive (massimo 4) ───
+// La principale tiene il lock di Electron: riceve i magnet/link aperti dal browser,
+// sorveglia gli appunti, sta nel tray e aggiorna yt-dlp. Rilanciando Maniac senza
+// argomenti parte un'istanza aggiuntiva (2, 3, 4) con la SUA sessione di Chromium
+// (localStorage, cookie, cache: LevelDB accetta un solo processo) e la SUA
+// configurazione, copiate dalla principale al primo avvio. Le istanze aggiuntive non
+// sorvegliano gli appunti (ogni link partirebbe quattro volte) e non fanno lavori
+// automatici. Con quattro istanze aperte, un nuovo avvio porta in primo piano la principale.
+const _MAX_INSTANCES = 4;
+const _instance = (() => {
+  const p = require('path'), f = require('fs');
+  const base = app.getPath('userData');
+  const dir = p.join(base, 'instances');
+  try { f.mkdirSync(dir, { recursive: true }); } catch (_) {}
+  const slotFile = n => p.join(dir, 'slot-' + n + '.pid');
+  const alive = pid => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+  const slotAlive = n => { try { const pid = +f.readFileSync(slotFile(n), 'utf8'); return pid > 0 && pid !== process.pid && alive(pid); } catch (_) { return false; } };
+  const args = process.argv.slice(1);
+  // Un avvio con un magnet/link (dal browser) va sempre alla principale.
+  const payload = args.some(a => /^(maniac|magnet):/i.test(a || '') || /^https?:\/\//i.test(a || ''));
+  const busy = [2, 3, 4].filter(slotAlive).length;
+  const wantExtra = !payload && busy < _MAX_INSTANCES - 1;
+  const gotLock = app.requestSingleInstanceLock({ extra: wantExtra });
+  if (gotLock) {
+    try { f.writeFileSync(slotFile(1), String(process.pid)); } catch (_) {}
+    return { n: 1, slotFile };
+  }
+  if (!wantExtra) return { n: 0 };
+  for (let n = 2; n <= _MAX_INSTANCES; n++) {
+    if (slotAlive(n)) continue;
+    try { f.unlinkSync(slotFile(n)); } catch (_) {}
+    // 'wx': se due avvii scelgono lo stesso posto nello stesso istante, uno solo vince.
+    try { f.writeFileSync(slotFile(n), String(process.pid), { flag: 'wx' }); } catch (_) { continue; }
+    const idir = p.join(dir, String(n)), sess = p.join(idir, 'session');
+    const fresh = !f.existsSync(sess);
+    if (fresh) {
+      try { f.mkdirSync(sess, { recursive: true }); } catch (_) {}
+      // Al primo avvio si parte dalle impostazioni della principale: cartella dei
+      // download, preferenze, login di X.
+      for (const sub of ['Local Storage', p.join('Partitions', 'maniac-x')]) {
+        try { f.cpSync(p.join(base, sub), p.join(sess, sub), { recursive: true, force: true, errorOnExist: false }); } catch (_) {}
+      }
+      try { f.rmSync(p.join(sess, 'Local Storage', 'leveldb', 'LOCK'), { force: true }); } catch (_) {}
+      try { f.copyFileSync(p.join(base, 'maniac-config.json'), p.join(idir, 'maniac-config.json')); } catch (_) {}
+    }
+    app.setPath('sessionData', sess);
+    return { n, slotFile, idir, fresh };
+  }
+  return { n: 0 };
+})();
+const _gotInstanceLock = _instance.n >= 1;
 if (!_gotInstanceLock) {
   app.quit();
 } else {
-  // Registriamo Maniac come default per magnet:. Se l'app non è installata,
-  // Windows può richiedere accept manuale dalla "Default apps".
-  try { app.setAsDefaultProtocolClient('magnet'); } catch(_){}
-  try { app.setAsDefaultProtocolClient('maniac'); } catch(_){}
+  // Registriamo Maniac come default per magnet: (solo la principale li riceve).
+  // Se l'app non è installata, Windows può richiedere accept manuale dalla "Default apps".
+  if (_instance.n === 1) {
+    try { app.setAsDefaultProtocolClient('magnet'); } catch(_){}
+    try { app.setAsDefaultProtocolClient('maniac'); } catch(_){}
+  }
 
   // Estrae l'URL "vero" da un argomento maniac://download?url=… (se presente)
   function _parseManiacProtocol(s) {
@@ -20,7 +69,9 @@ if (!_gotInstanceLock) {
     return params.get('url') || params.get('u') || params.get('magnet') || null;
   }
 
-  app.on('second-instance', (_event, argv /*, _cwd */) => {
+  app.on('second-instance', (_event, argv, _cwd, extra) => {
+    // È partita un'istanza aggiuntiva: niente da fare qui, non va portata avanti questa.
+    if (extra && extra.extra) return;
     try {
       const maniacArg = (argv || []).find(a => /^maniac:/i.test(a || ''));
       const magnet = (argv || []).find(a => /^magnet:/i.test(a || ''));
@@ -91,7 +142,13 @@ const pyBridge = require('./py-bridge');
 Menu.setApplicationMenu(null);
 
 const userDataPath = app.getPath('userData');
-const configFile = path.join(userDataPath, 'maniac-config.json');
+// Le istanze aggiuntive hanno la loro configurazione (copiata dalla principale al primo
+// avvio): scrivere tutte nello stesso file vorrebbe dire sovrascriversi a vicenda.
+const configFile = (_instance.n > 1 && _instance.idir) ? path.join(_instance.idir, 'maniac-config.json') : path.join(userDataPath, 'maniac-config.json');
+app.on('will-quit', () => {
+  try { if (_instance.slotFile) { const sf = _instance.slotFile(_instance.n); if (+fs.readFileSync(sf, 'utf8') === process.pid) fs.unlinkSync(sf); } } catch (_) {}
+});
+ipcMain.handle('app:instance', () => ({ n: _instance.n, max: _MAX_INSTANCES, fresh: !!_instance.fresh }));
 
 // ── Percorsi scrivibili a runtime ──────────────────────────────────────
 // In packaged la cartella resources/ è in sola lettura: modelli, chiave
@@ -147,8 +204,12 @@ async function scanMediaAsync(rootDir, withSize = false) {
   return out;
 }
 
+// La configurazione letta qui per l'accelerazione hardware serve anche alla prima
+// richiesta dell'interfaccia: niente seconda lettura e decodifica all'avvio.
+let _cfgBoot = null;
 try {
   const _cfgRaw = fs.existsSync(configFile) ? JSON.parse(fs.readFileSync(configFile,'utf8')) : null;
+  _cfgBoot = _cfgRaw;
   if (_cfgRaw && _cfgRaw.hwAccel === false) {
     app.disableHardwareAcceleration();
   }
@@ -233,6 +294,11 @@ function createWindow() {
       webviewTag: true
     }
   });
+  if (_instance.n > 1) {
+    // Nella barra delle applicazioni le istanze si distinguono dal numero.
+    mainWindow.setTitle('Maniac ' + _instance.n);
+    mainWindow.on('page-title-updated', e => e.preventDefault());
+  }
   mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
   mainWindow.once('ready-to-show', () => mainWindow.show());
   if (process.argv.includes('--dev')) mainWindow.webContents.openDevTools({ mode: 'detach' });
@@ -371,6 +437,7 @@ ipcMain.handle('import-playlist-dialog', async () => {
 });
 
 ipcMain.handle('config-load', () => {
+  if (_cfgBoot) { const c = _cfgBoot; _cfgBoot = null; return c; }
   try { if (fs.existsSync(configFile)) return JSON.parse(fs.readFileSync(configFile, 'utf8')); } catch (e) {}
   return {};
 });
@@ -379,7 +446,8 @@ ipcMain.handle('config-save', async (_e, cfg) => {
   // corrotto se il processo termina a metà scrittura.
   try {
     const tmp = configFile + '.tmp';
-    await fs.promises.writeFile(tmp, JSON.stringify(cfg, null, 2), 'utf8');
+    _cfgBoot = null;
+    await fs.promises.writeFile(tmp, JSON.stringify(cfg), 'utf8');
     await fs.promises.rename(tmp, configFile);
     return { success: true };
   } catch (e) { return { success: false, error: e.message }; }
@@ -580,7 +648,7 @@ ipcMain.handle('media:transcode', async (_e, { id, srcPath } = {}) => {
   const args = ['-y', '-i', srcPath];
   if (vcodec) { args.push('-c:v', vcodec); if (vcodec === 'libx264') args.push('-preset', 'veryfast', '-crf', '23', '-pix_fmt', 'yuv420p'); }
   if (acodec) { args.push('-c:a', acodec); if (acodec === 'aac') args.push('-b:a', '192k'); }
-  args.push('-movflags', '+faststart', '-max_muxing_queue_size', '1024', outPath);
+  args.push('-movflags', '+faststart', '-max_muxing_queue_size', '1024', '-f', 'mp4', outPath);
 
   const tmpOut = outPath + '.part';
   args[args.length - 1] = tmpOut;
@@ -802,11 +870,19 @@ const _DEFAULT_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.3
 // Multi-segment download stile uTorrent/FDM: --concurrent-fragments 4 spezza
 // HLS/DASH in 4 frammenti paralleli (3-4× più veloce su connessioni ad alta banda).
 function _baseDownloadArgs(url, prefBrowser) {
-  const out = ['--user-agent', _DEFAULT_UA, '--no-check-certificates',
+  // --encoding utf-8: su Windows yt-dlp scrive nella codifica della console, che non ha
+  // le emoji; il nome del file letto dal suo output non corrispondeva a quello su disco
+  // ("file non trovato" a fine download).
+  const out = ['--encoding', 'utf-8', '--user-agent', _DEFAULT_UA, '--no-check-certificates',
                '--concurrent-fragments', '4',
                '--retries', '5', '--fragment-retries', '8',
                '--retry-sleep', '2'];
-  const br = _detectActiveBrowser(prefBrowser);
+  // Per X i cookie del browser non servono quasi mai e fanno danni: con Chrome
+  // aperto il file e' bloccato e yt-dlp si ferma prima di contattare il sito,
+  // senza neanche leggere il titolo. I post pubblici vanno senza cookie, quelli
+  // sensibili con la sessione X di Maniac (vedi _xCookieFile). Resta valida una
+  // scelta esplicita del browser fatta dall'utente nelle Impostazioni.
+  const br = (_isXUrl(url) && !prefBrowser) ? null : _detectActiveBrowser(prefBrowser);
   if (br) out.push('--cookies-from-browser', br);
   try {
     const u = new URL(url);
@@ -814,14 +890,301 @@ function _baseDownloadArgs(url, prefBrowser) {
     if (/(^|\.)youtube\.com$|(^|\.)youtu\.be$/.test(host)) {
       // Fallback android client aggira gating "Sign in to confirm".
       out.push('--extractor-args', 'youtube:player_client=web_safari,android,ios');
-    } else if (/(^|\.)x\.com$|(^|\.)twitter\.com$/.test(host)) {
-      out.push('--extractor-args', 'twitter:api=syndication');
     } else if (/instagram\.com/.test(host)) {
       out.push('--extractor-args', 'instagram:include_stories=false');
     }
   } catch(_) {}
   return out;
 }
+function _stripCookieArgs(a) {
+  const out = [];
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] === '--cookies-from-browser' || a[i] === '--cookies') { i++; continue; }
+    out.push(a[i]);
+  }
+  return out;
+}
+
+// ── Account X dentro Maniac ─────────────────────────────────────────────
+// X mostra i video segnati come sensibili (tutti quelli per adulti) solo a chi
+// ha fatto login, e i cookie di Chrome/Edge da fuori non si leggono più: file
+// bloccato finché il browser è aperto, e cifratura legata al browser stesso.
+// Maniac tiene quindi una sessione sua: l'utente entra in X una volta, dalla
+// pagina di X, in una finestra di Maniac. Per i link di X yt-dlp riceve i cookie
+// di quella sessione in un file temporaneo, cancellato appena ha finito.
+const _X_PARTITION = 'persist:maniac-x';
+const _X_HOST_RX = /(^|\.)(x|twitter)\.com$/i;
+function _isXUrl(url) { try { return _X_HOST_RX.test(new URL(url).hostname || ''); } catch(_) { return false; } }
+function _xSession() { return require('electron').session.fromPartition(_X_PARTITION); }
+async function _xCookies() {
+  const s = _xSession(), out = [];
+  for (const domain of ['x.com', 'twitter.com']) {
+    try { out.push(...await s.cookies.get({ domain })); } catch(_) {}
+  }
+  return out;
+}
+const _xLoggedIn = cs => cs.some(c => c.name === 'auth_token' && c.value);
+async function _xConnected() { return _xLoggedIn(await _xCookies()); }
+// Cookie della sessione X nel formato di --cookies (Netscape), oppure null.
+async function _xCookieFile() {
+  const cs = await _xCookies();
+  if (!_xLoggedIn(cs)) return null;
+  const seen = new Set();
+  const lines = ['# Netscape HTTP Cookie File'];
+  for (const c of cs) {
+    const key = c.domain + '|' + c.path + '|' + c.name;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const domain = c.hostOnly ? c.domain.replace(/^\./, '') : (c.domain.startsWith('.') ? c.domain : '.' + c.domain);
+    const exp = (c.session || !c.expirationDate) ? 0 : Math.floor(c.expirationDate);
+    lines.push([domain, c.hostOnly ? 'FALSE' : 'TRUE', c.path || '/', c.secure ? 'TRUE' : 'FALSE',
+                String(exp), c.name, c.value].join('\t'));
+  }
+  const file = path.join(app.getPath('temp'), 'maniac-x-' + crypto.randomBytes(6).toString('hex') + '.txt');
+  fs.writeFileSync(file, lines.join('\n') + '\n', { mode: 0o600 });
+  return file;
+}
+function _rmQuiet(file) { if (file) { try { fs.unlinkSync(file); } catch(_) {} } }
+// Gli errori di X detti in modo che si capisca cosa fare.
+function _xFriendlyError(err, connected) {
+  const e = String(err || '');
+  if (connected && /Could not authenticate you|Bad Authentication data|HTTP Error 401/i.test(e)) {
+    return { error: 'La sessione di X in Maniac non è più valida (scaduta, o chiusa da un altro dispositivo): ricollega l\'account X e riprova.', needXLogin: true, expired: true };
+  }
+  if (/NSFW tweet requires authentication/i.test(e)) {
+    return connected
+      ? { error: 'X non mostra contenuti sensibili a questo account. Su X apri Impostazioni → Privacy e sicurezza → Contenuti che vedi, attiva "Mostra contenuti potenzialmente sensibili" e controlla di aver indicato la data di nascita, poi riprova.', needXLogin: false }
+      : { error: 'Questo post di X è segnato come contenuto sensibile: X lo mostra solo a chi ha fatto login. Collega il tuo account X (si fa una volta sola) e riprova.', needXLogin: true };
+  }
+  if (/protected tweet/i.test(e)) {
+    return connected
+      ? { error: 'È il post di un account protetto che il tuo account X non segue: X non lo mostra.', needXLogin: false }
+      : { error: 'È il post di un account protetto: serve il login a X con un account che lo segue.', needXLogin: true };
+  }
+  if (/No video could be found in this tweet/i.test(e)) {
+    return connected
+      ? { error: 'In questo post di X non c\'è un video: solo testo o immagini.', needXLogin: false }
+      : { error: 'Nessun video trovato in questo post di X. Se è segnato come contenuto sensibile, X lo mostra solo a chi ha fatto login: collega il tuo account X e riprova.', needXLogin: true };
+  }
+  return null;
+}
+
+let _xLoginWin = null;
+ipcMain.handle('xauth:status', async () => ({ ok: true, connected: await _xConnected() }));
+ipcMain.handle('xauth:logout', async () => {
+  try { await _xSession().clearStorageData(); } catch(_) {}
+  return { ok: true, connected: false };
+});
+// Apre la pagina di login di X in una finestra con la sessione di Maniac. La
+// password la scrive l'utente nella pagina di X: Maniac non la legge e non la
+// salva, aspetta solo che X imposti i cookie di sessione.
+// force: riapre la pagina di X anche se ci sono già cookie (sessione scaduta o
+// rifiutata da X). La sessione non si cancella mai da sola: un errore di X non
+// deve costare all'utente un nuovo login.
+ipcMain.handle('xauth:login', async (_e, { force } = {}) => {
+  if (!force && await _xConnected()) return { ok: true, connected: true };
+  if (_xLoginWin && !_xLoginWin.isDestroyed()) { _xLoginWin.focus(); return { ok: false, pending: true }; }
+  return await new Promise(resolve => {
+    const s = _xSession();
+    const webPreferences = { partition: _X_PARTITION, contextIsolation: true, nodeIntegration: false, sandbox: true };
+    const win = new BrowserWindow({ width: 520, height: 760, parent: mainWindow || undefined,
+                                    autoHideMenuBar: true, title: 'Accedi a X', backgroundColor: '#000000', webPreferences });
+    _xLoginWin = win;
+    win.webContents.setUserAgent(_DEFAULT_UA);
+    let finished = false, settleT = null;
+    const popups = new Set();
+    const finish = async () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(settleT);
+      s.cookies.removeListener('changed', onCookie);
+      const connected = await _xConnected();
+      _xLoginWin = null;
+      // destroy e non close: la pagina di X può trattenere la chiusura con beforeunload.
+      for (const p of popups) { try { if (!p.isDestroyed()) p.destroy(); } catch(_) {} }
+      if (!win.isDestroyed()) win.destroy();
+      resolve({ ok: true, connected });
+    };
+    // Il login è fatto quando arriva auth_token; ct0, il token anti-CSRF che
+    // yt-dlp rimanda a X, arriva subito dopo, appena si carica la home.
+    const onCookie = async (_e, cookie, _cause, removed) => {
+      if (removed || !/^(auth_token|ct0)$/.test(cookie.name)) return;
+      const cs = await _xCookies();
+      if (!_xLoggedIn(cs)) return;
+      clearTimeout(settleT);
+      settleT = setTimeout(finish, cs.some(c => c.name === 'ct0' && c.value) ? 1200 : 8000);
+    };
+    s.cookies.on('changed', onCookie);
+    // Già dentro (login forzato con una sessione buona): X porta alla home senza
+    // cambiare cookie, quindi si chiude anche quando si arriva lì.
+    const onNav = async (_e, u) => {
+      if (!/^https:\/\/(x|twitter)\.com\/home/.test(u || '')) return;
+      if (!_xLoggedIn(await _xCookies())) return;
+      clearTimeout(settleT);
+      settleT = setTimeout(finish, 1200);
+    };
+    win.webContents.on('did-navigate', onNav);
+    win.webContents.on('did-navigate-in-page', onNav);
+    win.on('closed', () => { if (!finished) finish(); });
+    // "Accedi con Google/Apple" apre un popup nella stessa sessione. Gli altri popup
+    // (finestre vuote che la pagina apre da sé) restavano appesi: si rifiutano.
+    win.webContents.setWindowOpenHandler(({ url }) => {
+      let host = '';
+      try { host = new URL(url).hostname; } catch(_) {}
+      if (!/(^|\.)(x\.com|twitter\.com|google\.com|apple\.com)$/i.test(host)) return { action: 'deny' };
+      return { action: 'allow', overrideBrowserWindowOptions: { parent: win, autoHideMenuBar: true, webPreferences } };
+    });
+    win.webContents.on('did-create-window', (child) => {
+      popups.add(child);
+      child.on('closed', () => popups.delete(child));
+    });
+    win.loadURL('https://x.com/i/flow/login').catch(() => {});
+  });
+});
+
+// ── Tutti i video di un profilo X ───────────────────────────────────────
+// yt-dlp sa scaricare un post, non sa elencare i post di un profilo. Maniac apre
+// la scheda Media del profilo in una finestra nascosta con la sessione X
+// dell'utente, la fa scorrere e legge le stesse risposte che riceve il sito
+// (via DevTools Protocol): ne esce l'elenco dei post con video, che poi passano
+// a yt-dlp uno per uno. Niente chiamate dirette alle API di X: cambiano spesso,
+// la pagina invece sa sempre come chiederle.
+const _X_RESERVED = new Set(['i', 'home', 'explore', 'search', 'settings', 'notifications', 'messages',
+  'compose', 'login', 'logout', 'signup', 'tos', 'privacy', 'intent', 'share', 'hashtag', 'jobs', 'lists']);
+function _xProfileName(url) {
+  try {
+    const u = new URL(url);
+    if (!_X_HOST_RX.test(u.hostname || '')) return null;
+    const parts = u.pathname.split('/').filter(Boolean);
+    if (!parts.length || parts.length > 2) return null;
+    if (parts.length === 2 && !/^(media|with_replies|highlights|videos)$/i.test(parts[1])) return null;
+    const name = parts[0];
+    if (_X_RESERVED.has(name.toLowerCase()) || !/^[A-Za-z0-9_]{1,15}$/.test(name)) return null;
+    return name;
+  } catch(_) { return null; }
+}
+// Cerca i post con video in una risposta GraphQL di X, qualunque sia la forma
+// dell'elenco (TimelineAddEntries, moduli della griglia Media, ...).
+function _xCollectVideos(json, screenName, into) {
+  const want = String(screenName || '').toLowerCase();
+  const walk = (o) => {
+    if (!o || typeof o !== 'object') return;
+    if (Array.isArray(o)) { for (const x of o) walk(x); return; }
+    const leg = o.legacy;
+    if (o.rest_id && leg && typeof leg === 'object') {
+      const media = ((leg.extended_entities || {}).media) || [];
+      const vids = media.filter(m => m && (m.type === 'video' || m.type === 'animated_gif'));
+      if (vids.length) {
+        const au = ((o.core || {}).user_results || {}).result || {};
+        const sn = (au.core || {}).screen_name || (au.legacy || {}).screen_name || screenName;
+        // Nella scheda Media ci sono solo i post del profilo; i post citati no.
+        if (!want || String(sn).toLowerCase() === want) {
+          const text = String(leg.full_text || '').replace(/\s*https:\/\/t\.co\/\S+\s*$/g, '').trim();
+          vids.forEach((m, i) => {
+            const key = o.rest_id + (vids.length > 1 ? '/' + (i + 1) : '');
+            if (into.has(key)) return;
+            into.set(key, {
+              id: key, tweetId: o.rest_id,
+              url: 'https://x.com/' + sn + '/status/' + o.rest_id + (vids.length > 1 ? '/video/' + (i + 1) : ''),
+              text: text.slice(0, 200), thumb: m.media_url_https || null,
+              duration: ((m.video_info || {}).duration_millis || 0) / 1000 || null,
+              gif: m.type === 'animated_gif', date: leg.created_at || null,
+            });
+          });
+        }
+      }
+    }
+    for (const k in o) walk(o[k]);
+  };
+  walk(json);
+}
+
+const _xScans = new Map(); // scanId -> { cancel() }
+ipcMain.handle('xprofile:cancel', (_e, scanId) => { const j = _xScans.get(scanId); if (j) j.cancel(); return { ok: true }; });
+ipcMain.handle('xprofile:scan', async (_e, { url, scanId, max, since } = {}) => {
+  const name = _xProfileName(url);
+  if (!name) return { ok: false, error: 'Non è il link di un profilo X.' };
+  if (!(await _xConnected())) {
+    return { ok: false, needXLogin: true,
+             error: 'Per leggere i video di un profilo X serve il login: X non mostra i profili a chi non è entrato.' };
+  }
+  const limit = Math.max(1, Math.min(5000, +max || 2000));
+  const prog = (d) => { try { mainWindow?.webContents.send('xprofile:progress', { scanId, ...d }); } catch(_) {} };
+  const found = new Map();
+  const win = new BrowserWindow({ show: false, width: 1280, height: 1000,
+    webPreferences: { partition: _X_PARTITION, contextIsolation: true, nodeIntegration: false, sandbox: true,
+                      backgroundThrottling: false } });
+  win.webContents.setUserAgent(_DEFAULT_UA);
+  win.webContents.setAudioMuted(true);
+  let canceled = false, timelineSeen = false, lastNew = Date.now();
+  _xScans.set(scanId, { cancel: () => { canceled = true; } });
+  const dbg = win.webContents.debugger;
+  const pending = new Set();
+  try {
+    dbg.attach('1.3');
+    dbg.on('message', async (_ev, method, p) => {
+      if (method === 'Network.responseReceived' && /\/i\/api\/graphql\/[^/]+\/(UserMedia|UserTweets|UserTweetsAndReplies)\b/.test(p.response.url)) {
+        pending.add(p.requestId);
+      } else if (method === 'Network.loadingFinished' && pending.has(p.requestId)) {
+        pending.delete(p.requestId);
+        timelineSeen = true;
+        try {
+          const { body, base64Encoded } = await dbg.sendCommand('Network.getResponseBody', { requestId: p.requestId });
+          const before = found.size;
+          _xCollectVideos(JSON.parse(base64Encoded ? Buffer.from(body, 'base64').toString('utf8') : body), name, found);
+          if (found.size > before) lastNew = Date.now();
+          prog({ found: found.size });
+        } catch(_) {}
+      }
+    });
+    await dbg.sendCommand('Network.enable', { maxResourceBufferSize: 64 * 1024 * 1024, maxTotalBufferSize: 256 * 1024 * 1024 });
+  } catch(e) {
+    try { win.destroy(); } catch(_) {}
+    _xScans.delete(scanId);
+    return { ok: false, error: 'Non riesco a leggere la pagina di X: ' + e.message };
+  }
+  prog({ found: 0, note: 'Apro il profilo @' + name + '…' });
+  try { await win.loadURL('https://x.com/' + name + '/media'); } catch(_) {}
+
+  const t0 = Date.now();
+  let problem = null;
+  // Scorre finché arrivano post nuovi: 12 s senza novità vuol dire fondo raggiunto.
+  while (!canceled && found.size < limit && Date.now() - t0 < 20 * 60 * 1000) {
+    await new Promise(r => setTimeout(r, 1500));
+    if (win.isDestroyed()) break;
+    const cur = win.webContents.getURL();
+    if (/\/(i\/flow\/login|login)\b/.test(cur)) { problem = 'login'; break; }
+    if (!timelineSeen && Date.now() - t0 > 25000) {
+      const txt = await win.webContents.executeJavaScript('document.body ? document.body.innerText.slice(0, 4000) : ""').catch(() => '');
+      if (/doesn.t exist|non esiste/i.test(txt)) problem = 'missing';
+      else if (/protected|protetti/i.test(txt)) problem = 'protected';
+      else if (/suspended|sospeso/i.test(txt)) problem = 'suspended';
+      else problem = 'empty';
+      break;
+    }
+    if (timelineSeen && !pending.size && Date.now() - lastNew > 12000) break;
+    // La scheda Media va dal più recente al più vecchio: oltre la data scelta
+    // non serve scorrere (tre post più vecchi bastano a dire che ci siamo).
+    if (since > 0) {
+      let older = 0;
+      for (const it of found.values()) { const t = Date.parse(it.date || ''); if (t && t < since) older++; }
+      if (older >= 3) break;
+    }
+    await win.webContents.executeJavaScript('window.scrollTo(0, document.documentElement.scrollHeight); true').catch(() => {});
+    prog({ found: found.size, note: 'Scorro il profilo @' + name + '…' });
+  }
+  try { dbg.detach(); } catch(_) {}
+  try { win.destroy(); } catch(_) {}
+  _xScans.delete(scanId);
+  if (problem === 'login') {
+    return { ok: false, needXLogin: true, error: 'La sessione di X non è più valida: ricollega l\'account X e riprova.' };
+  }
+  const why = { missing: 'Il profilo @' + name + ' non esiste.', protected: 'I post di @' + name + ' sono protetti: li vede solo chi lo segue.',
+                suspended: 'Il profilo @' + name + ' è sospeso.', empty: 'X non ha mostrato nessun post di @' + name + '.' }[problem];
+  const items = [...found.values()].slice(0, limit);
+  return { ok: true, user: name, items, canceled, truncated: found.size >= limit, note: items.length ? null : (why || 'Nessun video trovato nel profilo @' + name + '.') };
+});
+
 async function _resolveYtDlp(vibraVidPath, progressCb) {
   const candidates = [];
   if (vibraVidPath) {
@@ -847,7 +1210,7 @@ async function _resolveYtDlp(vibraVidPath, progressCb) {
     if (found === _ytDlpLocal) {
       const meta = _metaRead();
       const age = Date.now() - (meta.lastUpdate || 0);
-      if (age > _UPDATE_INTERVAL_MS) {
+      if (age > _UPDATE_INTERVAL_MS && _instance.n === 1) {
         // Async self-update; don't block
         (async () => {
           const ok = await _selfUpdate(_ytDlpLocal);
@@ -1018,10 +1381,11 @@ function _qualityArgs(quality, format) {
   return args;
 }
 
-function _probeFormats(bin, url) {
+function _probeFormats(bin, url, extraArgs) {
   return new Promise((resolve) => {
     try {
-      const p = spawn(bin, ['-J', '--no-playlist', url], { windowsHide: true });
+      const p = spawn(bin, ['-J', '--no-playlist', '--encoding', 'utf-8', ...(extraArgs || []), url], { windowsHide: true });
+      p.stdout.setEncoding('utf8'); p.stderr.setEncoding('utf8');
       let out = '', err = '';
       p.stdout.on('data', d => { out += d.toString(); });
       p.stderr.on('data', d => { err += d.toString(); });
@@ -1041,21 +1405,23 @@ function _probeFormats(bin, url) {
 }
 
 const _dlPending = new Map(); // id -> { resolvePolicy }
-ipcMain.handle('download:start', async (_e, { id, url, quality, format, outputDir, vibraVidPath, policy, cookieBrowser, resume, priority, resumeFilePath }) => {
+ipcMain.handle('download:start', async (_e, { id, url, quality, format, outputDir, vibraVidPath, policy, cookieBrowser, resume, priority, resumeFilePath, subDir }) => {
   const send = (data) => { try { mainWindow?.webContents.send('download:progress', { id, ...data }); } catch(e){} };
+  let xCookie = null;
   try {
     if (!url) return { success: false, error: 'URL mancante' };
     send({ status: 'Preparing' });
     let bin;
     try { bin = await _resolveYtDlp(vibraVidPath, msg => send({ status: 'Preparing', note: msg })); }
     catch(err) { send({ status: 'Error', error: 'Impossibile ottenere yt-dlp: '+err.message }); return { success: false, error: err.message }; }
+    if (_isXUrl(url)) xCookie = await _xCookieFile();
     // Probe metadata to detect multiple renditions
     let chosenFmtId = null;
     let effQuality = quality;
     let probeTitle = null;
     if (quality !== 'audio') {
       send({ status: 'Preparing', note: 'Analizzo formati…' });
-      const probe = await _probeFormats(bin, url);
+      const probe = await _probeFormats(bin, url, xCookie ? ['--cookies', xCookie] : []);
       if (probe.ok && probe.title) probeTitle = probe.title;
       if (probe.ok && probe.thumbnail) send({ thumbnail: probe.thumbnail, title: probe.title });
       // Stima la dimensione max così il riquadro mostra subito un peso indicativo
@@ -1084,9 +1450,15 @@ ipcMain.handle('download:start', async (_e, { id, url, quality, format, outputDi
         else effQuality = 'best';
       }
     }
-    const outDir = outputDir && fs.existsSync(outputDir) ? outputDir : app.getPath('downloads');
+    let outDir = outputDir && fs.existsSync(outputDir) ? outputDir : app.getPath('downloads');
+    // I video di un profilo vanno in una cartella loro (es. "X @nome").
+    if (subDir) {
+      const sd = path.join(outDir, _sanitizeFilename(String(subDir)) || 'X');
+      try { fs.mkdirSync(sd, { recursive: true }); outDir = sd; } catch(_) {}
+    }
     const qArgs = chosenFmtId ? ['-f', chosenFmtId + '+ba/b'] : _qualityArgs(effQuality, format);
-    const baseArgs = _baseDownloadArgs(url, cookieBrowser);
+    let baseArgs = _baseDownloadArgs(url, cookieBrowser);
+    if (xCookie) baseArgs = [..._stripCookieArgs(baseArgs), '--cookies', xCookie];
     // Override titolo per host noti che yt-dlp serializza come ID numerico.
     // Pre-fetch <title>/og:title della pagina HTML, sanitizziamo, e usiamo come template -o.
     let _outTemplate = path.join(outDir, '%(title).200s.%(ext)s');
@@ -1138,19 +1510,26 @@ ipcMain.handle('download:start', async (_e, { id, url, quality, format, outputDi
       const useArgs = runArgs || args;
       try { proc = spawn(currentBin, useArgs, { windowsHide: true }); }
       catch(err) { resolve({ ok:false, err:'Avvio yt-dlp fallito: '+err.message, retryable:false }); return; }
+      // Decodifica a flusso: un carattere UTF-8 spezzato fra due blocchi resta intero.
+      proc.stdout.setEncoding('utf8'); proc.stderr.setEncoding('utf8');
       _dlProcs.set(id, proc);
       send({ status: 'Downloading' });
       let lastTitle = '', lastErrLine = '', lastFilePath = '';
+      // yt-dlp scrive la percentuale molte volte al secondo: all'interfaccia ne bastano
+      // quattro (stati, titoli, file ed errori passano sempre subito).
+      let lastPctAt = 0;
+      const pctTooSoon = (pct) => { const now = Date.now(); if (pct < 100 && now - lastPctAt < 250) return true; lastPctAt = now; return false; };
       proc.stdout.on('data', buf => {
         const lines = buf.toString().split(/\r?\n/);
         for (const line of lines) {
           if (!line) continue;
           const mm = line.match(/\[Merger\] Merging formats into\s+"?([^"\n]+)"?/);
-          if (mm) { lastFilePath = mm[1].trim().replace(/"$/,''); send({ filePath: lastFilePath }); continue; }
+          if (mm) { lastFilePath = mm[1].trim().replace(/"$/,''); lastTitle = path.basename(lastFilePath); send({ filePath: lastFilePath, title: lastTitle }); continue; }
           const tm = line.match(/\[download\] Destination:\s*(.+)/);
           if (tm) { lastFilePath = tm[1].trim(); lastTitle = path.basename(lastFilePath); send({ title: lastTitle, filePath: lastFilePath }); continue; }
           const pm = line.match(/\[download\]\s+([\d.]+)%\s+of\s+~?\s*([\d.]+)\s*([KMGT]?i?B)\s+at\s+([\d.]+\w+\/s)\s+ETA\s+([\d:]+)/i);
           if (pm) {
+            if (pctTooSoon(parseFloat(pm[1]))) continue;
             const num = parseFloat(pm[2]);
             const unit = (pm[3] || '').toUpperCase();
             const mult = { 'B':1, 'KB':1024, 'KIB':1024, 'MB':1024*1024, 'MIB':1024*1024, 'GB':1024**3, 'GIB':1024**3, 'TB':1024**4, 'TIB':1024**4 }[unit] || 1;
@@ -1159,6 +1538,7 @@ ipcMain.handle('download:start', async (_e, { id, url, quality, format, outputDi
             continue;
           }
           const pm2 = line.match(/\[download\]\s+([\d.]+)%/);
+          if (pm2 && pctTooSoon(parseFloat(pm2[1]))) continue;
           if (pm2) { send({ percent: parseFloat(pm2[1]), status: 'Downloading' }); continue; }
           if (/^ERROR:/i.test(line)) lastErrLine = line;
         }
@@ -1281,11 +1661,16 @@ ipcMain.handle('download:start', async (_e, { id, url, quality, format, outputDi
         }
       }
     }
+    if (!r.ok && !r.canceled && _isXUrl(url)) {
+      const fx = _xFriendlyError(r.err, !!xCookie);
+      if (fx) r = { ...r, err: fx.error, needXLogin: fx.needXLogin };
+    }
     if (r.ok) send({ status: 'Done', percent: 100, note: '' });
     else if (r.canceled) send({ status: 'Canceled', note: '' });
-    else send({ status: 'Error', error: r.err || 'Errore', note: '' });
-    return { success: !!r.ok, error: r.err };
+    else send({ status: 'Error', error: r.err || 'Errore', note: '', needXLogin: !!r.needXLogin });
+    return { success: !!r.ok, error: r.err, needXLogin: !!r.needXLogin };
   } catch (e) { send({ status: 'Error', error: e.message }); return { success: false, error: e.message }; }
+  finally { _rmQuiet(xCookie); }
 });
 // ═══ FILE MOVE (utilizzato dal context-menu mediaOptions: "Sposta") ═══
 // Apre un dialog "scegli cartella destinazione", poi sposta atomicamente
@@ -2006,7 +2391,7 @@ ipcMain.handle('update:check', async () => {
                     + 'Controlla la connessione e riprova.' };
     }
 
-    const available = remote !== current;
+    const available = _verGreater(remote, current);
     _updateInfo = available ? r.updateInfo : null;
     return {
       ok: true, available, current, version: remote,
@@ -2018,6 +2403,19 @@ ipcMain.handle('update:check', async () => {
     return { ok: false, error: String(e.message || e).slice(0, 300) };
   }
 });
+
+// "1.1.4" contro "1.1.3" va confrontato numero per numero: con il confronto fra
+// stringhe qualunque versione diversa sembra nuova, e l'app arriva a proporre
+// come aggiornamento una release più vecchia di quella installata.
+function _verGreater(remote, current) {
+  const parse = v => String(v || '').split('-')[0].split('.').map(n => parseInt(n, 10) || 0);
+  const a = parse(remote), b = parse(current);
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const x = a[i] || 0, y = b[i] || 0;
+    if (x !== y) return x > y;
+  }
+  return false;
+}
 
 // Le note di rilascio arrivano in HTML da GitHub: le riduciamo a testo, così
 // la finestra le mostra senza rischiare di iniettare markup.
@@ -2382,7 +2780,7 @@ ipcMain.handle('os:open-default-apps', async () => {
 let _venvStatusCache = null;
 ipcMain.handle('ai:venv-check', async (_e, { force } = {}) => {
   if (_venvStatusCache && !force) return _venvStatusCache;
-  _venvStatusCache = await pyBridge.venvCheck();
+  _venvStatusCache = await pyBridge.venvCheck(!!force);
   return _venvStatusCache;
 });
 ipcMain.handle('ai:python-path', () => ({ path: pyBridge.resolvePython() }));
@@ -3035,7 +3433,7 @@ ipcMain.handle('eporner:search',         async (_e, query) => await _runEporner(
 ipcMain.handle('eporner:byCategory',     async (_e, cat)   => await _runEporner(['by-cat', '--c', String(cat || '')]));
 // Auto-seed al primo avvio (se DB non esiste).
 app.whenReady().then(() => {
-  setTimeout(() => {
+  if (_instance.n === 1) setTimeout(() => {
     if (!fs.existsSync(_epornerDb)) { _runEporner(['seed']).catch(()=>{}); }
   }, 8000);
 });
@@ -3369,9 +3767,11 @@ function _loadTrayPrefs(){
   if (typeof _trayPrefs.exitToTray  !== 'boolean') _trayPrefs.exitToTray  = false;
 }
 function _saveTrayPrefs(){
+  if (_instance.n > 1) return;
   try { fs.writeFileSync(_trayPrefsFile, JSON.stringify(_trayPrefs), 'utf8'); } catch(_) {}
 }
 _loadTrayPrefs();
+if (_instance.n > 1) Object.assign(_trayPrefs, { minimizeToTray: false, closeToTray: false, exitToTray: false, clipboardEnabled: false });
 
 function _showMainWindow(){
   if (!mainWindow) { createWindow(); return; }
@@ -3459,41 +3859,55 @@ let _clipLast = '';
 const _clipNotifiedAt = new Map(); // url -> ts
 
 async function _probeUrlMeta(url) {
+  let xCookie = null;
   try {
     const bin = await _resolveYtDlp(null, ()=>{});
     if (!bin) return null;
-    const baseArgs = _baseDownloadArgs(url);
-    return await new Promise((resolve) => {
+    let baseArgs = _baseDownloadArgs(url);
+    if (_isXUrl(url)) xCookie = await _xCookieFile();
+    if (xCookie) baseArgs = [..._stripCookieArgs(baseArgs), '--cookies', xCookie];
+    const run = (args) => new Promise((resolve) => {
       let proc;
-      try { proc = spawn(bin, ['--dump-json', '--skip-download', '--no-warnings', '--no-playlist', ...baseArgs, url], { windowsHide: true }); }
-      catch(_) { return resolve(null); }
-      let buf = '';
-      const to = setTimeout(() => { try { proc.kill(); } catch(_){} resolve(null); }, 8000);
+      try { proc = spawn(bin, ['--dump-json', '--skip-download', '--no-warnings', '--no-playlist', ...args, url], { windowsHide: true }); }
+      catch(_) { return resolve({ meta: null }); }
+      proc.stdout.setEncoding('utf8'); proc.stderr.setEncoding('utf8');
+      let buf = '', err = '';
+      const to = setTimeout(() => { try { proc.kill(); } catch(_){} resolve({ meta: null }); }, 8000);
       proc.stdout.on('data', d => { buf += d.toString(); });
-      proc.on('error', () => { clearTimeout(to); resolve(null); });
+      proc.stderr.on('data', d => { err += d.toString(); });
+      proc.on('error', () => { clearTimeout(to); resolve({ meta: null }); });
       proc.on('close', () => {
         clearTimeout(to);
+        const cookieErr = _isCookieLockError(err) || /Failed to decrypt|cookies? from browser/i.test(err);
         try {
           const line = buf.split(/\r?\n/).find(l => l.trim().startsWith('{'));
-          if (!line) return resolve(null);
+          if (!line) return resolve({ meta: null, cookieErr });
           const j = JSON.parse(line);
-          resolve({
+          resolve({ meta: {
             title: j.title || j.fulltitle || null,
             thumbnail: j.thumbnail || (Array.isArray(j.thumbnails) && j.thumbnails.length ? j.thumbnails[j.thumbnails.length-1].url : null),
             filesize: j.filesize || j.filesize_approx || null,
             duration: j.duration || null
-          });
-        } catch(_) { resolve(null); }
+          } });
+        } catch(_) { resolve({ meta: null, cookieErr }); }
       });
     });
+    let r = await run(baseArgs);
+    // Con il browser aperto il file dei cookie è bloccato e yt-dlp si ferma
+    // prima di contattare il sito: il titolo si chiede comunque, senza cookie.
+    if (!r.meta && r.cookieErr) r = await run(_stripCookieArgs(baseArgs));
+    return r.meta;
   } catch(_) { return null; }
+  finally { _rmQuiet(xCookie); }
 }
 
 async function _downloadIconToTemp(url) {
   if (!url) return null;
   try {
     const https = require('https');
-    const dest = path.join(userDataPath, 'tmp-clip-icon.jpg');
+    // Quattro file a rotazione: con due analisi insieme nessuna sovrascrive l'icona dell'altra.
+    _clipIconSlot = (_clipIconSlot + 1) % 4;
+    const dest = path.join(userDataPath, 'tmp-clip-icon-' + _clipIconSlot + '.jpg');
     return await new Promise((resolve) => {
       const tryGet = (u, n=0) => {
         https.get(u, { headers: { 'User-Agent': 'Maniac/1.0' } }, res => {
@@ -3512,41 +3926,72 @@ async function _downloadIconToTemp(url) {
   } catch(_) { return null; }
 }
 
-async function _handleClipboardUrl(url) {
+// Tanti link copiati di fila: si analizzano al massimo due per volta e, dal terzo in
+// poi, niente analisi né notifica per ognuno (passano subito all'app), con una sola
+// notifica col totale alla fine. Cinquanta analisi e cinquanta notifiche insieme
+// rallentavano tutto il PC.
+const _clipQ = [];
+let _clipActive = 0, _clipBurst = 0, _clipBurstT = null, _clipIconSlot = 0;
+function _queueClipboardUrl(url) {
+  _clipQ.push(url);
+  _clipBurst++;
+  clearTimeout(_clipBurstT);
+  _clipBurstT = setTimeout(_clipBurstEnd, 8000);
+  _pumpClipboard();
+}
+function _pumpClipboard() {
+  while (_clipActive < 2 && _clipQ.length) {
+    const url = _clipQ.shift();
+    _clipActive++;
+    _handleClipboardUrl(url, { quick: _clipBurst > 2 })
+      .catch(() => {})
+      .finally(() => { _clipActive--; _pumpClipboard(); });
+  }
+}
+function _clipBurstEnd() {
+  // Il riepilogo della raffica lo mostra l'interfaccia (vedi _dlNotify).
+  _clipBurst = 0;
+}
+
+async function _handleClipboardUrl(url, { quick } = {}) {
   // Anti-loop: stessa URL notificata negli ultimi 60s → skip
   const last = _clipNotifiedAt.get(url) || 0;
   if (Date.now() - last < 60_000) return;
   _clipNotifiedAt.set(url, Date.now());
 
-  const meta = await _probeUrlMeta(url);
-  const title = (meta && meta.title) || 'Video rilevato';
+  const meta = quick ? null : await _probeUrlMeta(url);
+  let title = (meta && meta.title) || 'Video rilevato';
+  if (!quick && !(meta && meta.title) && _isXUrl(url) && !(await _xConnected().catch(() => false))) {
+    title = 'Post di X: se è un contenuto sensibile serve il login (Impostazioni → Downloader → Account X)';
+  }
   const sizeStr = meta ? _humanSize(meta.filesize) : '';
-  const iconPath = meta && meta.thumbnail ? await _downloadIconToTemp(meta.thumbnail) : null;
+  const iconPath = !quick && meta && meta.thumbnail ? await _downloadIconToTemp(meta.thumbnail) : null;
 
-  // Manda evento al renderer (per pre-fill UI / toast in-app)
-  try { mainWindow?.webContents.send('clipboard:videoDetected', { url, title, thumbnail: meta?.thumbnail || null, size: meta?.filesize || null }); } catch(_) {}
-
-  // Notifica OS (popup vicino orologio Windows)
-  try {
-    if (Notification.isSupported()) {
-      const body = sizeStr ? `${title} · ${sizeStr}` : title;
-      const n = new Notification({
-        title: 'Maniac · Video rilevato',
-        body,
-        icon: iconPath || path.join(__dirname, 'assets', 'maniac_logo.ico'),
-        silent: false
-      });
-      n.on('click', () => {
-        _showMainWindow();
-        try { mainWindow?.webContents.send('clipboard:videoDetected', { url, title, thumbnail: meta?.thumbnail || null, size: meta?.filesize || null, openWizard: true }); } catch(_){}
-      });
-      n.show();
-    }
-  } catch(_) {}
+  // All'interfaccia: lei sa se il download parte da solo e decide l'avviso
+  // ("download avviato" o "video rilevato"), raggruppando quelli a raffica.
+  void sizeStr; void iconPath;
+  try { mainWindow?.webContents.send('clipboard:videoDetected', { url, title, thumbnail: meta?.thumbnail || null, size: meta?.filesize || null, quick: !!quick }); } catch(_) {}
 }
+
+// Avviso di sistema chiesto dall'interfaccia. onlyIfAway: solo se Maniac non è in primo
+// piano (ridotta a icona, nascosta nel tray o dietro un'altra finestra).
+ipcMain.handle('ui:notify', async (_e, { title, body, iconUrl, onlyIfAway, action, url } = {}) => {
+  try {
+    if (!Notification.isSupported()) return { shown: false };
+    const away = !mainWindow || mainWindow.isDestroyed() || !mainWindow.isVisible() || mainWindow.isMinimized() || !mainWindow.isFocused();
+    if (onlyIfAway && !away) return { shown: false, reason: 'in primo piano' };
+    const icon = iconUrl && /^https?:/i.test(iconUrl) ? await _downloadIconToTemp(iconUrl).catch(() => null) : null;
+    const n = new Notification({ title: String(title || 'Maniac').slice(0, 120), body: String(body || '').slice(0, 240),
+                                 icon: icon || path.join(__dirname, 'assets', 'maniac_logo.ico'), silent: true });
+    n.on('click', () => { _showMainWindow(); try { mainWindow?.webContents.send('ui:notifyClick', { action, url }); } catch(_) {} });
+    n.show();
+    return { shown: true };
+  } catch (e) { return { shown: false, error: e.message }; }
+});
 
 function _restartClipboardWatcher(){
   if (_clipTimer) { clearInterval(_clipTimer); _clipTimer = null; }
+  if (_instance.n > 1) return;
   if (!_trayPrefs.clipboardEnabled) return;
   _clipLast = (clipboard.readText() || '').trim();
   _clipTimer = setInterval(() => {
@@ -3555,17 +4000,19 @@ function _restartClipboardWatcher(){
     if (!txt || txt === _clipLast) return;
     _clipLast = txt;
     if (!_isKnownVideoUrl(txt)) return;
-    _handleClipboardUrl(txt);
+    _queueClipboardUrl(txt);
   }, 1500);
 }
 
 ipcMain.handle('clipboard:setEnabled', async (_e, on) => {
+  // Le istanze aggiuntive non sorvegliano mai gli appunti: lo fa solo la principale.
+  if (_instance.n > 1) return { ok: true, enabled: false, extraInstance: true };
   _trayPrefs.clipboardEnabled = !!on;
   _saveTrayPrefs();
   _restartClipboardWatcher();
   return { ok: true, enabled: _trayPrefs.clipboardEnabled };
 });
-ipcMain.handle('clipboard:isEnabled', async () => ({ enabled: !!_trayPrefs.clipboardEnabled }));
+ipcMain.handle('clipboard:isEnabled', async () => ({ enabled: _instance.n === 1 && !!_trayPrefs.clipboardEnabled }));
 ipcMain.handle('tray:setMinimizeToTray', async (_e, on) => {
   _trayPrefs.minimizeToTray = !!on;
   _saveTrayPrefs();
@@ -3981,11 +4428,13 @@ ipcMain.handle('smartlib:rescan', async (_e, folderPath) => {
 
 app.whenReady().then(() => {
   createWindow();
-  _wireWindowMinimizeToTray();
-  try { _buildTray(); } catch(e) { _logErr('tray-build', e); }
+  if (_instance.n === 1) {
+    _wireWindowMinimizeToTray();
+    try { _buildTray(); } catch(e) { _logErr('tray-build', e); }
+  }
   _restartClipboardWatcher();
-  // Avvia Smart Library (carica cartelle + watcher)
-  try { _smartStartAll(); } catch(e) { _logErr('smartlib-start', e); }
+  // Avvia Smart Library (carica cartelle + watcher): un solo osservatore, nella principale
+  if (_instance.n === 1) { try { _smartStartAll(); } catch(e) { _logErr('smartlib-start', e); } }
   // Se l'app è stata lanciata DAL CLICK su un magnet:/URL nel browser, argv
   // contiene l'URL → inoltralo al renderer non appena è pronto.
   // Fix race: se did-finish-load è già scattato (cold-start veloce),

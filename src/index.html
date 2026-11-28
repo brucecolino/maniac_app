@@ -1055,6 +1055,36 @@ input[type=range]::-webkit-slider-thumb{margin-top:-4.5px}
 .vc video.magnified{transform-origin:var(--mag-ox,50%) var(--mag-oy,50%);transform:scale(var(--mag-z,1));transition:transform .08s linear}
 .sub-ov{position:absolute;bottom:48px;left:0;right:0;text-align:center;color:var(--sub-color,#fff);font:600 var(--sub-size,18px)/1.3 'Inter';text-shadow:0 2px 4px rgba(0,0,0,.95),0 0 8px rgba(0,0,0,.9);padding:0 40px;pointer-events:none;z-index:45;white-space:pre-wrap}
 .sub-ov.title-start-ov{font:inherit}
+/* nome del file nello spazio libero della barra di ogni player */
+.vc-fname-wrap{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0 8px}
+.vc-fname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:500 11px/1.2 'Inter';color:var(--t2);cursor:default}
+[data-theme="light"] .vc-fname{color:#3A3A4A}
+/* riquadri stretti (es. 3 affiancati): nella barra non c'è posto, il nome sale sopra
+   come una didascalia sul fondo del video */
+.vc-controls{position:relative}
+.vc-controls.fname-top .vc-fname{position:absolute;left:10px;right:10px;bottom:calc(100% + 4px);text-align:left;color:#fff;
+  text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 6px rgba(0,0,0,.8);pointer-events:none;z-index:4}
+[data-theme="light"] .vc-controls.fname-top .vc-fname{color:#fff}
+/* Maniac Vision: solo i video, nessuna scritta */
+body.maniac-vision .vc-fname,body.maniac-vision .vc-fname-wrap{display:none!important}
+.inst-badge{order:9;margin-left:6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--accent);color:#fff;font:700 11px/18px 'Inter';text-align:center;box-sizing:border-box}
+[data-theme="light"] .inst-badge{background:#4a2e75;color:#fff}
+/* ═══ MANIAC VISION ═══ solo i video: la griglia copre tutta la finestra, senza
+   spazi, bordi, barre o pulsanti. Restano i sottotitoli, se accesi. */
+body.maniac-vision #vGrid{position:fixed;inset:0;width:100vw;height:100vh;z-index:9000;gap:0;background:#000}
+body.maniac-vision #vGrid .drag-ov{display:none!important}
+body.maniac-vision .vc{outline:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#000!important}
+body.maniac-vision .vc>*:not(.video-area):not(.sub-ov),body.maniac-vision .vc>.sub-ov.title-start-ov{display:none!important}
+body.maniac-vision .vc .video-area{background:#000!important}
+body.maniac-vision .vc .video-area>*:not(video):not(img){display:none!important}
+body.maniac-vision .vc .video-area>video,body.maniac-vision .vc .video-area>img{object-fit:contain!important;background:#000!important}
+body.maniac-vision.mv-fill .vc .video-area>video,body.maniac-vision.mv-fill .vc .video-area>img{object-fit:cover!important}
+/* riquadri sfumati: si fondono per somma, così dove si sovrappongono la luce resta al 100% */
+body.maniac-vision #vGrid{isolation:isolate}
+body.maniac-vision .sub-ov{bottom:6%}
+body.maniac-vision.mv-idle,body.maniac-vision.mv-idle *{cursor:none!important}
+#mvHint{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:9002;padding:8px 14px;border-radius:8px;background:rgba(0,0,0,.72);color:#fff;font:500 12px 'Inter';letter-spacing:.02em;pointer-events:none;opacity:1;transition:opacity .6s}
+#mvHint.out{opacity:0}
 .meter{position:relative;height:16px;background:var(--s3);border-radius:3px;overflow:hidden;contain:layout paint style;isolation:isolate}
 .meter-fill{height:100%;width:0%;background:#4CAF7D;will-change:width;contain:layout paint size}
 .meter-gate{position:absolute;top:-2px;bottom:-2px;width:2px;background:#E05565;pointer-events:none}
@@ -1171,6 +1201,7 @@ input[type=range]::-webkit-slider-thumb{margin-top:-4.5px}
 .lo-group-h .c{font:500 11px 'Inter';color:var(--t3)}
 .lo-group-h .chev{width:10px;color:var(--t3)}
 .lo-new{font:700 9px/1 'Inter';text-transform:uppercase;color:#22c55e;border:1px solid rgba(34,197,94,.5);border-radius:4px;padding:3px 5px}
+.lo-dup{font:700 9px/1 'Inter';text-transform:uppercase;color:#f59e0b;border:1px solid rgba(245,158,11,.45);border-radius:4px;padding:3px 5px}
 .lo-item{display:grid;grid-template-columns:18px minmax(0,1fr) auto minmax(120px,230px);align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid var(--bd);background:var(--s1)}
 .lo-item.sel{background:var(--pd)}
 .lo-item .n{font:500 12px/1.3 'Inter';color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1344,11 +1375,55 @@ input[type=range]::-webkit-slider-thumb{margin-top:-4.5px}
 .m2-dl-row .m2-dl-size{justify-self:end;font:600 11px 'JetBrains Mono',monospace;color:var(--t2);white-space:nowrap}
 .m2-dl-row .m2-dl-acts{display:flex;align-items:center;gap:4px;justify-content:flex-end}
 .m2-dl-act-trash{color:var(--err,#e55)!important}
+.xp-mdl{max-width:760px!important;width:min(760px,calc(100vw - 32px));display:flex;flex-direction:column;max-height:calc(100vh - 60px)}
+.xp-body{flex:1;min-height:0;overflow:auto;margin:6px 0 12px}
+.xp-foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.xp-note{font:400 11px/1.45 'Inter';color:var(--t3);margin-top:8px}
+.xp-live{padding:14px;border:1px solid var(--bd);border-radius:8px;background:var(--s2)}
+.xp-live .xp-t{font:600 13px 'Inter';color:var(--t1)}
+.xp-live .xp-c{font:400 12px 'JetBrains Mono',monospace;color:var(--t2);margin-top:4px}
+.xp-opts{display:flex;flex-wrap:wrap;gap:6px 16px;margin-bottom:8px;font:400 12px 'Inter';color:var(--t2)}
+.xp-filters{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px 10px;margin-bottom:10px;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--s2)}
+.xp-f{display:flex;flex-direction:column;gap:4px;font:400 11px 'Inter';color:var(--t2);min-width:0}
+.xp-f .m-input{width:100%;box-sizing:border-box}
+.xp-fchk{flex-direction:row;align-items:center;gap:6px;align-self:end;padding-bottom:6px;cursor:pointer}
+.xp-dur{display:flex;gap:4px}
+.xp-dur input{flex:1 1 60px;min-width:0}
+.xp-dur select{flex:0 0 auto;width:auto!important}
+[data-theme="light"] .xp-filters{background:#fff;border-color:rgba(0,0,0,.12)}
+.xp-opts label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.xp-opts a{color:var(--accent-hi);cursor:pointer}
+.xp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.xp-it{position:relative;display:flex;flex-direction:column;border:1px solid var(--bd);border-radius:8px;overflow:hidden;background:var(--s2);cursor:pointer}
+.xp-it.off{opacity:.45}
+.xp-it img{width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--s3);display:block}
+.xp-it input{position:absolute;top:6px;left:6px;width:16px;height:16px}
+.xp-it .xp-tx{padding:6px 8px;font:400 11px/1.35 'Inter';color:var(--t1);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:30px}
+.xp-it .xp-m{padding:0 8px 6px;font:400 10px 'JetBrains Mono',monospace;color:var(--t3)}
+[data-theme="light"] .xp-it,[data-theme="light"] .xp-live{background:#fff;border-color:rgba(0,0,0,.12)}
+[data-theme="light"] .xp-it img{background:#e9e9ef}
+[data-theme="light"] .xp-opts a{color:#4a2e75}
+.m2-dl-xlink{color:var(--accent-hi);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.m2-dl-xlink:hover{color:var(--t1)}
+[data-theme="light"] .m2-dl-xlink{color:#4a2e75}
+[data-theme="light"] .m2-dl-xlink:hover{color:#1A1A2E}
 .m2-dl-act-trash:hover{background:rgba(229,85,85,.14)!important;color:#fff!important}
 [data-theme="light"] .m2-dl-act-trash:hover{background:rgba(229,85,85,.18)!important;color:var(--err,#c0392b)!important}
 .m2-dl-size{text-align:right;font:600 12px/1 'JetBrains Mono',monospace;color:var(--t1);white-space:nowrap;letter-spacing:.02em}
 .m2-dl-acts{justify-content:flex-end}
 .m2-dl-row:hover{background:var(--s2)}
+.m2-dl-row{user-select:none;cursor:default}
+.m2-dl-row.sel,.m2-dl-row.sel:hover{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+[data-theme="light"] .m2-dl-row.sel,[data-theme="light"] .m2-dl-row.sel:hover{background:#E9E0F6}
+.m2-dl-selbar{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow:hidden;min-height:38px;box-sizing:border-box;padding:5px 10px;margin-bottom:8px;border:1px solid var(--accent);border-radius:8px;background:var(--s2);font:500 12px 'Inter';color:var(--t2)}
+.m2-dl-selbar b{color:var(--accent-hi)}
+.m2-dl-selbar.idle{border-color:var(--bd);background:transparent;color:var(--t3);font:400 11px 'Inter';white-space:nowrap;text-overflow:ellipsis}
+[data-theme="light"] .m2-dl-selbar.idle{background:transparent;border-color:#D9D2E3}
+.m2-dl-selbar .sp{flex:1}
+.m2-dl-selbar .m2-btn{height:26px;padding:0 10px;font-size:11px}
+.m2-dl-selbar .m2-btn.danger{color:var(--err,#e55)}
+[data-theme="light"] .m2-dl-selbar{background:#FFFFFF}
+[data-theme="light"] .m2-dl-selbar b{color:#4a2e75}
 .m2-dl-thumbwrap{position:relative;width:56px;height:36px;flex:0 0 56px;border-radius:4px;overflow:hidden;background:var(--s3)}
 .m2-dl-thumb{width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .m2-dl-thumb img{width:100%;height:100%;object-fit:cover;display:block}
@@ -1812,6 +1887,7 @@ input[type=range]::-webkit-slider-thumb{margin-top:-4.5px}
 <!-- TITLEBAR -->
 <div class="tb">
   <div class="logo">
+    <span id="instBadge" class="inst-badge" style="display:none" title="Istanza di Maniac"></span>
     <div class="logo-box"><img src="../assets/maniac_logo.png" alt="M" onerror="this.onerror=null;this.src='assets/maniac_logo.png'"></div>
   </div>
 
@@ -1844,6 +1920,9 @@ input[type=range]::-webkit-slider-thumb{margin-top:-4.5px}
     <span id="aiLoader" title="Analisi in corso…" style="display:none;align-items:center;justify-content:center;width:24px;height:24px;color:var(--p);margin-right:4px;position:relative"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16" style="animation:spin 1.1s linear infinite"><path d="M12 3a9 9 0 1 1-7.5 4"/></svg><span id="aiLoaderBadge" style="display:none;position:absolute;top:-2px;right:-4px;background:var(--p);color:#fff;font:700 9px/12px 'Inter',sans-serif;border-radius:8px;min-width:14px;height:14px;padding:0 3px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.3)">0</span></span>
     <button class="ib" id="btnCmdp" onclick="openCommandPalette()" title="Cerca comandi (Ctrl+K)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" width="14" height="14"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    </button>
+    <button class="ib" id="btnVision" onclick="toggleManiacVision()" title="Maniac Vision: solo i video, senza interfaccia (V) · F per lo schermo intero">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
     </button>
     <button class="ib" id="btnTheme" onclick="toggleTheme()">
       <svg id="themeIco" viewBox="0 0 24 24" fill="currentColor" width="15" height="15"></svg>
@@ -1980,9 +2059,10 @@ const S={
   // Playback defaults (applied at app start)
   playback:{autoplay:true,startView:1,startMode:'linear'},
   // Toolbar icons visibility (global)
-  toolbarIcons:{tc:false,td:true,loop:true,shuf:true,mag:true,fav:true,pl:true,fs:true},
+  toolbarIcons:{tc:false,td:true,fname:true,loop:true,shuf:true,mag:true,fav:true,pl:true,fs:true},
   // Title-at-start settings
   titleAtStart:false, titleAtStartPath:false,
+  crossfadeSec:0,
   // Logs
   logs:[]
 };
@@ -2481,7 +2561,8 @@ const DEFAULT_SHORTCUTS={
   next:'PageDown',prev:'PageUp',eq:'Ctrl+e',playlist:'Ctrl+l',shuffle:'r',loop:'l',
   screenshot:'Shift+s',speedUp:']',speedDown:'[',multi:'Ctrl+m',
   history:'Ctrl+h',switchPlayer:'Tab',
-  multiNext:'Ctrl+Shift+ArrowRight',multiPrev:'Ctrl+Shift+ArrowLeft'
+  multiNext:'Ctrl+Shift+ArrowRight',multiPrev:'Ctrl+Shift+ArrowLeft',
+  vision:'v'
 };
 function multiNextAll(){for(let i=0;i<S.multi;i++){if(P(i).playlist.length)playerNext(i);}}
 function multiPrevAll(){for(let i=0;i<S.multi;i++){if(P(i).playlist.length)playerPrev(i);}}
@@ -2656,7 +2737,7 @@ async function act_openFile(){
     });
     if(total>0){
       const p=P(target);
-      p.idx=startLen;
+      p.idx=_shuffleStart(p,startLen);
       loadFileIntoPlayer(target);
       if(r.items.some(it=>it.type==='folder'))toast(`Aggiunti ${total} file`);
     }
@@ -2688,7 +2769,7 @@ async function act_openFolder(){
       if(S.panel==='playlist'&&S.panelPlayer===target)renderPanel();
       toast(`Aggiunti ${sorted.length} file dalla cartella`);
       const p=P(target);
-      if(p.playlist.length>startLen){p.idx=startLen;loadFileIntoPlayer(target);}
+      if(p.playlist.length>startLen){p.idx=_shuffleStart(p,startLen);loadFileIntoPlayer(target);}
       saveConfig();
     }
   }
@@ -2732,7 +2813,8 @@ function autoFillEmptyPlayer(pid){
   // Raccogli i path già in uso in qualsiasi player
   const used=new Set();
   for(let i=0;i<S.multi;i++){P(i).playlist.forEach(f=>used.add(f.path));}
-  const next=q.find(f=>!used.has(f.path));
+  const avail=q.filter(f=>!used.has(f.path));
+  const next=p.shuffle?avail[Math.floor(Math.random()*avail.length)]:avail[0];
   if(!next)return false;
   addFileByPathInto(pid,next.path,next.name);
   p.idx=p.playlist.length-1;
@@ -2778,14 +2860,16 @@ async function act_importPlaylist(){
       const pid=pl.idx|0;if(pid<0||pid>3)return;
       ensurePlayers(pid+1);
       if(pid>=S.multi){S.multi=pid+1;renderMultiDots();}
-      const pp=P(pid);(pl.items||[]).forEach(it=>{pp.playlist.push(newFile(it.name,mkUrl(it.path,it.url),it.path));if(it.tags)pp.playlist[pp.playlist.length-1].tags=it.tags;tot++;});
+      const pp=P(pid),st=pp.playlist.length;(pl.items||[]).forEach(it=>{pp.playlist.push(newFile(it.name,mkUrl(it.path,it.url),it.path));if(it.tags)pp.playlist[pp.playlist.length-1].tags=it.tags;tot++;});
+      if(st===0&&pp.playlist.length)pp.idx=_shuffleStart(pp,0);
     });
     renderGrid();toast((t('imported')||'Importati')+' '+tot+' file');
-  } else if(Array.isArray(raw)){
-    raw.forEach(it=>addFileByPath(it.path,it.name));
-    toast((t('imported')||'Importati')+' '+raw.length+' file');
-  } else if(Array.isArray(raw&&raw.items)){
-    raw.items.forEach(it=>addFileByPath(it.path,it.name));
+  } else if(Array.isArray(raw)||Array.isArray(raw&&raw.items)){
+    const list=Array.isArray(raw)?raw:raw.items;
+    const tp=activeP(),st=tp.playlist.length;
+    list.forEach(it=>addFileByPath(it.path,it.name));
+    if(st===0&&tp.shuffle&&tp.playlist.length>1){tp.idx=_shuffleStart(tp,0);loadFileIntoPlayer(tp.id);}
+    if(Array.isArray(raw))toast((t('imported')||'Importati')+' '+raw.length+' file');
   }
 }
 
@@ -3297,6 +3381,7 @@ function _filePath(f){
 
 // Helper drop to specific playlist player
 async function _dropToPlaylist(e,pid){
+  const startLen=P(pid).playlist.length;
   const items=Array.from(e.dataTransfer.items||[]);
   const files=Array.from(e.dataTransfer.files||[]);
   for(const item of items){
@@ -3309,13 +3394,16 @@ async function _dropToPlaylist(e,pid){
     else if(f){const u=URL.createObjectURL(f);P(pid).playlist.push(newFile(f.name,u,null));}
   }
   if(!items.length)files.forEach(f=>{const fp=_filePath(f); if(fp)addFileByPathInto(pid,fp,f.name,{silent:true}); else{const u=URL.createObjectURL(f);P(pid).playlist.push(newFile(f.name,u,null));}});
+  if(startLen===0)P(pid).idx=_shuffleStart(P(pid),0);
   renderGrid();
   saveConfig();
   if(S.panel==='playlist'&&S.panelPlayer===pid)renderPanel();
 }
 function addFileByPathInto(pid,path,name,opts){
   const n=name||path.split(/[\\/]/).pop();
-  const url='file:///'+path.replace(/\\/g,'/').replace(/^\/+/,'');
+  // mkUrl e non 'file:///'+path: con # o % nel nome (es. "#tag", "top 11%")
+  // l'indirizzo si spezzava e il lettore cercava un file inesistente.
+  const url=mkUrl(path);
   addRecentFile(path,n,opts);
   addToPlayer(pid,n,url,path,opts);
 }
@@ -3468,6 +3556,13 @@ function persistFileTags(){
   S._fileTags=map;
   clearTimeout(S._fileTagsSaveT);
   S._fileTagsSaveT=setTimeout(()=>{ try{API.fileTagsSave(map);}catch(e){} },400);
+}
+// Indirizzo da dare al lettore. Per un file locale si ricalcola sempre dal percorso:
+// così guariscono anche le voci già in playlist salvate con un indirizzo non codificato.
+function _fileSrc(f){
+  if(!f)return '';
+  if(f.path&&/^([A-Za-z]:[\\/]|\\\\)/.test(f.path)&&(!f.url||/^file:/i.test(f.url)))return mkUrl(f.path);
+  return f.url||'';
 }
 function mkUrl(path,fallback){
   if(path){
@@ -3706,7 +3801,9 @@ function loadFileIntoPlayer(pid){
   const f=p.playlist[p.idx]; if(!f)return;
   // Reset stato sub: nuovo file → dimentica eventuale SRT del precedente
   p._subsSrtPath=null; p.subtitles=null;
+  const xf=_xfCapture(pid,f);
   renderGrid();
+  if(xf&&p.vidEl){p.vidEl._xfGain=0;applyPlayerVol(p);}
   // Pre-flight check: se il path locale non esiste più (file spostato/cancellato),
   // mostra toast chiaro invece di lasciar lanciare un MEDIA_ERROR opaco.
   if(f.path && /^(file:|[A-Za-z]:|\/)/.test(f.path) && window.maniac && window.maniac.fileExists){
@@ -3719,7 +3816,7 @@ function loadFileIntoPlayer(pid){
   }
   setTimeout(()=>{
     if(p.vidEl){
-      const targetUrl=f.url||mkUrl(f.path);
+      const targetUrl=_fileSrc(f)||mkUrl(f.path);
       // Wire error handler: in caso di MEDIA_ERR_SRC_NOT_SUPPORTED (codec/file mancante)
       // mostriamo diagnostica chiara invece di silent fail.
       if(!p.vidEl._maniacErrorBound){
@@ -3737,6 +3834,7 @@ function loadFileIntoPlayer(pid){
       p.vidEl.play().catch(()=>{});
       pushHistory(pid);
     }
+    if(xf)_xfRun(pid,xf);
     // Auto-carica sottotitoli salvati accanto al video (es. video.srt o video.it.srt)
     _autoLoadSiblingSubs(pid,f.path);
   },60);
@@ -3778,6 +3876,14 @@ function _handleMediaError(p,pid,videoEl){
   window._mediaErrLast=window._mediaErrLast||{};
   if(window._mediaErrLast[k]&&now-window._mediaErrLast[k]<2000)return;
   window._mediaErrLast[k]=now;
+  // In Maniac Vision niente finestre sopra i video: il file si salta e resta nei log.
+  // Il contatore evita di girare a vuoto se nessun file della playlist si apre.
+  if(_mvActive()){
+    try{ logError && logError(`[Player ${pid+1}] ${codeMsg}: ${fname}`, (detail||'')+(filePath?'\nPath: '+filePath:'')); }catch(_){}
+    p._mvFails=(p._mvFails||0)+1;
+    if(p.playlist.length>1&&p._mvFails<=p.playlist.length)setTimeout(()=>playerNext(pid),300);
+    return;
+  }
   // Tentativo di transcodifica con ffmpeg PRIMA di arrendersi: i codec come
   // HEVC/AC3/DTS o il container MKV non sono supportati da Chromium ma il file
   // è valido. code 3=DECODE, 4=SRC_NOT_SUPPORTED → proviamo a convertirlo.
@@ -3793,6 +3899,7 @@ function _handleMediaError(p,pid,videoEl){
 }
 
 function _showMediaErrorModal(codeMsg,fname,filePath,detail){
+  if(_mvActive())return;
   if(typeof toast==='function')toast(`${codeMsg} — ${fname}`);
   if(!(filePath && window.maniac))return;
   const ov=document.createElement('div'); ov.className='mdl-ov';
@@ -3859,6 +3966,18 @@ function _attemptTranscode(p,pid,f,codeMsg,detail){
   });
 }
 
+// Riproduzione casuale e file appena aggiunti (apri file/cartella, trascinamento, import):
+// si parte da uno a caso fra quelli nuovi invece che dal primo in ordine alfabetico.
+// Il file scelto entra nella cronologia del casuale, così "Avanti" non lo ripropone subito.
+function _shuffleStart(p,startLen){
+  const n=p.playlist.length-startLen;
+  if(!p.shuffle||n<2)return startLen;
+  const i=startLen+Math.floor(Math.random()*n);
+  const f=p.playlist[i];
+  if(f&&f.path)p._shufHistory=(p._shufHistory||[]).concat(f.path).slice(-200);
+  p._shufStack=(p._shufStack||[]).concat(i).slice(-100);
+  return i;
+}
 function playerNext(pid){
   const p=P(pid);
   // Player vuoto: "Avanti" eredita la playlist da un altro player.
@@ -3933,11 +4052,20 @@ function pushHistory(pid){
   // Ordine cronologico discendente (ts più recente primo)
   S.history.sort((a,b)=>(b.ts||0)-(a.ts||0));
   if(S.history.length>50)S.history.length=50;
+  // Anche i recenti si aggiornano qui, quando un file parte davvero: prima li registrava
+  // solo "Apri file", e i video trascinati sui riquadri non comparivano mai.
+  if(cur.path&&!/^(https?|blob):/i.test(cur.path)){
+    const prev=(S.recent||[]).find(r=>r.path===cur.path);
+    addRecentFile(cur.path,cur.name,{silent:true});
+    const r0=S.recent[0]; if(r0&&!r0.thumb&&prev&&prev.thumb)r0.thumb=prev.thumb;
+  }
   saveConfig();
   if(S.panel==='history')renderPanel();
+  if(S.panel==='file')renderPanel();
   // Genera miniatura in cache persistente (punto 10)
   _ensureThumbCache(cur.path,cur.url,p.vidEl).then(dataUrl=>{
     if(!dataUrl)return;
+    const rr=(S.recent||[]).find(r=>r.path===cur.path); if(rr&&!rr.thumb)rr.thumb=dataUrl;
     const e=S.history.find(h=>h.path===cur.path); if(e){e.thumb=dataUrl;saveConfig();if(S.panel==='history')renderPanel();}
   }).catch(()=>{});
 }
@@ -4041,9 +4169,208 @@ function applyEqToPlayer(p){
   c.boostGain.gain.value=(p.boost||100)/100;
 }
 
+// ═══ MANIAC VISION ═══
+// Solo i video: la griglia (1, 2, 3 o 4 riquadri) copre tutta la finestra, senza
+// interfaccia, spazi né bordi. Parte nella finestra così com'è; F (o il tasto dello
+// schermo intero scelto nelle scorciatoie) e il doppio clic mettono e tolgono lo schermo
+// intero restando in Vision. V o il pulsante con l'occhio per entrare e uscire; Esc
+// toglie prima lo schermo intero, poi esce. C alterna video interi e "riempi".
+// Le scorciatoie di riproduzione continuano a funzionare.
+function _mvActive(){return document.body.classList.contains('maniac-vision');}
+let _mvIdleT=null;
+function _mvPoke(){
+  document.body.classList.remove('mv-idle');
+  clearTimeout(_mvIdleT);
+  if(_mvActive())_mvIdleT=setTimeout(()=>document.body.classList.add('mv-idle'),1800);
+}
+function _mvHint(text){
+  let h=document.getElementById('mvHint');
+  if(!h){h=document.createElement('div');h.id='mvHint';document.body.appendChild(h);}
+  h.textContent=text;h.classList.remove('out');
+  clearTimeout(h._t);h._t=setTimeout(()=>h.classList.add('out'),2600);
+}
+async function toggleManiacVision(force){
+  const on=force!=null?!!force:!_mvActive();
+  if(on===_mvActive())return;
+  // Le dissolvenze in corso sono agganciate alle coordinate di prima: si chiudono.
+  Object.keys(_xfActive).forEach(k=>_xfEnd(+k,_xfActive[k]));
+  document.body.classList.toggle('maniac-vision',on);
+  if(on){
+    document.body.classList.toggle('mv-fill',S.mvFit==='cover');
+    // Un singolo riquadro a schermo intero (tasto F) va chiuso: Vision mostra tutta la griglia.
+    try{if(document.fullscreenElement&&document.fullscreenElement!==document.documentElement)await document.exitFullscreen();}catch(_){}
+    _mvHint('Maniac Vision · F schermo intero · Esc per uscire · C interi / riempi');
+    _mvPoke();
+  }else{
+    document.body.classList.remove('mv-idle','mv-fill');
+    clearTimeout(_mvIdleT);
+    const h=document.getElementById('mvHint');if(h)h.remove();
+    if(window.__mvFs&&document.fullscreenElement){try{await document.exitFullscreen();}catch(_){}}
+    window.__mvFs=false;
+  }
+  const b=document.getElementById('btnVision');if(b)b.classList.toggle('on',on);
+  _mvLayout();
+}
+// Riquadri sfumati: ogni riquadro sborda un po' nei vicini e lì svanisce, mentre il
+// vicino compare (rampe complementari). La fusione è per somma (plus-lighter): in
+// ogni punto della zona comune i due video pesano in tutto il 100%, anche nell'incrocio
+// centrale dei quattro. I lati sul bordo dello schermo restano netti.
+function _mvFeatherPct(){const v=S.mvFeather;return v==null?12:Math.max(0,Math.min(30,+v||0));}
+function _mvLayout(){
+  const g=document.getElementById('vGrid');if(!g)return;
+  const cells=[...g.children].filter(c=>c.classList&&c.classList.contains('vc'));
+  cells.forEach(c=>{c.style.margin='';c.style.maskImage=c.style.webkitMaskImage='';c.style.maskComposite=c.style.webkitMaskComposite='';c.style.mixBlendMode='';});
+  const pct=_mvFeatherPct();
+  if(!_mvActive()||!pct||cells.length<2)return;
+  const gr=g.getBoundingClientRect(),rects=cells.map(c=>c.getBoundingClientRect());
+  const o=Math.max(1,Math.round(Math.min(...rects.map(r=>Math.min(r.width,r.height)))*pct/200));
+  const ramp=(dir,a,b)=>`linear-gradient(${dir},${a?`transparent 0,#000 ${2*o}px`:'#000 0'},${b?`#000 calc(100% - ${2*o}px),transparent 100%`:'#000 100%'})`;
+  cells.forEach((c,i)=>{
+    const r=rects[i];
+    const L=r.left-gr.left>1,R=gr.right-r.right>1,T=r.top-gr.top>1,B=gr.bottom-r.bottom>1;
+    c.style.margin=`${T?-o:0}px ${R?-o:0}px ${B?-o:0}px ${L?-o:0}px`;
+    c.style.maskImage=c.style.webkitMaskImage=`${ramp('to right',L,R)},${ramp('to bottom',T,B)}`;
+    c.style.maskComposite='intersect';c.style.webkitMaskComposite='source-in';
+    c.style.mixBlendMode='plus-lighter';
+  });
+}
+let _mvResizeT=null;
+window.addEventListener('resize',()=>{if(!_mvActive())return;clearTimeout(_mvResizeT);_mvResizeT=setTimeout(_mvLayout,120);});
+
+// Schermo intero dentro Vision: si entra e si esce senza lasciare Vision.
+async function _mvToggleFullscreen(){
+  try{
+    if(document.fullscreenElement){await document.exitFullscreen();}
+    else{await document.documentElement.requestFullscreen();window.__mvFs=true;_mvHint('Schermo intero · Esc per tornare alla finestra');}
+  }catch(_){}
+}
+let _mvFsLeftAt=0;
+document.addEventListener('fullscreenchange',()=>{
+  if(!document.fullscreenElement){if(window.__mvFs)_mvFsLeftAt=Date.now();window.__mvFs=false;}
+  if(_mvActive())setTimeout(_mvLayout,60);
+});
+document.addEventListener('mousemove',()=>{if(_mvActive())_mvPoke();},{passive:true});
+document.addEventListener('dblclick',e=>{
+  if(!_mvActive())return;
+  e.preventDefault();e.stopPropagation();_mvToggleFullscreen();
+},true);
+document.addEventListener('keydown',e=>{
+  if(!_mvActive())return;
+  if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'))return;
+  if(e.key==='Escape'){
+    e.preventDefault();e.stopPropagation();
+    // A schermo intero Esc riporta alla finestra (Chromium lo fa da sé: qui non si
+    // esce anche da Vision con lo stesso tasto).
+    if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});return;}
+    if(Date.now()-_mvFsLeftAt<400)return;
+    toggleManiacVision(false);return;
+  }
+  if(matchShortcut(e,S.shortcuts&&S.shortcuts.fullscreen)||((e.key==='f'||e.key==='F')&&!e.ctrlKey&&!e.altKey&&!e.metaKey)){
+    e.preventDefault();e.stopPropagation();_mvToggleFullscreen();return;
+  }
+  if((e.key==='c'||e.key==='C')&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
+    e.preventDefault();e.stopPropagation();
+    S.mvFit=S.mvFit==='cover'?'contain':'cover';
+    document.body.classList.toggle('mv-fill',S.mvFit==='cover');
+    _mvHint(S.mvFit==='cover'?'Riempi: nessuna banda, i bordi del video si tagliano':'Adatta: video interi');
+    try{saveConfig();}catch(_){}
+  }
+},true);
+
+// ═══ CROSSFADE ═══
+// Il passaggio da un file all'altro sfuma invece di tagliare. Il video uscente viene
+// spostato in uno strato sopra la sua cella (continua a muoversi e a suonare), sotto
+// parte il nuovo; in S.crossfadeSec secondi il primo svanisce mentre il volume passa
+// dall'uno all'altro. Vale per video, audio e immagini, in ogni cella della griglia,
+// sia a fine file sia con Avanti/Indietro. Le altre celle non vengono toccate.
+const _xfActive={};
+function _xfSecs(){const s=+S.crossfadeSec||0;return s>0?Math.min(10,s):0;}
+function _xfBaseVol(p){return (p.vol/100)*((p.muted||S.muted)?0:1);}
+function _xfCapture(pid,f){
+  if(_xfActive[pid])_xfEnd(pid,_xfActive[pid]);
+  const secs=_xfSecs();if(!secs)return null;
+  const p=P(pid),old=p.vidEl;
+  if(!old||!old.isConnected)return null;
+  const cell=old.closest('.vc');
+  if(!cell||cell.classList.contains('live'))return null;
+  // Stesso file: la griglia riusa la cella, non c'è niente da sfumare.
+  if(cell.getAttribute('data-file-uid')===String(f&&f.uid))return null;
+  // Video non ancora partito: niente immagine da tenere, si taglia come prima.
+  if(!old._imgMode&&old.tagName==='VIDEO'&&old.readyState<2)return null;
+  const r=(old.parentElement||old).getBoundingClientRect();
+  if(r.width<4||r.height<4)return null;
+  const cs=getComputedStyle(old);
+  const ov=document.createElement('div');
+  ov.className='xf-ov';
+  ov.dataset.pid=pid;
+  ov.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;z-index:${_mvActive()?9001:30};pointer-events:none;overflow:hidden;opacity:1`;
+  if(_mvActive()){
+    // Dentro la griglia (che in Vision è fissa a 0,0) e con la stessa maschera del riquadro,
+    // così anche il file che esce sfuma sui bordi invece di avere uno spigolo netto.
+    ov.style.maskImage=ov.style.webkitMaskImage=cell.style.maskImage;
+    ov.style.maskComposite=cell.style.maskComposite;ov.style.webkitMaskComposite=cell.style.webkitMaskComposite;
+    document.getElementById('vGrid').appendChild(ov);
+  }else (document.fullscreenElement||document.body).appendChild(ov);
+  // Fuori dalla cella le regole CSS della cella non valgono più: si copiano quelle che contano.
+  Object.assign(old.style,{position:'absolute',left:'0',top:'0',width:'100%',height:'100%',display:'block',
+    objectFit:cs.objectFit,background:cs.backgroundColor,transform:cs.transform,transformOrigin:cs.transformOrigin});
+  ov.appendChild(old);           // spostato nello stesso istante: continua a riprodurre
+  p.vidEl=null;                  // la griglia non deve fermarlo né smontarlo
+  old._xfFired=true;             // se finisce durante la dissolvenza non deve fare "avanti"
+  return {el:old,ov,secs,uid:cell.getAttribute('data-file-uid'),raf:0,done:false};
+}
+function _xfRun(pid,xf){
+  _xfActive[pid]=xf;
+  const p=P(pid),inc=p.vidEl;
+  const go=()=>{
+    if(xf.done||xf.started)return;
+    xf.started=true;
+    const t0=performance.now(),ms=xf.secs*1000;
+    // Timer e non requestAnimationFrame: con Maniac coperto o ridotto a icona i
+    // fotogrammi d'animazione si fermano, la dissolvenza restava a metà e il file
+    // nuovo senza volume. Il tempo si misura dall'orologio, quindi anche con i
+    // timer rallentati arriva alla fine; e comunque una chiusura di sicurezza c'è.
+    const step=()=>{
+      if(xf.done)return;
+      const k=Math.min(1,(performance.now()-t0)/ms),e=k*k*(3-2*k);
+      xf.ov.style.opacity=String(1-e);
+      if(!xf.el._imgMode){try{xf.el.volume=Math.max(0,Math.min(1,_xfBaseVol(p)*(1-e)));}catch(_){}}
+      const cur=P(pid).vidEl;
+      if(cur&&cur._xfGain!=null){cur._xfGain=e;applyPlayerVol(P(pid));}
+      if(k<1)xf.raf=setTimeout(step,33);else _xfEnd(pid,xf);
+    };
+    step();
+    xf.hard=setTimeout(()=>_xfEnd(pid,xf),ms+1500);
+  };
+  // Si sfuma quando il nuovo ha davvero un'immagine: prima resta visibile il vecchio,
+  // così un file lento a partire non lascia vedere il nero.
+  if(!inc||inc._imgMode||inc.tagName!=='VIDEO'||inc.readyState>=3)go();
+  else{
+    const once=()=>{inc.removeEventListener('playing',once);inc.removeEventListener('canplay',once);go();};
+    inc.addEventListener('playing',once);inc.addEventListener('canplay',once);
+    xf.wait=setTimeout(go,3000);
+  }
+}
+function _xfEnd(pid,xf){
+  if(xf.done)return;
+  xf.done=true;
+  clearTimeout(xf.raf);clearTimeout(xf.wait);clearTimeout(xf.hard);
+  const el=xf.el;
+  try{if(!el._imgMode&&el.tagName==='VIDEO'){el.pause();
+    // La catena audio di questo elemento non serve più: la si chiude.
+    const ch=S.audioContexts[xf.uid];
+    if(ch&&ch.src&&ch.src.mediaElement===el){try{ch.ctx.close();}catch(_){}delete S.audioContexts[xf.uid];}
+    el.removeAttribute('src');el.load();}}catch(_){}
+  try{xf.ov.remove();}catch(_){}
+  if(_xfActive[pid]===xf)delete _xfActive[pid];
+  const p=P(pid);
+  if(p.vidEl&&p.vidEl._xfGain!=null){p.vidEl._xfGain=null;applyPlayerVol(p);}
+}
+
 function applyPlayerVol(p){
   if(!p||!p.vidEl)return;
-  const v=(p.vol/100)*((p.muted||S.muted)?0:1);
+  const g=p.vidEl._xfGain;
+  const v=(p.vol/100)*((p.muted||S.muted)?0:1)*(g==null?1:g);
   try{p.vidEl.volume=v;}catch(e){}
   const f=p.playlist[p.idx];
   if(f){const ch=S.audioContexts[f.uid]; if(ch&&ch.volGain){try{ch.volGain.gain.value=v;}catch(e){}}}
@@ -4084,7 +4411,8 @@ function buildCellToolbar(pid,vid){
     </div>
     <div class="vc-vol"><div class="vc-vol-bar"><div class="vc-vol-fill" style="width:${p.vol}%"></div></div></div>
     <button class="vc-btn" data-speed title="Velocità"><svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg></button>
-    <div style="flex:1"></div>
+    <div class="vc-fname-wrap">${(()=>{const f=p.playlist[p.idx];if(!f)return '';const e=v=>String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+      return `<span class="vc-fname" data-ti="fname" title="${e(f.path||f.url||f.name)}" style="${ic('fname',true)?'':'display:none'}">${e(f.name||'')}</span>`;})()}</div>
     <button class="vc-btn ${p.shuffle?'on':''}" data-shuf data-ti="shuf" title="Casuale" style="${ic('shuf',true)?'':'display:none'}"><svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
     <button class="vc-btn ${p.loop?'on':''}" data-loop data-ti="loop" title="Loop" style="${ic('loop',true)?'':'display:none'}"><svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
     <button class="vc-btn ${(p.abLoop&&p.abLoop.on)?'on':''}" data-abloop data-ti="abloop" title="Ripetizione A-B (clic: imposta A→B; doppio clic: reset)" style="${ic('abloop',true)?'':'display:none'}"><svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M3 4v16h2V4H3zm16 0v16h2V4h-2zM7 8l5 4-5 4V8zm10 0v8l-5-4 5-4z"/></svg></button>
@@ -4099,6 +4427,14 @@ function buildCellToolbar(pid,vid){
     <button class="vc-btn" data-overflow title="Altri strumenti"><svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
     <button class="vc-btn" data-fs data-ti="fs" title="Schermo intero" style="${ic('fs',true)?'':'display:none'}"><svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg></button>
   `;
+  // Nome del file: se nella barra restano meno di 90 px sale sopra la barra.
+  try{
+    const fw=tb.querySelector('.vc-fname-wrap');
+    if(fw&&window.ResizeObserver){
+      const fit=()=>wrap.classList.toggle('fname-top',fw.clientWidth<90);
+      new ResizeObserver(fit).observe(fw);
+    }
+  }catch(_){}
   // I6: Drag-reorder for non-core toolbar buttons
   const CORE_ATTRS=['data-play','data-prev','data-next','data-stop','data-back10','data-fwd10','data-speed'];
   const isReorderable=btn=>{if(!btn||btn.tagName!=='BUTTON')return false;if(!btn.classList.contains('vc-btn'))return false;for(const a of CORE_ATTRS){if(btn.hasAttribute(a))return false;}return true;};
@@ -4438,7 +4774,7 @@ function createCell(pid){
       // Immagine → wrapper <img> trattato come video 10s con timer virtuale
       vid=document.createElement('img');
       // f.url è già percent-encoded da mkUrl(): NON ri-codificare (porterebbe %5B→%255B).
-      try{ vid.src = f.url || ''; }catch(e){ vid.src=f.url||''; }
+      try{ vid.src = _fileSrc(f); }catch(e){ vid.src=f.url||''; }
       vid.style.cssText='width:100%;height:100%;object-fit:contain;display:block;background:#000';
       vid.draggable=false;
       // Shim minimale per compat con il resto del codice
@@ -4497,7 +4833,7 @@ function createCell(pid){
       const isHttp=/^https?:/i.test(f.url);
       // f.url è già percent-encoded da mkUrl() per i file locali: NON ri-codificare
       // (encodeURI doppio porta %5B→%255B, file non trovato → MEDIA_ELEMENT_ERROR).
-      vid.src = f.url;
+      vid.src = _fileSrc(f);
       if(isHttp){try{vid.crossOrigin='anonymous';}catch(e){}}
     }
     if(!isImg){ vid.autoplay=isLive;vid.playsInline=true; }
@@ -4547,6 +4883,7 @@ function createCell(pid){
 
     vid.addEventListener('loadedmetadata',()=>{
       f.duration=vid.duration||0;
+      p._mvFails=0;
       if(S.panel==='playlist'&&S.panelPlayer===pid)renderPanel();
       // Per stream live (webcam/IP cam) NON instradiamo l'audio attraverso la
       // Web Audio API: la MediaElementSource introduce buffering / latenza che
@@ -4565,10 +4902,21 @@ function createCell(pid){
     });
     vid.addEventListener('ended',()=>{
       if(isLive)return;
+      // già passato al successivo con la dissolvenza: niente secondo "avanti"
+      if(vid._xfFired)return;
       // G15: ensure controls remain interactive
       try{cell.style.pointerEvents='';vid.style.pointerEvents='';}catch(_){}
       if(p.loop){vid.currentTime=0;vid.play().catch(()=>{});}
       else if(p.playlist.length>1)playerNext(pid);
+    });
+    // Con la dissolvenza il file successivo parte S.crossfadeSec prima della fine,
+    // così i due si sovrappongono invece di passare per il nero.
+    if(!isLive&&!isImg)vid.addEventListener('timeupdate',()=>{
+      const secs=_xfSecs();
+      if(!secs||vid._xfFired||p.loop||p.playlist.length<2||p.vidEl!==vid)return;
+      const d=vid.duration;
+      if(!isFinite(d)||d<secs*2+1)return;
+      if(vid.currentTime>=d-secs){vid._xfFired=true;playerNext(pid);}
     });
     vid.addEventListener('error',()=>{
       if(isLive)return;
@@ -4817,6 +5165,7 @@ function renderGrid(){
   renderPlayerTrigs();
   applyVideoFilters();
   updatePlayIcons();
+  if(_mvActive())_mvLayout();
 }
 
 function renderPlayerTrigs(){
@@ -6760,6 +7109,24 @@ function renderTab(){
       <div class="sg"><div class="sg-lbl">${t('startMode')}</div>
         <div class="seg"><button class="seg-b ${pb.startMode==='linear'?'on':''}" onclick="S.playback.startMode='linear';saveConfig();renderPanel()">${t('linear')||'Lineare'}</button><button class="seg-b ${pb.startMode==='random'?'on':''}" onclick="S.playback.startMode='random';saveConfig();renderPanel()">${t('random')||'Casuale'}</button></div>
       </div>
+      <div class="sg"><div class="sg-lbl">Dissolvenza tra un file e l'altro</div>
+        <select onchange="S.crossfadeSec=+this.value;saveConfig()">
+          ${[[0,'Spenta'],[0.5,'0,5 secondi'],[1,'1 secondo'],[2,'2 secondi'],[3,'3 secondi'],[5,'5 secondi'],[8,'8 secondi']].map(([v,l])=>`<option value="${v}" ${(+S.crossfadeSec||0)===v?'selected':''}>${l}</option>`).join('')}
+        </select>
+        <div style="margin-top:4px;font-size:10px;color:var(--t3);line-height:1.4">Il file successivo entra sfumando, immagine e volume, invece di tagliare: vale per video, audio e immagini, in ogni riquadro, a fine file e con Avanti/Indietro. Con più video piccoli insieme stanca meno l'occhio.</div>
+      </div>
+      <div class="sg"><div class="sg-lbl">Maniac Vision (tasto V)</div>
+        <div class="sg-row"><span class="sg-txt">Video nei riquadri</span>
+          <select onchange="S.mvFit=this.value;document.body.classList.toggle('mv-fill',S.mvFit==='cover');saveConfig()">
+            <option value="contain" ${S.mvFit!=='cover'?'selected':''}>Interi (adatta)</option>
+            <option value="cover" ${S.mvFit==='cover'?'selected':''}>Riempi, tagliando i bordi</option>
+          </select></div>
+        <div class="sg-row"><span class="sg-txt">Sfumatura tra i riquadri</span>
+          <select onchange="S.mvFeather=+this.value;_mvLayout();saveConfig()">
+            ${[[0,'Nessuna (bordi netti)'],[6,'Leggera'],[12,'Media'],[20,'Ampia'],[30,'Molto ampia']].map(([v,l])=>`<option value="${v}" ${_mvFeatherPct()===v?'selected':''}>${l}</option>`).join('')}
+          </select></div>
+        <div style="margin-top:4px;font-size:10px;color:var(--t3);line-height:1.4">Solo i video, nella finestra. F o doppio clic per lo schermo intero; Esc toglie lo schermo intero e poi esce; V entra ed esce; C alterna interi / riempi.</div>
+      </div>
       <div class="sg"><div class="sg-lbl">Titolo all'avvio</div>
         <div class="sg-row"><span class="sg-txt">Visualizza titolo all'inizio della riproduzione</span><div class="sw ${S.titleAtStart?'on':''}" onclick="S.titleAtStart=!S.titleAtStart;this.classList.toggle('on',S.titleAtStart);saveConfig()"><div class="dot"></div></div></div>
         <div class="sg-row"><span class="sg-txt">Includi directory</span><div class="sw ${S.titleAtStartPath?'on':''}" onclick="S.titleAtStartPath=!S.titleAtStartPath;this.classList.toggle('on',S.titleAtStartPath);saveConfig()"><div class="dot"></div></div></div>
@@ -6953,6 +7320,7 @@ function renderTab(){
       ['Avanti 10s','fwd10'],['Indietro 10s','back10'],['Avanti 1min','fwdMin'],['Indietro 1min','backMin'],
       ['File successivo','next'],['File precedente','prev'],
       ['Multi-Next (tutti i player)','multiNext'],['Multi-Prev (tutti i player)','multiPrev'],
+      ['Maniac Vision (solo i video)','vision'],
       ['Equalizzatore','eq'],['Playlist','playlist'],['Casuale','shuffle'],['Loop','loop'],
       ['Multi-view','multi'],['Cronologia','history'],['Cambia player attivo','switchPlayer']
     ];
@@ -6994,6 +7362,7 @@ function renderTab(){
       ${[
         ['tc','Minutaggio (tempo corrente)'],
         ['td','Durata'],
+        ['fname','Nome del file'],
         ['loop','Ripeti'],
         ['shuf','Casuale'],
         ['mag','Lente'],
@@ -7099,14 +7468,22 @@ function renderTab(){
         ${['auto','chrome','edge','firefox','brave','opera','vivaldi'].map(b=>`<option value="${b}" ${cfg.cookieBrowser===b?'selected':''}>${b==='auto'?'Auto-detect':b.charAt(0).toUpperCase()+b.slice(1)}</option>`).join('')}
       </select>
       <div id="dlCookieHint" style="font:400 10px 'JetBrains Mono',monospace;color:var(--t3);margin-top:4px">${(()=>{ const list=window.__cookieBrowsers||[]; return list.length?'Rilevati: '+list.join(', '):'Sto rilevando…'; })()}</div>
+      <div class="sg-lbl" style="margin-top:10px">Account X (per i post sensibili)</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span id="dlXStatus" style="flex:1;font:400 11px 'JetBrains Mono',monospace;color:var(--t2)">Controllo…</span>
+        <button class="reset-btn" id="dlXBtn" onclick="dlXToggle()" disabled>…</button>
+      </div>
+      <div style="font:400 10px 'JetBrains Mono',monospace;color:var(--t3);margin-top:4px">X mostra i video per adulti solo a chi ha fatto login. Entri dalla pagina di X in una finestra di Maniac: la password la scrivi a X, Maniac non la legge e non la salva. La sessione serve solo per i link di X.</div>${(setTimeout(()=>{try{_dlXRefresh();}catch(_){}},0),'')}
       <div class="sg-row" style="margin-top:10px"><span class="sg-txt">Download concorrenti (max)</span>
-        <input type="range" min="1" max="10" value="${dc.maxConcurrent||3}" oninput="S.downloaderCfg.maxConcurrent=+this.value;saveConfig();this.nextElementSibling.textContent=this.value" style="width:160px"><span style="width:24px;text-align:right">${dc.maxConcurrent||3}</span></div>
+        <input type="range" min="1" max="${_DL_MAX_CONC}" value="${_dlMaxConc()}" oninput="S.downloaderCfg.maxConcurrent=+this.value;saveConfig();this.nextElementSibling.textContent=this.value;_dlWake()" style="width:160px"><span style="width:28px;text-align:right">${_dlMaxConc()}</span></div>
       <div class="sg-row"><span class="sg-txt">Limite banda</span>
         <input type="range" min="0" max="21" step="1" value="${_bwLimitToStep(dc.bandwidthLimit||0)}" oninput="S.downloaderCfg.bandwidthLimit=_bwStepToKbps(+this.value);saveConfig();this.nextElementSibling.textContent=_bwLabel(S.downloaderCfg.bandwidthLimit)" style="width:160px"><span style="min-width:90px;text-align:right;font:600 11px 'JetBrains Mono',monospace">${_bwLabel(dc.bandwidthLimit||0)}</span></div>
       <div class="sg-row"><span class="sg-txt">Auto-tag "Downloaded" ai download finiti</span><div class="sw ${dc.autoTag?'on':''}" onclick="S.downloaderCfg.autoTag=!S.downloaderCfg.autoTag;this.classList.toggle('on',S.downloaderCfg.autoTag);saveConfig()"><div class="dot"></div></div></div>
       <div class="sg-row"><span class="sg-txt">Cattura automatica clipboard (URL/magnet)</span><div class="sw ${dc.clipboardCapture?'on':''}" onclick="S.downloaderCfg.clipboardCapture=!S.downloaderCfg.clipboardCapture;this.classList.toggle('on',S.downloaderCfg.clipboardCapture);saveConfig();toggleClipboardMonitor()"><div class="dot"></div></div></div>
       <div class="sg-row"><span class="sg-txt">Avvia automaticamente i download intercettati (notifica system tray)</span><div class="sw ${dc.interceptorAutoStart?'on':''}" onclick="S.downloaderCfg.interceptorAutoStart=!S.downloaderCfg.interceptorAutoStart;this.classList.toggle('on',S.downloaderCfg.interceptorAutoStart);saveConfig()"><div class="dot"></div></div></div>
       <div class="sg-row"><span class="sg-txt">Avvia magnet dal browser senza chiedere</span><div class="sw ${dc.interceptorAutoStartTorrent!==false?'on':''}" onclick="S.downloaderCfg.interceptorAutoStartTorrent=!(S.downloaderCfg.interceptorAutoStartTorrent!==false);this.classList.toggle('on',S.downloaderCfg.interceptorAutoStartTorrent!==false);saveConfig()"><div class="dot"></div></div></div>
+      <div class="sg-row"><span class="sg-txt">Avviso quando un link copiato viene preso (se Maniac non è in primo piano)</span><div class="sw ${dc.notifyStart!==false?'on':''}" onclick="S.downloaderCfg.notifyStart=!(S.downloaderCfg.notifyStart!==false);this.classList.toggle('on',S.downloaderCfg.notifyStart!==false);saveConfig()"><div class="dot"></div></div></div>
+      <div class="sg-row"><span class="sg-txt">Avviso quando un download finisce (se Maniac non è in primo piano)</span><div class="sw ${dc.notifyDone?'on':''}" onclick="S.downloaderCfg.notifyDone=!S.downloaderCfg.notifyDone;this.classList.toggle('on',!!S.downloaderCfg.notifyDone);saveConfig()"><div class="dot"></div></div></div>
       <div class="sg-row"><span class="sg-txt">Avvia URL video copiati senza chiedere</span><div class="sw ${dc.interceptorAutoStartUrl?'on':''}" onclick="S.downloaderCfg.interceptorAutoStartUrl=!S.downloaderCfg.interceptorAutoStartUrl;this.classList.toggle('on',S.downloaderCfg.interceptorAutoStartUrl);saveConfig()"><div class="dot"></div></div></div>
       <div class="sg-row"><span class="sg-txt">Apri Wizard se URL non trova video</span><div class="sw ${dc.autoWizardOnFail!==false?'on':''}" onclick="S.downloaderCfg.autoWizardOnFail=!(S.downloaderCfg.autoWizardOnFail!==false);this.classList.toggle('on',S.downloaderCfg.autoWizardOnFail!==false);saveConfig()"><div class="dot"></div></div></div>
       <div class="sg-row"><span class="sg-txt">Mostra anteprime downloader</span><div class="sw ${!(S.hideThumbs&&S.hideThumbs.downloader)?'on':''}" onclick="toggleThumbs('downloader');this.classList.toggle('on',!(S.hideThumbs&&S.hideThumbs.downloader));if(S.panel==='downloader')renderPanel()"><div class="dot"></div></div></div>
@@ -7825,7 +8202,41 @@ function aiElementMenu(id,evt){
 
 // ═══ DOWNLOAD TAB (VibraVid / yt-dlp integration) ═══
 function _dlLoad(){try{return JSON.parse(localStorage.getItem('downloads')||'[]');}catch(e){return [];}}
-function _dlSave(list){try{localStorage.setItem('downloads',JSON.stringify(list.slice(0,100)));}catch(e){}}
+// Le righe ancora da scaricare non si tagliano mai: la coda di un profilo X può
+// superare le cento righe, e quelle oltre la centesima sparivano senza partire.
+// Dello storico finito si tengono le 300 più recenti.
+function _dlSave(list){
+  const fin=s=>s==='Done'||s==='Canceled'||s==='Error';
+  let kept=0;
+  const out=list.filter(d=>!fin(d.status)||++kept<=300);
+  try{localStorage.setItem('downloads',JSON.stringify(out));}catch(e){}
+}
+// ── Coda: al massimo "Download concorrenti" insieme, gli altri partono appena
+// si libera un posto. Vale per ogni download yt-dlp (i torrent hanno il loro motore).
+const _DL_MAX_CONC=10;
+const _dlSlot={active:0,wait:[]};
+function _dlMaxConc(){return Math.max(1,Math.min(_DL_MAX_CONC,+((S.downloaderCfg||{}).maxConcurrent)||_DL_MAX_CONC));}
+function _dlWake(){while(_dlSlot.wait.length&&_dlSlot.active<_dlMaxConc()){_dlSlot.active++;_dlSlot.wait.shift()();}}
+function _dlPatchRow(id,patch){
+  const l=_dlLoad();const d=l.find(x=>x.id===id);if(!d)return null;
+  Object.assign(d,patch);_dlSave(l);
+  if(S.panel==='downloader')_dlPatchRows(l,[id]);
+  return d;
+}
+async function _dlStartLimited(params){
+  if(_dlSlot.active>=_dlMaxConc()){
+    _dlPatchRow(params.id,{status:'Queued',note:'In attesa di un posto libero'});
+    await new Promise(r=>_dlSlot.wait.push(r));
+  }else _dlSlot.active++;
+  try{
+    // Annullato o messo in pausa mentre aspettava: non parte.
+    const d=_dlLoad().find(x=>x.id===params.id);
+    if(!d||d.status==='Canceled'||d.status==='Paused')return {success:false,canceled:true};
+    _dlPatchRow(params.id,{status:'Preparing',note:''});
+    wireDownloadPanel();
+    return await window.maniac.downloadStart(params);
+  }finally{_dlSlot.active--;_dlWake();}
+}
 function _dlCfg(){
   let c={};try{c=JSON.parse(localStorage.getItem('dlCfg')||'{}');}catch(e){}
   return Object.assign({vibraVidPath:'C:\\Users\\markt\\VibraVid\\',outputDir:'',quality:'best',format:'mp4',cookieBrowser:'auto'},c);
@@ -7892,6 +8303,8 @@ function renderDownload(){
       <div style="display:flex;align-items:center;gap:8px">
         ${iconBtn('<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>','Pausa selezionati','dlPauseSelected()')}
         ${iconBtn('<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M8 5v14l11-7z"/></svg>','Riprendi selezionati','dlResumeSelected()')}
+        ${iconBtn('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M20 6L9 17l-5-5"/><path d="M4 21h16"/></svg>','Rimuovi dalla lista i terminati (completati, in errore, annullati)','dlClearDone()')}
+        ${iconBtn('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>','Svuota tutta la lista (i file scaricati restano sul disco)','dlClearHistory()')}
         <div class="m2-seg">
           <button class="${cur==='all'?'on':''}" onclick="_dlSetFilter('all')">Tutti</button>
           <button class="${cur==='active'?'on':''}" onclick="_dlSetFilter('active')">Attivi</button>
@@ -7908,6 +8321,7 @@ function renderDownload(){
         ${iconBtn(ICON_IMG,(S.hideThumbs&&S.hideThumbs.downloader)?'Mostra anteprime':'Nascondi anteprime',"toggleThumbs('downloader');renderPanel()")}
       </div>
     </div>
+    <div id="dlSelBar">${_dlSelBarHtml()}</div>
     <div id="dlList">${S.dlHidden?'':_dlRenderList(_dlSorted(fl))}</div>
   </div>`;
   return h;
@@ -7951,7 +8365,7 @@ function _dlRenderList(list){
     const canResume=(d.status==='Paused'||d.status==='Error'||d.status==='Canceled');
     const title=(d.title||d.url||'').replace(/</g,'&lt;');
     const grad=_gradFor(title||d.id||'x');
-    const _thumbInner=d.thumb?`<img src="${d.thumb}" loading="lazy" style="width:100%;height:100%;object-fit:cover">`:(isTor?`<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color:rgba(255,255,255,.7)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm-1-3.07c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v.93z"/></svg>`:'');
+    const _thumbInner=d.thumb?`<img src="${_dlThumbSrc(d.thumb)}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">`:(isTor?`<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color:rgba(255,255,255,.7)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm-1-3.07c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v.93z"/></svg>`:'');
     const thumbHtml=hideT?'':`<div class="m2-dl-thumb" style="background:${grad}">${_thumbInner}</div>`;
     const errOverlay=(d.status==='Error')?`<div class="m2-dl-err" title="Mostra log" onclick="dlShowError('${d.id}')">${icon('warn',{size:'sm'})}</div>`:'';
     const pct=Math.max(0,Math.min(100,d.percent||0));
@@ -7993,15 +8407,15 @@ function _dlRenderList(list){
     acts.push(`<button class="m2-dl-act m2-dl-act-trash" title="Rimuovi" onclick="dlRemove('${d.id}')" style="color:var(--err,#e55)">${icon('trash',{size:'sm'})}</button>`);
     const sizeBytes=d.size||d.length||0;
     const sizeStr=sizeBytes>0?fmtSizeMB(sizeBytes):(d.status==='Done'?'?':'…');
-    const selChk=`<input type="checkbox" ${d._sel?'checked':''} onclick="event.stopPropagation();dlToggleSelect('${d.id}')" style="margin-right:6px;flex:0 0 auto" title="Seleziona per pausa/riprendi massiva">`;
-    return `<div class="m2-dl-row" data-dlid="${d.id}" oncontextmenu="event.preventDefault();dlOptionsCtx(event,'${d.id}')" ondblclick="if(event.target.closest('.m2-dl-act')||event.target.closest('input'))return;dlOpenInFreePlayer('${d.id}')">
+    const selChk=`<input type="checkbox" ${d._sel?'checked':''} onclick="event.preventDefault();event.stopPropagation()" style="margin-right:6px;flex:0 0 auto" title="Seleziona (clic, trascina, Maiusc per un intervallo, Ctrl+A per tutti)">`;
+    return `<div class="m2-dl-row${d._sel?' sel':''}" data-dlid="${d.id}" oncontextmenu="event.preventDefault();dlOptionsCtx(event,'${d.id}')" ondblclick="if(event.target.closest('.m2-dl-act')||event.target.closest('input'))return;dlOpenInFreePlayer('${d.id}')">
       ${selChk}
       <div class="m2-dl-thumbwrap">${thumbHtml}${errOverlay}</div>
       <div class="m2-dl-info">
         <div class="m2-dl-title">
           <span class="m2-dl-titletxt" title="Doppio click per rinominare" ondblclick="event.stopPropagation();dlRenameInline(this,'${d.id}')">${title}</span>
         </div>
-        <div class="m2-dl-meta">${meta}${showNote?' · '+d.note.replace(/</g,'&lt;'):''}</div>
+        <div class="m2-dl-meta">${meta}${showNote?' · '+d.note.replace(/</g,'&lt;'):''}${d.status==='Error'&&d.needXLogin?` · post sensibile, serve il login a X · <a class="m2-dl-xlink" onclick="event.stopPropagation();dlConnectXAndRetry('${d.id}')">Collega account X e riprova</a>`:''}</div>
         <div class="m2-dl-bar"><div class="m2-dl-fill" style="width:${pct}%;background:${stColor}"></div></div>
       </div>
       <span class="m2-dl-chip" title="${chip}">${chip}</span>
@@ -8191,11 +8605,110 @@ async function dlUpdateBin(){
   else toast('Errore aggiornamento: '+(r&&r.error||'?'));
 }
 function dlClearDone(){
-  const list=_dlLoad().filter(d=>!(d.status==='Done'||d.status==='Error'||d.status==='Canceled'));
+  const all=_dlLoad();
+  const list=all.filter(d=>!(d.status==='Done'||d.status==='Error'||d.status==='Canceled'));
+  const n=all.length-list.length;
   _dlSave(list);
   if(S.panel==='downloader')renderPanel();
-  toast('Download terminati eliminati');
+  toast(n?(n+' download terminati tolti dalla lista (i file restano sul disco)'):'Nessun download terminato da togliere');
 }
+// ── Selezione dinamica ──
+// Clic su una riga (non sui pulsanti) la seleziona o deseleziona; tenendo premuto e
+// passando sulle altre righe le porta allo stesso stato; Maiusc+clic seleziona
+// l'intervallo; Ctrl+A tutte le righe visibili; Esc toglie la selezione.
+const _DL_ACTIVE=s=>s==='Downloading'||s==='Queued'||s==='Preparing'||s==='Seeding';
+let _dlSelAnchor=null,_dlDrag=null;
+function _dlSelCount(list){return (list||_dlLoad()).filter(d=>d._sel).length;}
+function _dlSelBarHtml(){
+  const list=_dlLoad(),n=_dlSelCount(list);
+  // La barra c'è sempre, con la stessa altezza: se comparisse solo al primo clic
+  // spingerebbe giù la lista, e il mouse ancora premuto finirebbe sulla riga sopra.
+  if(!n)return list.length?`<div class="m2-dl-selbar idle">Clic su una riga per selezionarla · trascina per selezionarne tante · Maiusc+clic per un intervallo · Ctrl+A tutte</div>`:'';
+  const vis=_dlView(list).length;
+  return `<div class="m2-dl-selbar"><span><b>${n}</b> selezionat${n===1?'o':'i'}</span>
+    ${n<vis?`<button class="m2-btn" onclick="dlSelectAll(true)">Tutti (${vis})</button>`:''}
+    <button class="m2-btn" onclick="dlSelectAll(false)">Nessuno</button>
+    <span class="sp"></span>
+    <button class="m2-btn" onclick="dlPauseSelected()">Pausa</button>
+    <button class="m2-btn" onclick="dlResumeSelected()">Riprendi</button>
+    <button class="m2-btn" onclick="dlRemoveSelected(false)" title="I file già scaricati restano sul disco">Rimuovi dalla lista</button>
+    <button class="m2-btn danger" onclick="dlRemoveSelected(true)" title="I file finiscono nel Cestino di Windows: si possono recuperare">Sposta i file nel Cestino</button></div>`;
+}
+function _dlSelRefresh(list,ids){
+  if(S.panel!=='downloader')return;
+  if(ids)_dlPatchRows(list,ids);
+  const b=document.getElementById('dlSelBar');if(b)b.innerHTML=_dlSelBarHtml();
+}
+function _dlSetSel(ids,val){
+  const list=_dlLoad(),want=new Set(ids),ch=[];
+  list.forEach(d=>{if(want.has(d.id)&&!!d._sel!==!!val){d._sel=!!val;ch.push(d.id);}});
+  if(!ch.length)return;
+  _dlSave(list);_dlSelRefresh(list,ch);
+}
+function dlSelectAll(on){
+  const list=_dlLoad();
+  const ids=on?_dlView(list).map(d=>d.id):list.filter(d=>d._sel).map(d=>d.id);
+  _dlSetSel(ids,!!on);
+}
+function _dlSelectRange(a,b){
+  const ids=_dlView(_dlLoad()).map(d=>d.id),i=ids.indexOf(a),j=ids.indexOf(b);
+  if(i<0||j<0){_dlSetSel([b],true);return;}
+  _dlSetSel(ids.slice(Math.min(i,j),Math.max(i,j)+1),true);
+}
+async function _dlStopAll(list){
+  for(const d of list){
+    if(!_DL_ACTIVE(d.status))continue;
+    try{
+      if(d.torrent){if(d.torId&&window.maniac.torrentRemove)await window.maniac.torrentRemove(d.torId);}
+      else if(window.maniac.downloadCancel)await window.maniac.downloadCancel(d.id);
+    }catch(_){}
+  }
+}
+async function dlRemoveSelected(trash){
+  const list=_dlLoad(),sel=list.filter(d=>d._sel);
+  if(!sel.length){toast('Nessun download selezionato');return;}
+  const files=trash?sel.filter(d=>d.filePath&&d.status==='Done'):[];
+  if(trash&&!files.length){toast('Fra i selezionati non ci sono file scaricati da spostare');return;}
+  const ok=await themedConfirm(trash
+    ?{title:'Sposta nel Cestino',message:'Spostare nel Cestino di Windows '+files.length+' file scaricat'+(files.length===1?'o':'i')+' e togliere dalla lista i '+sel.length+' selezionati? Dal Cestino si possono recuperare.',confirmText:'Sposta nel Cestino',cancelText:'Annulla',danger:true}
+    :{title:'Rimuovi dalla lista',message:'Togliere dalla lista '+sel.length+' download? Quelli in corso vengono fermati. I file già scaricati restano sul disco.',confirmText:'Rimuovi',cancelText:'Annulla'});
+  if(!ok)return;
+  await _dlStopAll(sel);
+  let moved=0,failed=0;
+  for(const d of files){
+    try{const r=await window.maniac.download.trashFile(d.filePath);if(r&&r.ok)moved++;else failed++;}catch(_){failed++;}
+  }
+  const ids=new Set(sel.map(d=>d.id));
+  _dlSave(_dlLoad().filter(d=>!ids.has(d.id)));
+  _dlSelAnchor=null;
+  if(S.panel==='downloader')renderPanel();
+  toast(trash?(moved+' file nel Cestino'+(failed?', '+failed+' non spostati (già spostati o in uso)':'')+' · '+sel.length+' righe tolte'):(sel.length+' download tolti dalla lista'));
+}
+document.addEventListener('mousedown',e=>{
+  if(e.button!==0||S.panel!=='downloader')return;
+  const row=e.target.closest&&e.target.closest('#dlList .m2-dl-row');if(!row)return;
+  if(e.target.closest('button,a,.m2-dl-act,.m2-dl-err,.m2-dl-xlink,input[type=text]'))return;
+  e.preventDefault();
+  const id=row.dataset.dlid;
+  if(e.shiftKey&&_dlSelAnchor){_dlSelectRange(_dlSelAnchor,id);return;}
+  const d=_dlLoad().find(x=>x.id===id);if(!d)return;
+  const val=!d._sel;
+  _dlSetSel([id],val);
+  _dlSelAnchor=id;
+  _dlDrag={val,seen:new Set([id])};
+},true);
+document.addEventListener('mouseover',e=>{
+  if(!_dlDrag)return;
+  const row=e.target.closest&&e.target.closest('#dlList .m2-dl-row');if(!row)return;
+  const id=row.dataset.dlid;if(_dlDrag.seen.has(id))return;
+  _dlDrag.seen.add(id);_dlSetSel([id],_dlDrag.val);
+});
+document.addEventListener('mouseup',()=>{_dlDrag=null;});
+document.addEventListener('keydown',e=>{
+  if(S.panel!=='downloader'||(e.target&&/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)))return;
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.altKey&&(e.key==='a'||e.key==='A')){e.preventDefault();e.stopPropagation();dlSelectAll(true);}
+  else if(e.key==='Escape'&&_dlSelCount()&&!document.querySelector('.mdl-ov.show')){e.preventDefault();dlSelectAll(false);}
+},true);
 function _dlGetPolicy(){try{return JSON.parse(localStorage.getItem('dlQualityPolicy')||'null');}catch(e){return null;}}
 function _dlSavePolicy(p){try{localStorage.setItem('dlQualityPolicy',JSON.stringify(p));}catch(e){}}
 function showQualityChoice(data){
@@ -8242,10 +8755,16 @@ function wireDownloadPanel(){
       if(window.maniac.downloadPickQuality)window.maniac.downloadPickQuality(data.id,pol||{kind:'best'});
     });
   }
-  window.maniac.onDownloadProgress(evt=>{
-    const list=_dlLoad();
-    const d=list.find(x=>x.id===evt.id);
-    if(!d)return;
+  // Gli avanzamenti arrivano anche decine di volte al secondo: si applicano a lotti
+  // (una lettura, un salvataggio e un ridisegno ogni 250 ms). Ridisegnare tutta la
+  // lista a ogni evento, anteprime comprese, bloccava l'interfaccia per secondi
+  // quando partivano tanti download insieme.
+  window.maniac.onDownloadProgress(evt=>_dlQueueEvt('dl',evt));
+  if(window.maniac.onTorrentProgress)window.maniac.onTorrentProgress(evt=>_dlQueueEvt('tor',evt));
+}
+function _dlApplyEvt(d,evt){
+    if(evt.status==='Done'&&d.status!=='Done'&&(S.downloaderCfg||{}).notifyDone)
+      setTimeout(()=>_dlNotify('done','Maniac · Download completato',(evt.title||d.title||d.url||'').replace(/\.[a-z0-9]{2,4}$/i,''),d.thumb,'downloader'),0);
     if(evt.percent!=null)d.percent=evt.percent;
     if(evt.speed)d.speed=evt.speed;
     if(evt.eta)d.eta=evt.eta;
@@ -8257,6 +8776,7 @@ function wireDownloadPanel(){
     if(evt.filePath)d.filePath=evt.filePath;
     if(evt.note!==undefined)d.note=evt.note;
     if(evt.error)d.error=evt.error;
+    if(evt.status)d.needXLogin=evt.status==='Error'&&!!evt.needXLogin;
     // F4: log errori download nel pannello Info → Logs
     if(evt.status==='Error'&&evt.error&&!d._loggedError){
       d._loggedError=true;
@@ -8265,15 +8785,10 @@ function wireDownloadPanel(){
     if(evt.status==='Canceled'&&!d._loggedError){
       try{ if(typeof logError==='function')logError('Download annullato: '+(d.title||d.url),''); }catch(_){}
     }
-    _dlSave(list);
-    if(S.panel==='downloader'){const el=document.getElementById('dlList');if(el)el.innerHTML=_dlRenderList(_dlSorted(list));}
-  });
-  if(window.maniac.onTorrentProgress){
-    window.maniac.onTorrentProgress(evt=>{
-      const list=_dlLoad();
-      // Match by torId first, then id
-      const d=list.find(x=>x.torId===evt.id||x.id===evt.id);
-      if(!d)return;
+}
+function _dlApplyTorEvt(d,evt){
+      if((evt.status==='Done'||evt.status==='Seeding')&&d.status!=='Done'&&d.status!=='Seeding'&&(S.downloaderCfg||{}).notifyDone)
+        setTimeout(()=>_dlNotify('done','Maniac · Download completato',evt.name||d.title||'Torrent',null,'downloader'),0);
       if(evt.percent!=null)d.percent=evt.percent*(evt.percent>1?1:100);
       if(evt.percent!=null&&evt.percent<=1)d.percent=evt.percent*100;
       if(evt.speed!=null)d.speed=evt.speed;
@@ -8289,10 +8804,51 @@ function wireDownloadPanel(){
       if(evt.name&&!d._titleEdited)d.title=evt.name;
       if(evt.filePath)d.filePath=evt.filePath;
       if(evt.folderPath)d.folderPath=evt.folderPath;
-      _dlSave(list);
-      if(S.panel==='downloader'){const el=document.getElementById('dlList');if(el)el.innerHTML=_dlRenderList(_dlSorted(list));}
-    });
+}
+const _dlEvQ=[];let _dlEvT=null;
+function _dlQueueEvt(kind,evt){_dlEvQ.push([kind,evt]);if(!_dlEvT)_dlEvT=setTimeout(_dlFlushEvts,250);}
+// Gli eventi si applicano nell'ordine in cui sono arrivati: lo stato finale è lo stesso
+// di prima, cambia solo quante volte si legge, si salva e si ridisegna.
+function _dlFlushEvts(){
+  _dlEvT=null;
+  if(!_dlEvQ.length)return;
+  const evs=_dlEvQ.splice(0);
+  const list=_dlLoad();const changed=new Set();
+  for(const [kind,evt] of evs){
+    const d=kind==='tor'?list.find(x=>x.torId===evt.id||x.id===evt.id):list.find(x=>x.id===evt.id);
+    if(!d)continue;
+    (kind==='tor'?_dlApplyTorEvt:_dlApplyEvt)(d,evt);
+    changed.add(d.id);
   }
+  if(!changed.size)return;
+  _dlSave(list);
+  if(S.panel==='downloader')_dlPatchRows(list,[...changed]);
+}
+function _dlView(list){return _dlSorted(_dlFiltered(list));}
+// Ridisegna solo le righe cambiate e tiene l'anteprima già decodificata se è la stessa
+// immagine. Se cambiano le righe visibili o il loro ordine, ridisegna tutto.
+function _dlPatchRows(list,ids){
+  const el=document.getElementById('dlList');
+  if(!el||S.dlHidden)return;
+  const view=_dlView(list);
+  const rows=[...el.children].filter(r=>r.classList.contains('m2-dl-row'));
+  const same=rows.length===view.length&&rows.every((r,i)=>r.dataset.dlid===view[i].id);
+  if(!same){el.innerHTML=_dlRenderList(view);return;}
+  const want=new Set(ids);
+  view.forEach((d,i)=>{
+    if(!want.has(d.id))return;
+    const tmp=document.createElement('div');tmp.innerHTML=_dlRenderList([d]);
+    const nr=tmp.firstElementChild;if(!nr)return;
+    const oi=rows[i].querySelector('.m2-dl-thumb img'),ni=nr.querySelector('.m2-dl-thumb img');
+    if(oi&&ni&&oi.getAttribute('src')===ni.getAttribute('src'))ni.replaceWith(oi);
+    rows[i].replaceWith(nr);
+  });
+}
+// X dà le anteprime a piena risoluzione (name=orig): per un riquadro di 56 px basta
+// la versione piccola, che si scarica e si decodifica in una frazione del tempo.
+function _dlThumbSrc(u){
+  if(!u||!/^https:\/\/pbs\.twimg\.com\//.test(u))return u;
+  return /[?&]name=/.test(u)?u.replace(/([?&]name=)[^&]*/,'$1small'):u+(u.includes('?')?'&':'?')+'name=small';
 }
 function dlUpdateCfg(){
   const cfg=_dlCfg();
@@ -8350,6 +8906,10 @@ async function dlStart(url, opts){
   if(!window.maniac||!window.maniac.downloadStart){toast('IPC non disponibile');return;}
   dlUpdateCfg();
   const cfg=_dlCfg();
+  // Il link di un profilo X non è un video ma un elenco: si sceglie cosa scaricare.
+  // Vale anche per i link copiati con l'avvio automatico: centinaia di video non
+  // partono mai senza che l'utente li abbia visti.
+  if(!opts.batch&&_dlXProfileName(url)){if(inp)inp.value='';xProfileDialog(url);return;}
   const isTorrent=/^magnet:/i.test(url)||/\.torrent(\?|$)/i.test(url);
   // Wizard streamingcommunity: serie → stagione → episodio (skip in modalità auto)
   if(!opts.auto && !isTorrent && /streamingcommunity|stream(ing)?community|cb01|animeworld|animeunity/i.test(url)){
@@ -8359,18 +8919,22 @@ async function dlStart(url, opts){
       if(chosen&&chosen.url)url=chosen.url;
     }catch(e){}
   }
-  const id=(isTorrent?'tor_':'dl_')+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+  const id=opts.rowId||((isTorrent?'tor_':'dl_')+Date.now()+'_'+Math.random().toString(36).slice(2,7));
   let domain='';try{domain=new URL(url).hostname.replace(/^www\./,'');}catch(e){}
   const list=_dlLoad();
-  const entry={id,url,domain,title:url,percent:0,status:'Queued',ts:Date.now(),torrent:isTorrent};
-  _dlImproveTitle(entry);
-  list.unshift(entry);
+  let entry=opts.rowId?list.find(x=>x.id===opts.rowId):null;
+  if(entry){entry.status='Preparing';}
+  else{
+    entry={id,url,domain,title:url,percent:0,status:'Queued',ts:Date.now(),torrent:isTorrent};
+    _dlImproveTitle(entry);
+    list.unshift(entry);
+  }
   _dlSave(list);
   if(inp)inp.value='';
   const el=document.getElementById('dlList');if(el)el.innerHTML=_dlRenderList(_dlSorted(list));
   wireDownloadPanel();
   // Notifica visibile di avvio (user request: pop-up quando parte download)
-  try{
+  if(!opts.batch)try{
     const active=_dlLoad().filter(x=>x.status==='Queued'||x.status==='Downloading'||x.status==='Preparing').length;
     toast(active>1?('Sto scaricando '+active+' file'):(isTorrent?'Avvio download torrent…':'Avvio download…'));
   }catch(e){}
@@ -8390,15 +8954,20 @@ async function dlStart(url, opts){
     }
     return;
   }
-  const policy=_dlGetPolicy();
+  const policy=opts.policy||_dlGetPolicy();
   const _cb = cfg.cookieBrowser && cfg.cookieBrowser !== 'auto' ? cfg.cookieBrowser : null;
-  const r=await window.maniac.downloadStart({id,url,quality:cfg.quality,format:cfg.format,outputDir:cfg.outputDir,vibraVidPath:cfg.vibraVidPath,policy,cookieBrowser:_cb});
+  const r=await _dlStartLimited({id,url,quality:cfg.quality,format:cfg.format,outputDir:cfg.outputDir,vibraVidPath:cfg.vibraVidPath,policy,cookieBrowser:_cb,subDir:opts.subDir||entry.subDir||null});
+  if(r&&r.canceled)return;
   if(r&&!r.success){
     const l2=_dlLoad();const d=l2.find(x=>x.id===id);
-    if(d){d.status='Error';d.error=r.error||'';}
+    if(d){d.status='Error';d.error=r.error||'';d.needXLogin=!!r.needXLogin;}
     _dlSave(l2);
     if(S.panel==='downloader')renderPanel();
+    // In una coda gli errori restano sulla loro riga: un avviso per video sarebbe solo rumore.
+    if(opts.batch)return;
     toast('Errore: '+(r.error||'yt-dlp non trovato'));
+    // Il video c'è, X lo mostra solo a chi ha fatto login: cercarlo nella pagina non serve.
+    if(r.needXLogin)return;
     // Auto-suggest wizard when URL was unresolvable
     const cfgW=S.downloaderCfg||{};
     const autoWiz=cfgW.autoWizardOnFail!==false;
@@ -8491,6 +9060,245 @@ function dlRenameInline(spanEl,id){
   inp.addEventListener('blur',()=>finish(true));
 }
 // F4: retry come RESUME — riusa lo stesso id, passa --continue a yt-dlp
+// ── Profili X: tutti i video di un profilo ──
+const _DL_X_RESERVED=new Set(['i','home','explore','search','settings','notifications','messages','compose','login','logout','signup','tos','privacy','intent','share','hashtag','jobs','lists']);
+function _dlXProfileName(url){
+  try{
+    const u=new URL(url);
+    if(!/(^|\.)(x|twitter)\.com$/i.test(u.hostname||''))return null;
+    const p=u.pathname.split('/').filter(Boolean);
+    if(!p.length||p.length>2)return null;
+    if(p.length===2&&!/^(media|with_replies|highlights|videos)$/i.test(p[1]))return null;
+    if(_DL_X_RESERVED.has(p[0].toLowerCase())||!/^[A-Za-z0-9_]{1,15}$/.test(p[0]))return null;
+    return p[0];
+  }catch(_){return null;}
+}
+function _xpEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function _xpDur(s){if(!s)return '';s=Math.round(s);const m=Math.floor(s/60),x=s%60;return m>=60?Math.floor(m/60)+':'+String(m%60).padStart(2,'0')+':'+String(x).padStart(2,'0'):m+':'+String(x).padStart(2,'0');}
+// Filtri per scegliere quali video scaricare insieme: valgono per ogni elenco di
+// video con testo, data e durata (oggi i profili X). Restano per la volta dopo.
+const _XP_DAYS=[[0,'Tutto'],[7,'Ultima settimana'],[30,'Ultimo mese'],[90,'Ultimi 3 mesi'],[180,'Ultimi 6 mesi'],[365,'Ultimo anno'],['date','Dal giorno…']];
+// Durate: un numero qualsiasi in secondi o minuti (1 s, 10 s, 90 s, 12 min…).
+// Il filtro lavora sempre in secondi; l'unità serve solo a scriverlo comodo.
+function _xpFiltersLoad(){let f={};try{f=JSON.parse(localStorage.getItem('xpFilters')||'{}')||{};}catch(_){}
+  f=Object.assign({days:0,since:'',minDur:0,maxDur:0,minUnit:1,maxUnit:60,words:'',notWords:'',gif:true},f);
+  if(f.minUnit!==1&&f.minUnit!==60)f.minUnit=1;
+  if(f.maxUnit!==1&&f.maxUnit!==60)f.maxUnit=60;
+  return f;}
+function _xpFiltersSave(f){try{localStorage.setItem('xpFilters',JSON.stringify(f));}catch(_){}}
+function _xpNorm(s){return String(s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
+function _xpWords(s){return String(s||'').split(/[,;]+/).map(w=>_xpNorm(w).trim()).filter(Boolean);}
+function _xpSinceMs(f){
+  if(f.days==='date')return f.since?new Date(f.since+'T00:00:00').getTime():0;
+  return +f.days>0?Date.now()-f.days*86400000:0;
+}
+function _xpMatch(it,f){
+  const since=_xpSinceMs(f);
+  if(since&&it.date&&Date.parse(it.date)<since)return false;
+  if(it.gif&&!f.gif)return false;
+  const d=+it.duration||0;
+  if(f.minDur&&d<f.minDur)return false;
+  if(f.maxDur&&d>f.maxDur)return false;
+  const t=_xpNorm(it.text);
+  const w=_xpWords(f.words);if(w.length&&!w.some(x=>t.includes(x)))return false;
+  if(_xpWords(f.notWords).some(x=>t.includes(x)))return false;
+  return true;
+}
+function _xpFiltersHtml(f){
+  const sel=(k,opts)=>`<select class="m-input" data-f="${k}">${opts.map(([v,l])=>`<option value="${v}"${String(f[k])===String(v)?' selected':''}>${l}</option>`).join('')}</select>`;
+  const dur=(k,u,ph)=>{const v=f[k]?+(f[k]/f[u]).toFixed(2):'';
+    return `<div class="xp-dur"><input type="text" inputmode="decimal" class="m-input" data-f="${k}" value="${v}" placeholder="${ph}">${sel(u,[[1,'secondi'],[60,'minuti']])}</div>`;};
+  return `<div class="xp-filters">
+    <label class="xp-f"><span>Fino a quando</span>${sel('days',_XP_DAYS)}${f.days==='date'?`<input type="date" class="m-input" data-f="since" value="${_xpEsc(f.since||'')}">`:''}</label>
+    <label class="xp-f"><span>Durata minima</span>${dur('minDur','minUnit','qualsiasi')}</label>
+    <label class="xp-f"><span>Durata massima</span>${dur('maxDur','maxUnit','nessun limite')}</label>
+    <label class="xp-f"><span>Parole chiave (ne basta una)</span><input class="m-input" data-f="words" value="${_xpEsc(f.words)}" placeholder="es. solo, #anal"></label>
+    <label class="xp-f"><span>Escludi se contiene</span><input class="m-input" data-f="notWords" value="${_xpEsc(f.notWords)}" placeholder="es. trailer, promo"></label>
+    <label class="xp-f xp-fchk"><input type="checkbox" data-f="gif" ${f.gif?'checked':''}> Includi le GIF</label>
+  </div>`;
+}
+// Disegna i filtri in box e chiama onChange a ogni modifica (il testo con un attimo
+// di ritardo, così l'elenco non si ridisegna a ogni lettera).
+function _xpMountFilters(box,f,onChange){
+  box.innerHTML=_xpFiltersHtml(f);
+  let t=null;
+  box.querySelectorAll('[data-f]').forEach(el=>{
+    const k=el.dataset.f, typing=el.tagName==='INPUT'&&(el.type==='text'||el.type==='number');
+    el.addEventListener(typing?'input':'change',()=>{
+      const unit=k==='minDur'||k==='minUnit'?'minUnit':'maxUnit', durK=unit==='minUnit'?'minDur':'maxDur';
+      if(el.type==='checkbox')f[k]=el.checked;
+      else if(k==='days')f[k]=el.value==='date'?'date':+el.value;
+      else if(k==='minDur'||k==='maxDur')f[k]=Math.max(0,(parseFloat(String(el.value).replace(',','.'))||0)*f[unit]);
+      else if(k==='minUnit'||k==='maxUnit'){
+        // cambiando unità resta il numero scritto: "10" secondi diventa "10" minuti
+        const num=parseFloat(String((box.querySelector('[data-f="'+durK+'"]')||{}).value||'').replace(',','.'))||0;
+        f[k]=+el.value;f[durK]=num*f[k];
+      }
+      else f[k]=el.value;
+      _xpFiltersSave(f);
+      if(k==='days'){_xpMountFilters(box,f,onChange);box.querySelector('[data-f="'+(f.days==='date'?'since':'days')+'"]').focus();}
+      clearTimeout(t);t=setTimeout(onChange,typing?220:0);
+    });
+  });
+}
+async function xProfileDialog(url){
+  const name=_dlXProfileName(url);if(!name)return;
+  const api=window.maniac&&window.maniac.xauth;
+  if(!api||!api.scanProfile){toast('Lettura dei profili X non disponibile');return;}
+  if(!window.__xpWired){window.__xpWired=true;api.onScanProgress(d=>{const f=(window.__xpCb||{})[d.scanId];if(f)f(d);});}
+  const ov=document.createElement('div');ov.className='mdl-ov';
+  ov.innerHTML=`<div class="mdl xp-mdl" role="dialog" aria-modal="true"><div class="mdl-ttl">Video del profilo @${_xpEsc(name)}</div><div class="xp-body"></div><div class="xp-foot"></div></div>`;
+  document.body.appendChild(ov);requestAnimationFrame(()=>ov.classList.add('show'));
+  const body=ov.querySelector('.xp-body'),foot=ov.querySelector('.xp-foot');
+  const f=_xpFiltersLoad();
+  const scanId='xp_'+Date.now();
+  let closed=false;
+  const close=()=>{if(closed)return;closed=true;try{api.cancelScan(scanId);}catch(_){}delete (window.__xpCb||{})[scanId];ov.classList.remove('show');setTimeout(()=>ov.remove(),200);};
+  const btn=(label,primary,fn)=>{const b=document.createElement('button');b.className='mdl-btn'+(primary?' primary':'');b.textContent=label;b.onclick=fn;return b;};
+  const setFoot=(...bs)=>{foot.innerHTML='';bs.forEach(b=>foot.appendChild(b));};
+  const needLogin=msg=>{
+    body.innerHTML=`<div class="mdl-msg">${_xpEsc(msg)}</div><div class="xp-note">Entri dalla pagina di X in una finestra di Maniac: la password la scrivi a X, Maniac non la legge e non la salva.</div>`;
+    setFoot(btn('Annulla',false,close),btn('Collega account X',true,async()=>{
+      let r=null;try{r=await api.login(true);}catch(_){}
+      if(r&&r.pending){toast('La finestra di login di X è già aperta');return;}
+      if(r&&r.connected){toast('Account X collegato');try{_dlXRefresh();}catch(_){}ask();}
+      else toast('Login a X non completato');
+    }));
+  };
+  // 1. Cosa scaricare: i filtri si scelgono prima, così il periodo ferma la lettura.
+  const ask=()=>{
+    body.innerHTML=`<div class="xp-note" style="margin:0 0 10px">Scegli quali video vuoi: li potrai ancora cambiare sull'elenco. "Fino a quando" ferma anche la lettura del profilo, quindi più è breve, prima finisce.</div><div class="xp-fbox"></div>`;
+    _xpMountFilters(body.querySelector('.xp-fbox'),f,()=>{});
+    setFoot(btn('Annulla',false,close),btn('Leggi il profilo',true,scan));
+  };
+  // 3. Elenco: filtri modificabili, selezione libera, già scaricati saltati.
+  const showList=r=>{
+    const items=r.items||[];
+    if(!items.length){body.innerHTML=`<div class="mdl-msg">${_xpEsc(r.note||'Nessun video trovato.')}</div>`;setFoot(btn('Chiudi',false,close));return;}
+    const have=new Set();
+    _dlLoad().forEach(d=>{if(d.status==='Error'||d.status==='Canceled')return;const m=String(d.url||'').match(/\/status\/(\d+)(?:\/video\/(\d+))?/);if(m)have.add(m[1]+(m[2]?'/'+m[2]:''));});
+    const had=it=>have.has(it.id)||(!/\//.test(it.id)&&have.has(it.tweetId));
+    let skipHad=true,useDir=true;
+    const sel=new Set(items.map((it,i)=>i).filter(i=>!had(items[i])));
+    const nHad=items.filter(had).length;
+    body.innerHTML=`<div class="xp-fbox"></div><div class="xp-opts"></div><div class="xp-grid"></div>`;
+    const optsEl=body.querySelector('.xp-opts'),grid=body.querySelector('.xp-grid');
+    const draw=()=>{
+      const vis=items.map((it,i)=>i).filter(i=>_xpMatch(items[i],f));
+      const chosen=vis.filter(i=>sel.has(i));
+      optsEl.innerHTML=`<span><b>${vis.length}</b> di ${items.length} video corrispondono ai filtri${r.canceled?' (lettura fermata: quelli trovati fin qui)':''}${r.truncated?' (primi '+items.length+')':''}</span>
+          ${nHad?`<label><input type="checkbox" data-o="had" ${skipHad?'checked':''}> Salta i ${nHad} già scaricati</label>`:''}
+          <label><input type="checkbox" data-o="dir" ${useDir?'checked':''}> Nella cartella «X @${_xpEsc(name)}»</label>
+          <a data-o="all">Tutti</a><a data-o="none">Nessuno</a>`;
+      grid.innerHTML=vis.length?vis.map(i=>{const it=items[i];return `<label class="xp-it ${sel.has(i)?'':'off'}" data-i="${i}" title="${_xpEsc(it.text||'')}">
+          <input type="checkbox" ${sel.has(i)?'checked':''}>${it.thumb?`<img loading="lazy" decoding="async" src="${_xpEsc(_dlThumbSrc(it.thumb))}" alt="">`:'<img alt="">'}
+          <div class="xp-tx">${_xpEsc(it.text||'(senza testo)')}</div>
+          <div class="xp-m">${[it.gif?'GIF':_xpDur(it.duration),it.date?new Date(it.date).toLocaleDateString():'',had(it)?'già scaricato':''].filter(Boolean).join(' · ')}</div></label>`;}).join('')
+        :'<div class="xp-note">Nessun video corrisponde ai filtri.</div>';
+      grid.querySelectorAll('.xp-it').forEach(el=>{el.onclick=e=>{e.preventDefault();const i=+el.dataset.i;sel.has(i)?sel.delete(i):sel.add(i);draw();};});
+      const o=k=>optsEl.querySelector(`[data-o="${k}"]`);
+      if(o('had'))o('had').onchange=e=>{skipHad=e.target.checked;items.forEach((it,i)=>{if(had(it)){skipHad?sel.delete(i):sel.add(i);}});draw();};
+      o('dir').onchange=e=>{useDir=e.target.checked;};
+      o('all').onclick=()=>{vis.forEach(i=>{if(!(skipHad&&had(items[i])))sel.add(i);});draw();};
+      o('none').onclick=()=>{vis.forEach(i=>sel.delete(i));draw();};
+      const go=btn(chosen.length?`Scarica ${chosen.length} video`:'Scegli i video',true,()=>{
+        if(!chosen.length)return;
+        close();
+        _dlQueueBatch(chosen.map(i=>items[i]),useDir?'X @'+name:null);
+      });
+      go.disabled=!chosen.length;
+      setFoot(btn('Annulla',false,close),go);
+    };
+    _xpMountFilters(body.querySelector('.xp-fbox'),f,draw);
+    draw();
+  };
+  // 2. Lettura del profilo.
+  const scan=async()=>{
+    body.innerHTML=`<div class="xp-live"><div class="xp-t">Apro il profilo @${_xpEsc(name)}…</div><div class="xp-c">0 video trovati</div></div>
+      <div class="xp-note">Maniac scorre la scheda Media del profilo con il tuo account X, come faresti tu nel browser. Su profili grandi ci vuole qualche minuto: puoi fermarti quando vuoi e scegliere fra quelli trovati fin lì.</div>`;
+    (window.__xpCb=window.__xpCb||{})[scanId]=d=>{
+      const t=body.querySelector('.xp-t'),c=body.querySelector('.xp-c');
+      if(t&&d.note)t.textContent=d.note;
+      if(c&&d.found!=null)c.textContent=d.found+' video trovati';
+    };
+    setFoot(btn('Annulla',false,close),btn('Fermati qui',false,()=>api.cancelScan(scanId)));
+    let r=null;
+    try{r=await api.scanProfile(url,scanId,0,_xpSinceMs(f));}catch(e){r={ok:false,error:String(e&&e.message||e)};}
+    if(closed)return;
+    if(!r||!r.ok){
+      if(r&&r.needXLogin)return needLogin(r.error);
+      body.innerHTML=`<div class="mdl-msg">${_xpEsc((r&&r.error)||'Errore durante la lettura del profilo')}</div>`;
+      setFoot(btn('Chiudi',false,close));return;
+    }
+    showList(r);
+  };
+  let on=false;try{on=!!((await api.status())||{}).connected;}catch(_){}
+  if(on)ask();
+  else needLogin('Per leggere i video di un profilo X serve il login: X non mostra i profili a chi non è entrato.');
+}
+// Mette in coda tanti video e ne scarica al massimo "Download concorrenti" alla volta.
+// Le righe compaiono subito come "In coda"; annullarne una la toglie dalla coda.
+async function _dlQueueBatch(items,subDir){
+  const now=Date.now();
+  const rows=items.map((it,i)=>({id:'dl_'+now+'_'+i+'_'+Math.random().toString(36).slice(2,6),url:it.url,domain:'x.com',
+    title:it.text?it.text.slice(0,90):'Post X '+it.tweetId,thumb:it.thumb||null,percent:0,status:'Queued',ts:now-i,batch:true,subDir:subDir||null}));
+  const list=_dlLoad();list.unshift(...rows);_dlSave(list);
+  if(S.panel==='downloader'){const el=document.getElementById('dlList');if(el)el.innerHTML=_dlRenderList(_dlSorted(_dlLoad()));}
+  wireDownloadPanel();
+  toast(rows.length+' video di X in coda');
+  const max=_dlMaxConc();
+  let next=0,done=0;
+  const worker=async()=>{
+    while(next<rows.length){
+      const row=rows[next++];
+      const cur=_dlLoad().find(x=>x.id===row.id);
+      if(!cur||cur.status!=='Queued')continue;
+      try{await dlStart(row.url,{batch:true,auto:true,rowId:row.id,policy:{kind:'best'},subDir:row.subDir});}catch(_){}
+      done++;
+    }
+  };
+  await Promise.all(Array.from({length:Math.min(max,rows.length)},worker));
+  const fin=_dlLoad().filter(d=>rows.some(r=>r.id===d.id));
+  const ok=fin.filter(d=>d.status==='Done').length,ko=fin.filter(d=>d.status==='Error').length;
+  toast('Video di X: '+ok+' scaricati'+(ko?', '+ko+' con errore (li riprovi dalla loro riga)':''));
+}
+
+// ── Account X ──
+async function _dlXRefresh(){
+  const st=document.getElementById('dlXStatus'),bt=document.getElementById('dlXBtn');
+  if(!st||!bt||!(window.maniac&&window.maniac.xauth))return;
+  let on=false;
+  try{on=!!((await window.maniac.xauth.status())||{}).connected;}catch(_){}
+  st.textContent=on?'Collegato: i post sensibili si scaricano':'Non collegato: si scaricano solo i post pubblici';
+  st.style.color=on?'var(--success)':'var(--t2)';
+  bt.textContent=on?'Scollega':'Collega account X';
+  bt.disabled=false;
+  bt.dataset.on=on?'1':'';
+}
+async function dlXToggle(){
+  const bt=document.getElementById('dlXBtn');
+  if(!(window.maniac&&window.maniac.xauth))return;
+  if(bt)bt.disabled=true;
+  try{
+    if(bt&&bt.dataset.on){await window.maniac.xauth.logout();toast('Account X scollegato');}
+    else{
+      const r=await window.maniac.xauth.login();
+      if(r&&r.pending)toast('La finestra di login di X è già aperta');
+      else toast(r&&r.connected?'Account X collegato':'Login a X non completato');
+    }
+  }catch(e){toast('Account X: '+(e&&e.message||e));}
+  _dlXRefresh();
+}
+async function dlConnectXAndRetry(id){
+  if(!(window.maniac&&window.maniac.xauth))return;
+  let r=null;
+  try{r=await window.maniac.xauth.login(true);}catch(_){}
+  if(r&&r.pending){toast('La finestra di login di X è già aperta');return;}
+  if(!(r&&r.connected)){toast('Login a X non completato');return;}
+  toast('Account X collegato: riprovo il download');
+  _dlXRefresh();
+  dlRetry(id);
+}
 async function dlRetry(id){
   const list=_dlLoad();const d=list.find(x=>x.id===id);
   if(!d)return;
@@ -8544,13 +9352,15 @@ async function dlRetry(id){
   const cfg=_dlCfg();const _cb=cfg.cookieBrowser&&cfg.cookieBrowser!=='auto'?cfg.cookieBrowser:null;
   // F: resume — passa il path file noto così yt-dlp riprende sullo stesso .part invece
   // di rigenerare un nuovo nome (probe/fetch title potrebbero differire al retry).
-  const r=await window.maniac.downloadStart({
+  const r=await _dlStartLimited({
     id,url:d.url,
     quality:cfg.quality,format:cfg.format,
-    outputDir:cfg.outputDir,vibraVidPath:cfg.vibraVidPath,
+    outputDir:cfg.outputDir,vibraVidPath:cfg.vibraVidPath,subDir:d.subDir||null,
+    policy:_dlGetPolicy()||undefined,
     cookieBrowser:_cb,resume:true,priority:d.priority||'high',
     resumeFilePath:d.filePath||null
   });
+  if(r&&r.canceled)return;
   if(r&&!r.success){
     const l2=_dlLoad();const dd=l2.find(x=>x.id===id);
     if(dd){dd.status='Error';dd.error=r.error||'';}
@@ -8602,13 +9412,15 @@ async function dlRestart(id){
   }
   if(!window.maniac||!window.maniac.downloadStart){toast('IPC non disponibile');return;}
   const cfg=_dlCfg();const _cb=cfg.cookieBrowser&&cfg.cookieBrowser!=='auto'?cfg.cookieBrowser:null;
-  const r=await window.maniac.downloadStart({
+  const r=await _dlStartLimited({
     id,url:d.url,
     quality:cfg.quality,format:cfg.format,
-    outputDir:cfg.outputDir,vibraVidPath:cfg.vibraVidPath,
+    outputDir:cfg.outputDir,vibraVidPath:cfg.vibraVidPath,subDir:d.subDir||null,
+    policy:_dlGetPolicy()||undefined,
     cookieBrowser:_cb,resume:false,priority:d.priority||'high',
     resumeFilePath:null
   });
+  if(r&&r.canceled)return;
   if(r&&!r.success){
     const l2=_dlLoad();const dd=l2.find(x=>x.id===id);
     if(dd){dd.status='Error';dd.error=r.error||'';}
@@ -8754,10 +9566,8 @@ function dlResumeSelected(){
   toast(n?(n+' download ripresi'):'Nessun download selezionato in pausa');
 }
 function dlToggleSelect(id){
-  const list=_dlLoad();const d=list.find(x=>x.id===id);
-  if(!d)return;
-  d._sel=!d._sel; _dlSave(list);
-  if(S.panel==='downloader'){const el=document.getElementById('dlList');if(el)el.innerHTML=_dlRenderList(_dlSorted(_dlFiltered(list)));}
+  const d=_dlLoad().find(x=>x.id===id);
+  if(d)_dlSetSel([id],!d._sel);
 }
 // G3: open completed download in player
 async function dlOpen(id){
@@ -8822,16 +9632,13 @@ function _dlImproveTitle(d){
   d._titleEdited=false;
 }
 async function dlClearHistory(){
-  const ok=await themedConfirm({title:'Cancella download',message:'Cancellare TUTTI i download dalla lista (inclusi quelli in corso)?',confirmText:'Cancella tutto',cancelText:'Annulla',danger:true});
-  if(!ok)return;
-  // Cancel any in-flight
   const list=_dlLoad();
-  for(const d of list){
-    if((d.status==='Downloading'||d.status==='Queued')&&window.maniac&&window.maniac.downloadCancel){
-      try{await window.maniac.downloadCancel(d.id);}catch(e){}
-    }
-  }
+  if(!list.length){toast('La lista è già vuota');return;}
+  const ok=await themedConfirm({title:'Svuota lista download',message:'Togliere tutti i '+list.length+' download dalla lista? Quelli in corso vengono fermati. I file già scaricati restano sul disco.',confirmText:'Svuota',cancelText:'Annulla',danger:true});
+  if(!ok)return;
+  await _dlStopAll(list);
   _dlSave([]);
+  toast('Lista download svuotata');
   if(S.panel==='downloader')renderPanel();
 }
 
@@ -8900,6 +9707,7 @@ async function scStreamWizard(pageUrl){
 
 // ═══ WIZARD DOWNLOAD ═══
 async function dlWizardOpen(prefillUrl){
+  if(prefillUrl&&_dlXProfileName(prefillUrl)){xProfileDialog(prefillUrl);return;}
   try { maybeShowTip('wizard-open'); } catch(_){}
   return new Promise(resolve=>{
     const ov=document.createElement('div');ov.className='wiz-ov';
@@ -9194,6 +10002,11 @@ function _maybeShowFirstRun(){
 function _showLinkInterceptorBanner(data){
   if(!data||!data.url)return;
   const url=data.url;
+  // I link copiati di fila si sommano: prima ogni nuovo link sostituiva il riquadro,
+  // e copiandone cinquanta restava solo l'ultimo.
+  const L=window.__lnkList=window.__lnkList||[];
+  if(!L.some(x=>x.url===url))L.push(data);
+  const many=L.length>1;
   // Rimuovi banner precedente se identico/per la stessa url
   const old=document.getElementById('linkIntercept'); if(old)old.remove();
   const bn=document.createElement('div');
@@ -9201,11 +10014,11 @@ function _showLinkInterceptorBanner(data){
   bn.style.cssText='position:fixed;top:42px;right:14px;z-index:9999;width:380px;max-width:calc(100vw - 28px);background:var(--s1);border:1px solid var(--p);border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.4);padding:14px;display:flex;flex-direction:column;gap:10px;animation:linkInBan .25s ease-out;font:500 12px/1.4 \'Inter\'';
   const thumb=data.thumbnail?`<img src="${data.thumbnail}" style="width:80px;height:48px;border-radius:5px;object-fit:cover;flex:0 0 80px;background:#000" onerror="this.style.display='none'">`:'';
   const sizeStr=(typeof data.size==='number'&&data.size>0)?(()=>{const u=['B','KB','MB','GB'];let i=0,n=data.size;while(n>=1024&&i<3){n/=1024;i++;}return n.toFixed(n>=10||i===0?0:1)+' '+u[i];})():'';
-  const title=(data.title||'Video rilevato').replace(/</g,'&lt;');
+  const title=((data.title||'Video rilevato')+(many?' · e altri '+(L.length-1):'')).replace(/</g,'&lt;');
   bn.innerHTML=`
     <div style="display:flex;align-items:center;gap:6px;font:700 10px/1 'Inter';color:var(--p);text-transform:uppercase;letter-spacing:.06em">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" width="14" height="14"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-      Link rilevato dagli appunti
+      ${many?L.length+' link rilevati dagli appunti':'Link rilevato dagli appunti'}
     </div>
     <div style="display:flex;gap:10px">
       ${thumb}
@@ -9216,27 +10029,58 @@ function _showLinkInterceptorBanner(data){
       </div>
     </div>
     <div style="display:flex;gap:6px;justify-content:flex-end">
-      <button id="lnkIgnore" class="m2-btn">Ignora</button>
-      <button id="lnkOpenWiz" class="m2-btn">Wizard…</button>
-      <button id="lnkAdd" class="m2-btn primary">Scarica</button>
+      <button id="lnkIgnore" class="m2-btn">${many?'Ignora tutti':'Ignora'}</button>
+      ${many?'':'<button id="lnkOpenWiz" class="m2-btn">Wizard…</button>'}
+      <button id="lnkAdd" class="m2-btn primary">${many?'Scarica tutti ('+L.length+')':'Scarica'}</button>
     </div>`;
   document.body.appendChild(bn);
-  const close=()=>{bn.remove();};
+  const close=()=>{L.length=0;bn.remove();};
   bn.querySelector('#lnkIgnore').onclick=close;
   bn.querySelector('#lnkAdd').onclick=()=>{
     try{
-      const inp=document.getElementById('dlUrl'); if(inp)inp.value=url;
-      if(typeof dlStart==='function')dlStart(url);
+      if(many){
+        // Partono tutti in coda: il limite dei download concorrenti decide quanti insieme.
+        L.slice().forEach(x=>{try{dlStart(x.url,{auto:true});}catch(_){}});
+        toast(L.length+' download in coda');
+      }else{
+        const inp=document.getElementById('dlUrl'); if(inp)inp.value=url;
+        if(typeof dlStart==='function')dlStart(url);
+      }
     }catch(_){}
     close();
   };
-  bn.querySelector('#lnkOpenWiz').onclick=()=>{
+  if(!many)bn.querySelector('#lnkOpenWiz').onclick=()=>{
     if(typeof dlWizardOpen==='function')dlWizardOpen(url);
     close();
   };
   // auto-dismiss dopo 30s se l'utente non interagisce
-  setTimeout(()=>{ if(document.getElementById('linkIntercept')===bn)close(); },30000);
+  setTimeout(()=>{ if(document.getElementById('linkIntercept')===bn)close(); },many?60000:30000);
 }
+
+// Avvisi di sistema dei download, quando Maniac non è in primo piano. In una raffica
+// (tanti link copiati o tanti download che finiscono insieme) ne arrivano due e poi uno
+// solo col totale, invece di cinquanta di fila.
+const _dlNotif={start:{n:0,t:null},found:{n:0,t:null},done:{n:0,t:null}};
+const _DL_NOTIF_SUM={start:['Maniac · Download avviati',' download avviati dagli appunti'],
+  found:['Maniac · Link rilevati',' link video copiati dagli appunti'],done:['Maniac · Download completati',' download completati']};
+function _dlNotify(kind,title,body,iconUrl,action,url){
+  if(!window.maniac||!window.maniac.uiNotify)return;
+  const b=_dlNotif[kind];b.n++;
+  clearTimeout(b.t);
+  b.t=setTimeout(()=>{
+    const extra=b.n-2;b.n=0;
+    if(extra>0)window.maniac.uiNotify({title:_DL_NOTIF_SUM[kind][0],body:'Altri '+extra+_DL_NOTIF_SUM[kind][1],onlyIfAway:true,action:'downloader'});
+  },6000);
+  if(b.n<=2)window.maniac.uiNotify({title,body,iconUrl,onlyIfAway:true,action,url});
+}
+try{
+  if(window.maniac&&window.maniac.onUiNotifyClick)window.maniac.onUiNotifyClick(d=>{
+    try{
+      if(d&&d.action==='wizard'&&d.url&&typeof dlWizardOpen==='function')dlWizardOpen(d.url);
+      else openPanel('downloader');
+    }catch(_){}
+  });
+}catch(_){}
 
 // Helper: il toggle "master" interceptorAutoStart implica auto-start sia per
 // URL che per torrent (a meno che il toggle specifico sia esplicitamente off).
@@ -9263,12 +10107,15 @@ try {
           dlWizardOpen(url);
           return;
         }
+        const nice=(data.title&&data.title!=='Video rilevato')?data.title:url;
         if (_autoStartUrlEnabled()) {
           if (typeof dlStart === 'function') { dlStart(url, {auto:true}); toast('Download avviato: '+url.slice(0,60)); }
+          if ((S.downloaderCfg||{}).notifyStart!==false) _dlNotify('start','Maniac · Download avviato',nice,data.thumbnail,'downloader');
           return;
         }
         // Mostra banner JDownloader-style
         _showLinkInterceptorBanner(data);
+        if ((S.downloaderCfg||{}).notifyStart!==false) _dlNotify('found','Maniac · Video rilevato',nice,data.thumbnail,'wizard',url);
       } catch(_){}
     });
   }
@@ -11497,7 +12344,7 @@ async function importSubsFile(pid){
   try{
     const fs=require?require('fs'):null;
     const txt = fs ? fs.readFileSync(r.path,'utf8') :
-      await fetch('file:///'+r.path.replace(/\\/g,'/')).then(x=>x.text());
+      await fetch(mkUrl(r.path)).then(x=>x.text());
     const vtt=/\.vtt$/i.test(r.path)?txt:_srtToVtt(txt);
     const blob=new Blob([vtt],{type:'text/vtt'});
     const url=URL.createObjectURL(blob);
@@ -12009,10 +12856,11 @@ const LO_LAYOUTS=[
   {id:'performer_category',l:'Performer › Tipologia',ex:'Nome performer\\GANGBANG\\video',h:'Senza performer riconosciuto: _Senza performer\\tipologia.'},
   {id:'tags_only',l:'Solo tag, nessuno spostamento',ex:'i file restano dove sono',h:'Performer e tipologia diventano tag nel player.'}
 ];
-const LO_PHASES=[['scan','Lettura libreria'],['hash','Impronte dei file'],['stash','Confronto con StashDB'],['folders','Cartelle performer'],['code','Codici scena'],['phash','Impronte visive'],['title','Titoli su StashDB'],['names','Nomi nei file'],['learn','Tipologie'],['plan','Proposte']];
+const LO_PHASES=[['scan','Lettura libreria'],['hash','Impronte dei file'],['stash','Confronto con StashDB'],['folders','Cartelle performer'],['code','Codici scena'],['phash','Impronte visive'],['title','Titoli su StashDB'],['names','Nomi nei file'],['learn','Tipologie'],['visual','Immagini dei video'],['plan','Proposte']];
 const LO_CONF={certain:['Certo','lo-c-certain'],probable:['Probabile','lo-c-probable'],uncertain:['Da verificare','lo-c-uncertain'],none:['Non spostato','lo-c-none'],manual:['Scelta tua','lo-c-manual']};
 const LO_SRC={oshash:'impronta file',phash:'impronta visiva',code:'codice scena',title:'titolo StashDB',filename:'nome nel file','stashdb-name':'nome su StashDB',folder:'cartella'};
-const LO_FILTERS=[['move','Da spostare'],['certain','Certi'],['probable','Probabili'],['uncertain','Da verificare'],['manual','Scelte tue'],['none','Non spostati'],['all','Tutti']];
+const LO_RANK={certain:3,probable:2,manual:2,uncertain:1,none:0};
+const LO_FILTERS=[['move','Da spostare'],['certain','Certi'],['probable','Probabili'],['uncertain','Da verificare'],['manual','Scelte tue'],['dup','Doppioni'],['none','Non spostati'],['all','Tutti']];
 const _lo={step:1,detect:null,detectBusy:false,hasKey:null,jobId:null,prog:null,result:null,sel:new Set(),over:{},open:{},all:{},filter:'move',q:'',exec:null,undo:null,bound:false,bg:false,groups:[],_t:null,
   thumbs:{},thumbQ:[],thumbInFlight:0,thumbT:null};
 
@@ -12026,6 +12874,11 @@ function _loCfg(){
     .forEach(k=>{if(typeof c[k]!=='boolean')c[k]=true;});
   if(!c.rolesByRoot||typeof c.rolesByRoot!=='object')c.rolesByRoot={};
   if(!c.extraCategoriesByRoot||typeof c.extraCategoriesByRoot!=='object')c.extraCategoriesByRoot={};
+  if(typeof c.duplicatesFolder!=='string')c.duplicatesFolder='';
+  if(typeof c.useVisual!=='boolean')c.useVisual=false;
+  if(typeof c.autoOrganize!=='boolean')c.autoOrganize=false;
+  if(c.autoConfidence!=='probable')c.autoConfidence='certain';
+  if(!(c.autoIntervalMin>=5))c.autoIntervalMin=15;
   return c;
 }
 // Tipologie disponibili: le cartelle rilevate come tipologia più quelle aggiunte a mano.
@@ -12127,6 +12980,10 @@ function _loPanelStatus(){
   if(_lo.jobId){const p=_lo.prog||{};return 'Analisi in corso'+(p.total?' · '+(p.current||0)+'/'+p.total:'')+'…';}
   if(_lo.exec&&_lo.exec.running)return 'Spostamento in corso…';
   if(_lo.result&&_lo.step===4)return _loCount(it=>_lo.sel.has(it.id)&&_loActionable(it))+' proposte pronte da rivedere';
+  const c=_loCfg();
+  if(c.autoOrganize){
+    return 'Automatico attivo'+(_lo.autoLast?' · ultimo giro: '+(_lo.autoLast.moved||0)+' video':' · controlla ogni '+c.autoIntervalMin+' minuti');
+  }
   return 'Riconosce performer e tipologia e mette ogni video al suo posto';
 }
 
@@ -12288,18 +13145,41 @@ function _loStep2(){
       <div class="lo-row" style="gap:6px"><button class="mdl-btn" onclick="_loAddCategoryFolder()">Aggiungi cartella esistente…</button><button class="mdl-btn" onclick="_loAddCategoryNew()">Nuova tipologia…</button></div>
       <div class="lo-note">Le cartelle nuove vengono create solo quando confermi gli spostamenti.</div>`;
   }
+  const swRaw=(on,t,onclick,h)=>`<div class="lo-sw" onclick="${onclick}"><div class="sw ${on?'on':''}"><div class="dot"></div></div><div><div class="t">${t}</div><div class="s">${h}</div></div></div>`;
+  b+=`<div class="section-label">Doppioni</div>
+    <div class="lo-sws" style="grid-template-columns:1fr">
+      ${swRaw(!!c.duplicatesFolder,'Manda i doppioni in una cartella a parte',
+        `_loSet('duplicatesFolder',${c.duplicatesFolder?"''":"'_DOPPIONI'"})`,
+        'Li riconosce dall\'impronta del file, dall\'impronta visiva o dalla stessa scena su StashDB. Da spento restano dove sono, segnalati nell\'anteprima.')}
+    </div>`;
+  if(c.duplicatesFolder){
+    b+=`<div class="lo-row">Cartella dei doppioni: <input class="m-input" style="width:220px" value="${_loEsc(c.duplicatesFolder)}" onchange="_loSet('duplicatesFolder',this.value.trim()||'_DOPPIONI',true)"></div>`;
+  }
   b+=`<div class="section-label">Riconoscimento</div>
     <div class="lo-sws">
       ${sw('useStashdb','StashDB','Impronta del file, codici scena e cast da stashdb.org. Invia solo impronte e titoli, mai i video.')}
       ${sw('usePhash','Impronta visiva','Riconosce anche i video ricompressi. La prima volta è lenta (1-3 s a video), poi resta in cache.',noStash)}
       ${sw('useSearch','Ricerca per titolo e nome','Cerca su StashDB titoli e nomi scritti nel file, verificando la durata.',noStash)}
-    </div>
+      ${sw('useVisual','Tipologia dalle immagini','Guarda otto fotogrammi per video e impara le tue tipologie anche dall\'immagine: serve quando il nome del file non dice niente.')}
+    </div>${c.useVisual?`<div class="lo-note">La prima volta scarica un modello da 335 MB e impiega circa mezzo secondo a video${_loVisualEta(d)}: i risultati restano in cache, le volte dopo tocca solo ai video nuovi. La risposta viene usata solo quando è abbastanza sicura, e non sostituisce mai la cartella di origine.</div>`:''}
     <div class="section-label">Tag e performer</div>
     <div class="lo-sws">
       ${sw('applyTags','Tag performer e tipologia','Li aggiunge come tag ai video organizzati, e i tag seguono i file spostati.')}
       ${sw('tagAll','Tagga anche i file che restano dove sono','Utile per i video già al posto giusto o che scegli di non spostare.',!c.applyTags)}
       ${sw('addPerformers','Aggiungi i performer nuovi a Maniac','Chi non è ancora fra gli elementi riconosciuti entra in elenco con la foto da StashDB.')}
     </div>`;
+  b+=`<div class="section-label">Automatico</div>
+    <div class="lo-sws" style="grid-template-columns:1fr">
+      ${sw('autoOrganize','Sistema da solo i nuovi video','Ogni tanto ricontrolla le cartelle da smistare e mette a posto quello che riconosce, lasciando lo snapshot per annullare. I doppioni non li tocca.')}
+    </div>`;
+  if(c.autoOrganize){
+    b+=`<div class="lo-row">Sposta da solo i file
+      <select class="m-input" style="width:auto" onchange="_loSet('autoConfidence',this.value,true)">
+        <option value="certain"${c.autoConfidence!=='probable'?' selected':''}>solo certi</option>
+        <option value="probable"${c.autoConfidence==='probable'?' selected':''}>certi e probabili</option>
+      </select> e ricontrolla ogni
+      <input type="number" min="5" max="720" class="m-input" style="width:70px" value="${c.autoIntervalMin}" onchange="_loSet('autoIntervalMin',Math.max(5,Math.round(+this.value)||15),true)"> minuti.</div>`;
+  }
   if(c.useStashdb&&_lo.hasKey===false)b+=`<div class="lo-warn">Manca la chiave API StashDB (Impostazioni › StashDB API key): senza, il riconoscimento usa solo i nomi dei file e le tue cartelle.</div>`;
   return `${_loHead()}<div class="wiz-body">${b}</div>
     <div class="wiz-foot"><button class="mdl-btn" onclick="_lo.step=1;_loRender()">← Indietro</button>
@@ -12308,9 +13188,20 @@ function _loStep2(){
 function _loSet(k,v,silent){
   const c=_loCfg();c[k]=v;
   // Tag, performer e anteprime si applicano dopo: non invalidano l'analisi già fatta.
-  if(!['showThumbs','applyTags','tagAll','addPerformers'].includes(k))_lo.result=null;
+  if(!['showThumbs','applyTags','tagAll','addPerformers','autoOrganize','autoConfidence','autoIntervalMin'].includes(k))_lo.result=null;
+  if(['autoOrganize','autoIntervalMin'].includes(k)){try{_loAutoInit();}catch(_){}}
   try{saveConfig();}catch(_){}
   if(!silent)_loRender();
+}
+
+// Stima grossolana: mezzo/sette decimi di secondo a video, contando anche i file
+// gia' smistati che servono da esempio per imparare.
+function _loVisualEta(d){
+  const cats=_loCategories().length||1;
+  const nTarget=(_loCfg().scope==='all'?(d.total||0):(d.unsortedTotal||0));
+  const nTrain=Math.min(d.total||0,cats*120);
+  const min=Math.round((nTarget+nTrain)*0.7/60);
+  return min>=2?`, quindi circa ${min<60?min+' minuti':Math.round(min/60)+' ore'} su questa libreria`:'';
 }
 
 // ── 3. Analisi ──
@@ -12319,8 +13210,9 @@ async function _loStart(){
   if(_lo.jobId)return;
   const config={root:c.root,roles:c.rolesByRoot[c.root]||{},layout:c.layout,scope:c.scope,
     minPerformerFiles:c.minPerformerFiles,createPerformerFolders:!!c.createPerformerFolders,performerContainer:c.performerContainer||null,
-    extraCategories:(c.extraCategoriesByRoot[c.root]||[]),
-    useStashdb:!!c.useStashdb,usePhash:!!(c.useStashdb&&c.usePhash),useSearch:!!(c.useStashdb&&c.useSearch)};
+    extraCategories:(c.extraCategoriesByRoot[c.root]||[]),duplicatesFolder:c.duplicatesFolder||'',
+    useStashdb:!!c.useStashdb,usePhash:!!(c.useStashdb&&c.usePhash),useSearch:!!(c.useStashdb&&c.useSearch),
+    useVisual:!!c.useVisual};
   const jobId='liborg_'+Date.now();
   Object.assign(_lo,{jobId,prog:{phases:{},warns:[]},result:null,step:3,bg:false});
   _loRender();_workerInc('organizer');
@@ -12339,7 +13231,13 @@ function _loCancel(){
   if(_lo.prog)_lo.prog.error='Analisi interrotta.';
 }
 function _loOnProgress(evt){
-  if(!evt||!_lo.jobId||evt.jobId!==_lo.jobId)return;
+  if(!evt)return;
+  if(_lo.autoJob&&evt.jobId===_lo.autoJob){
+    if(evt.type==='done')_loAutoDone(evt);
+    else if(evt.type==='exit'||evt.type==='error')_lo.autoJob=null;
+    return;
+  }
+  if(!_lo.jobId||evt.jobId!==_lo.jobId)return;
   const p=_lo.prog||(_lo.prog={phases:{},warns:[]});
   const enter=ph=>{if(ph&&p.phase!==ph){if(p.phase)p.phases[p.phase]='done';p.phase=ph;p.current=0;p.total=0;p.file='';p.found=null;p.eta=null;}};
   if(evt.type==='phase'){enter(evt.phase);p.text=evt.text||p.text;if(evt.total!=null)p.total=evt.total;}
@@ -12408,6 +13306,7 @@ function _loConf(it){return _loHasOver(it)?(_loActionable(it)?'manual':'none'):(
 function _loCount(fn){return ((_lo.result||{}).items||[]).filter(fn).length;}
 function _loMatchFilter(it,f){
   if(f==='all')return true;
+  if(f==='dup')return !!it.dup;
   const act=_loActionable(it);
   if(f==='move')return act;
   if(f==='none')return !act;
@@ -12437,7 +13336,7 @@ function _loStep4(){
   const cls=s.classifier;
   const kpi=(n,l)=>`<div class="lo-kpi"><b>${n}</b><span>${l}</span></div>`;
   let b=`<div class="lo-sum">${kpi(s.inScope||0,'analizzati')}${kpi(s.withPerformer||0,'con performer')}${kpi(s.withCategory||0,'con tipologia')}${kpi(_loCount(_loActionable),tagsOnly?'da taggare':'da spostare')}</div>
-    <div class="lo-sub">Riconosciuti su StashDB: ${idf.oshash||0} con l'impronta del file, ${idf.phash||0} con l'impronta visiva, ${idf.code||0} dal codice scena, ${idf.title||0} dal titolo, ${idf.name||0} dal nome nel file.${cls&&cls.samples?' Tipologie imparate da '+cls.samples+' file già smistati'+(cls.coverage90?': affidabili al 90% nel '+Math.round(cls.coverage90*100)+'% dei casi':'')+'.':''}${(s.newFolders||[]).length?' Nuove cartelle: '+s.newFolders.slice(0,6).map(_loEsc).join(', ')+(s.newFolders.length>6?'…':'')+'.':''}</div>`;
+    <div class="lo-sub">Riconosciuti su StashDB: ${idf.oshash||0} con l'impronta del file, ${idf.phash||0} con l'impronta visiva, ${idf.code||0} dal codice scena, ${idf.title||0} dal titolo, ${idf.name||0} dal nome nel file.${cls&&cls.samples?' Tipologie imparate da '+cls.samples+' file già smistati'+(cls.coverage90?': affidabili al 90% nel '+Math.round(cls.coverage90*100)+'% dei casi':'')+'.':''}${s.visual?' Immagini: imparate da '+s.visual.trained+' file, '+Math.round(s.visual.accuracy*100)+'% di risposte esatte in prova, usate su '+s.visual.used+'.':''}${s.duplicates?' Doppioni: '+s.duplicates+'.':''}${(s.newFolders||[]).length?' Nuove cartelle: '+s.newFolders.slice(0,6).map(_loEsc).join(', ')+(s.newFolders.length>6?'…':'')+'.':''}</div>`;
   if(s.stash&&s.stash.disabled)b+=`<div class="lo-warn">${_loEsc(s.stash.disabled)}</div>`;
   b+=`<div class="lo-filters">${LO_FILTERS.map(([f,l])=>`<button class="lo-chip ${_lo.filter===f?'on':''}" onclick="_lo.filter='${f}';_lo.open={};_loRender()">${f==='move'&&tagsOnly?'Da taggare':l} ${_loCount(it=>_loMatchFilter(it,f))}</button>`).join('')}
     <button class="lo-chip ${cfg.showThumbs?'on':''}" title="Mostra un fotogramma di ogni video" onclick="_loSet('showThumbs',${!cfg.showThumbs})">Anteprime</button>
@@ -12480,7 +13379,8 @@ function _loRow(it){
   const cf=LO_CONF[conf]||LO_CONF.none;
   const th=cfg.showThumbs?`<div class="lo-thumb">${(t=>t?`<img src="${t}" alt="">`:'<span>…</span>')(_loThumb(it.path))}</div>`:'';
   const perfs=(it.performers||[]).filter(p=>!/^(MALE|TRANSGENDER_MALE)$/.test(p.gender||'')).slice(0,3);
-  const chips=perfs.map(p=>`<span class="lo-pchip" title="${_loEsc((LO_SRC[p.source]||p.source)+' · '+((LO_CONF[p.conf]||[''])[0]))}">${_loEsc(p.name)}</span>`).join('')
+  const chips=(it.dup?`<span class="lo-dup" title="${_loEsc('Doppione ('+it.dup.kind+') di '+it.dup.of)}">doppione</span>`:'')
+    +perfs.map(p=>`<span class="lo-pchip" title="${_loEsc((LO_SRC[p.source]||p.source)+' · '+((LO_CONF[p.conf]||[''])[0]))}">${_loEsc(p.name)}</span>`).join('')
     +(it.category?`<span class="lo-cchip" title="${_loEsc((LO_CONF[it.category.conf]||[''])[0])}">${_loEsc(it.category.name)}</span>`:'')
     +(it.scene?`<span title="${_loEsc(it.scene.title||'')}">${_loEsc(LO_SRC[it.scene.source]||'')}${it.scene.studio?' · '+_loEsc(it.scene.studio):''}</span>`:'');
   const tip=[it.reason,it.scene&&it.scene.title?'Scena: '+it.scene.title:'',it.rel].filter(Boolean).join('\n');
@@ -12604,6 +13504,19 @@ function _loOnExecProgress(evt){
     } else if(evt.type==='exit'){_workerDec('organizer');_lo.undo=null;}
     return;
   }
+  const A=_lo.autoExec;
+  if(A&&evt.jobId===A.jobId){
+    if(evt.type==='warn'){
+      const m=String(evt.error||'');
+      const op=A.ops.find(o=>m.includes(o.from)||m.includes(o.to));
+      if(op)A.failed.add(op.from);
+    } else if(evt.type==='done'){
+      _loAutoExecDone(evt,A);
+    } else if(evt.type==='exit'&&A.running){
+      A.running=false;_lo.autoExec=null;
+    }
+    return;
+  }
   const X=_lo.exec;if(!X||evt.jobId!==X.jobId)return;
   if(evt.type==='progress'){X.current=evt.current||0;X.total=evt.total||X.total;X.file=evt.file||'';}
   else if(evt.type==='warn'){
@@ -12675,7 +13588,7 @@ function _loTagFile(path,it){
 }
 // I file spostati si portano dietro tag, voci di playlist e recenti; con addTags
 // ricevono anche performer e tipologia riconosciuti.
-function _loRemap(pairs,addTags){
+function _loRemap(pairs,addTags,byPathArg){
   if(!pairs||!pairs.length)return 0;
   const moved=new Map(pairs.map(p=>[p.from,p.to]));
   S._fileTags=S._fileTags||{};
@@ -12689,8 +13602,8 @@ function _loRemap(pairs,addTags){
   (S.players||[]).forEach(p=>p&&(p.playlist||[]).forEach(f=>{const d=moved.get(f.path);if(d){f.path=d;try{f.url=mkUrl(d);}catch(_){}}}));
   (S.recent||[]).forEach(r=>{const d=moved.get(r.path);if(d)r.path=d;});
   let tagged=0;
-  if(addTags&&_loCfg().applyTags&&_lo.result){
-    const byPath=new Map(_lo.result.items.map(it=>[it.path,it]));
+  if(addTags&&_loCfg().applyTags&&(byPathArg||_lo.result)){
+    const byPath=byPathArg||new Map(_lo.result.items.map(it=>[it.path,it]));
     pairs.forEach(({from,to})=>{const it=byPath.get(from);if(it&&_loTagFile(to,it))tagged++;});
   }
   try{persistFileTags();}catch(_){}
@@ -12764,6 +13677,75 @@ async function _loUndo(){
   _workerInc('organizer');
   toast('Ripristino in corso…');
   _loRender();
+}
+// ── Sistemazione automatica dei nuovi arrivi ──
+// Spenta di suo. Accesa, ogni tot minuti rianalizza le cartelle da smistare — con
+// la cache è questione di secondi — e sposta da sola solo ciò che rientra nella
+// soglia scelta, mai i doppioni, lasciando snapshot e cronologia per tornare indietro.
+function _loAutoInit(){
+  if(window._loAutoTimer){clearInterval(window._loAutoTimer);window._loAutoTimer=null;}
+  const c=_loCfg();
+  if(!c.autoOrganize||!c.root)return;
+  window._loAutoTimer=setInterval(()=>{_loAutoRun();},Math.max(5,+c.autoIntervalMin||15)*60000);
+  setTimeout(()=>{_loAutoRun();},60000);
+}
+async function _loAutoRun(){
+  const c=_loCfg(), api=window.maniac&&window.maniac.libOrganizer;
+  if(!c.autoOrganize||!c.root||!api)return;
+  // Mai in mezzo a un lavoro dell'utente: se il wizard è aperto decide lui.
+  if(_lo.jobId||_lo.autoJob||_lo.undo||(_lo.exec&&_lo.exec.running)||(_lo.autoExec&&_lo.autoExec.running))return;
+  if(document.getElementById('loOv'))return;
+  const jobId='liborg_auto_'+Date.now();
+  _lo.autoJob=jobId;
+  const config={root:c.root,roles:c.rolesByRoot[c.root]||{},layout:c.layout,scope:'unsorted',
+    minPerformerFiles:c.minPerformerFiles,createPerformerFolders:!!c.createPerformerFolders,
+    performerContainer:c.performerContainer||null,extraCategories:(c.extraCategoriesByRoot[c.root]||[]),
+    duplicatesFolder:c.duplicatesFolder||'',useStashdb:!!c.useStashdb,
+    usePhash:!!(c.useStashdb&&c.usePhash),useSearch:!!(c.useStashdb&&c.useSearch),
+    useVisual:!!c.useVisual,visualDownload:false};
+  let r=null;
+  try{r=await api.analyze({jobId,config});}catch(_){r=null;}
+  if(!r||!r.ok)_lo.autoJob=null;
+}
+function _loAutoDone(evt){
+  _lo.autoJob=null;
+  const c=_loCfg();
+  const min=c.autoConfidence==='probable'?2:3;
+  const items=(evt.items||[]).filter(it=>it.dest&&!it.dup&&(LO_RANK[it.conf]||0)>=min);
+  if(!items.length)return;
+  const jobId='lo_auto_exec_'+Date.now();
+  _lo.autoExec={jobId,running:true,items,ops:items.map(it=>({from:it.path,to:it.dest})),failed:new Set()};
+  try{window.maniac.organizer.execute({jobId,ops:_lo.autoExec.ops});}catch(_){_lo.autoExec=null;}
+}
+function _loAutoExecDone(evt,A){
+  A.running=false;
+  const pairs=A.ops.filter(o=>!A.failed.has(o.from));
+  const byPath=new Map(A.items.map(it=>[it.path,it]));
+  const tagged=_loRemap(pairs,true,byPath);
+  const moved=evt.moved||0;
+  try{
+    const root=_loCfg().root;
+    S.organizerRecents=Array.isArray(S.organizerRecents)?S.organizerRecents:[];
+    S.organizerRecents.unshift({ts:Date.now(),moved,failed:evt.failed||0,snapshot:evt.snapshot||'',
+      sources:[root],root,auto:true,sample:pairs.slice(0,12).map(o=>({from:o.from,to:o.to}))});
+    S.organizerRecents=S.organizerRecents.slice(0,50);
+    S._orgPanelSnaps=undefined;
+    saveConfig();
+  }catch(_){}
+  if(_loCfg().addPerformers){
+    _loAddPerformers(pairs.map(o=>({it:byPath.get(o.from),path:o.to})).filter(x=>x.it));
+  }
+  _lo.autoLast={ts:Date.now(),moved,tagged,snapshot:evt.snapshot||''};
+  _lo.autoExec=null;
+  if(moved){
+    toast('Organizer: '+moved+' nuovi video sistemati');
+    try{
+      if(window.Notification&&Notification.permission==='granted'){
+        new Notification('Maniac · Organizer',{body:moved+' nuovi video sistemati automaticamente',silent:true});
+      }
+    }catch(_){}
+  }
+  if(S.panel==='organizer')renderPanel();
 }
 function _loReset(){
   Object.assign(_lo,{step:1,detect:null,result:null,exec:null,prog:null,sel:new Set(),over:{},open:{},all:{},q:''});
@@ -14030,7 +15012,7 @@ function removeCustomTag(label){
   saveConfig();renderPanel();
 }
 function toggleToolbarIcon(k,el){
-  S.toolbarIcons=S.toolbarIcons||{tc:false,td:true,loop:true,shuf:true,mag:true,fav:true,pl:true,fs:true};
+  S.toolbarIcons=S.toolbarIcons||{tc:false,td:true,fname:true,loop:true,shuf:true,mag:true,fav:true,pl:true,fs:true};
   S.toolbarIcons[k]=!S.toolbarIcons[k];
   if(el)el.classList.toggle('on',S.toolbarIcons[k]);
   saveConfig();
@@ -14549,7 +15531,7 @@ document.addEventListener('mouseover',e=>{
 });
 
 // ═══ DRAG & DROP — drop su una cella va in quel player ═══
-function _dropAddFile(f, target, fi){
+function _dropAddFile(f, target, fi, batch){
   const pid=(target!==null)?target:(() => {
     let t=S.activePlayer;
     if(S.multi>1){for(let j=0;j<S.multi;j++){if(P(j).playlist.length===0){t=j;break;}}}
@@ -14563,9 +15545,10 @@ function _dropAddFile(f, target, fi){
     if(tp.vidEl){try{tp.vidEl.srcObject=null;tp.vidEl.removeAttribute('src');}catch(e){}}
     if(tp.idx>=tp.playlist.length)tp.idx=Math.max(0,tp.playlist.length-1);
   }
-  const url=f.path?'file:///'+f.path.replace(/\\/g,'/').replace(/^\/+/,''):URL.createObjectURL(f);
-  addToPlayer(pid,f.name,url,f.path||f.name);
-  if(fi===0){
+  const url=f.path?mkUrl(f.path):URL.createObjectURL(f);
+  // In un blocco di più file si aggiunge in silenzio: parte uno solo, scelto alla fine.
+  addToPlayer(pid,f.name,url,f.path||f.name,batch?{silent:true}:undefined);
+  if(fi===0&&!batch){
     tp.idx=tp.playlist.length-1;
     S.activePlayer=pid;
     loadFileIntoPlayer(pid);
@@ -14645,12 +15628,13 @@ async function handleDrop(e){
     return t;
   })();
   const startLen=P(pidTarget).playlist.length;
-  collected.forEach((f,fi)=>_dropAddFile(f,target,fi));
+  const batch=collected.length>1;
+  collected.forEach((f,fi)=>_dropAddFile(f,target,fi,batch));
   // Ensure playback starts from first new file
   setTimeout(()=>{
     const tp=P(pidTarget);
     if(tp.playlist.length>startLen){
-      tp.idx=startLen;
+      tp.idx=_shuffleStart(tp,startLen);
       S.activePlayer=pidTarget;
       loadFileIntoPlayer(pidTarget);
     }
@@ -14980,11 +15964,65 @@ document.addEventListener('keydown',e=>{
   else if(matchShortcut(e,s.multi)){e.preventDefault();cycleMulti();}
   else if(matchShortcut(e,s.multiNext)){e.preventDefault();multiNextAll();}
   else if(matchShortcut(e,s.multiPrev)){e.preventDefault();multiPrevAll();}
+  else if(matchShortcut(e,s.vision)){e.preventDefault();toggleManiacVision();}
   else if(matchShortcut(e,s.next)){e.preventDefault();mainNext();}
   else if(matchShortcut(e,s.prev)){e.preventDefault();mainPrev();}
   else if(matchShortcut(e,s.history)){e.preventDefault();S.panel==='history'?closePanel():openPanel('history');}
   else if(matchShortcut(e,s.switchPlayer)){e.preventDefault();if(S.multi>1){S.activePlayer=(S.activePlayer+1)%S.multi;renderGrid();$('shufBtn').classList.toggle('on',activeP().shuffle);$('loopBtn').classList.toggle('on',activeP().loop);}}
 });
+
+// ═══ CRONOLOGIA COMPATTA ═══
+// Ogni voce della cronologia tiene l'istantanea delle playlist di tutti i riquadri, per
+// poter ripristinare la sessione. Sono quasi sempre le stesse playlist ripetute voce dopo
+// voce: 50 voci arrivavano a 14 mila righe e 6 MB, letti all'avvio e riscritti a ogni
+// video che parte. Su disco ogni playlist diversa si scrive una volta (historyPlaylists)
+// e le voci la richiamano per chiave; in memoria la cronologia resta com'era.
+const _histKeyCache=new WeakMap();
+function _histKey(files){
+  let k=_histKeyCache.get(files);
+  if(k)return k;
+  let h=2166136261;
+  for(const f of files){
+    const s=(f.path||f.url||'')+'\u0001'+(f.name||'')+'\u0002';
+    for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}
+  }
+  k=(h>>>0).toString(36)+'_'+files.length;
+  _histKeyCache.set(files,k);
+  return k;
+}
+function _histPack(hist){
+  const pool={};
+  const out=(hist||[]).map(e=>{
+    if(!e||!Array.isArray(e.snapshot))return e;
+    return Object.assign({},e,{snapshot:e.snapshot.map(s=>{
+      if(!s||!Array.isArray(s.files)||!s.files.length)return s;
+      const k=_histKey(s.files);
+      if(!pool[k])pool[k]=s.files.map(f=>[f.name||'',f.path||'',f.path?'':(f.url||''),f.duration||0]);
+      const r=Object.assign({},s);delete r.files;r.filesRef=k;
+      return r;
+    })});
+  });
+  return {history:out,historyPlaylists:pool};
+}
+function _histUnpack(hist,pool){
+  if(!Array.isArray(hist))return [];
+  if(!pool||typeof pool!=='object')return hist;
+  const cache={};
+  hist.forEach(e=>{
+    if(!e||!Array.isArray(e.snapshot))return;
+    e.snapshot=e.snapshot.map(s=>{
+      if(!s||!s.filesRef)return s;
+      const k=s.filesRef;
+      if(!cache[k]){
+        cache[k]=(pool[k]||[]).map(a=>({name:a[0],path:a[1]||null,url:a[2]||(a[1]?mkUrl(a[1]):''),duration:a[3]||0}));
+        _histKeyCache.set(cache[k],k);
+      }
+      const r=Object.assign({},s);delete r.filesRef;r.files=cache[k];
+      return r;
+    });
+  });
+  return hist;
+}
 
 // ═══ CONFIG PERSISTENCE ═══
 // saveConfig è invocata da ~180 punti: serializza l'intero stato (history,
@@ -15021,7 +16059,7 @@ async function _saveConfigNow(){
       eqB:p.eqB,eqM:p.eqM,eqH:p.eqH,boost:p.boost,voice:p.voice,
       speed:p.speed,autoplay:p.autoplay,playMode:p.playMode,muted:p.muted
     })),
-    history:S.history,
+    ..._histPack(S.history),
     toolbarIcons:S.toolbarIcons,
     titleAtStart:S.titleAtStart, titleAtStartPath:S.titleAtStartPath,
     tagMultiSel:S.tagMultiSel,
@@ -15051,6 +16089,9 @@ async function _saveConfigNow(){
     discordUrl:S.discordUrl||'',
     translatorLang:S.translatorLang||'it',
     wheelNotch:S.wheelNotch||12,
+    crossfadeSec:S.crossfadeSec||0,
+    mvFit:S.mvFit==='cover'?'cover':'contain',
+    mvFeather:_mvFeatherPct(),
     wheelLerp:S.wheelLerp||0.30,
     exploreZoom:S.exploreZoom||140,
     subsEngine:S.subsEngine||'whisper',
@@ -15097,7 +16138,7 @@ async function loadConfig(){
     document.documentElement.style.setProperty('--sub-color',S.subsColor);
   }catch(_){}
   if(cfg.audioIn)S.audioIn={...S.audioIn,...cfg.audioIn};
-  S.history=Array.isArray(cfg.history)?cfg.history:[];
+  S.history=_histUnpack(Array.isArray(cfg.history)?cfg.history:[],cfg.historyPlaylists);
   if(cfg.toolbarIcons)S.toolbarIcons={...S.toolbarIcons,...cfg.toolbarIcons};
   S.titleAtStart=!!cfg.titleAtStart;
   S.titleAtStartPath=!!cfg.titleAtStartPath;
@@ -15128,6 +16169,9 @@ async function loadConfig(){
   S.discordUrl=cfg.discordUrl||'https://discord.gg/xEykckGac';
   S.translatorLang=cfg.translatorLang||'it';
   S.wheelNotch=Math.max(6,Math.min(100,+cfg.wheelNotch||12));
+  S.crossfadeSec=Math.max(0,Math.min(10,+cfg.crossfadeSec||0));
+  S.mvFit=cfg.mvFit==='cover'?'cover':'contain';
+  S.mvFeather=cfg.mvFeather==null?12:Math.max(0,Math.min(30,+cfg.mvFeather||0));
   S.wheelLerp=Math.max(0.10,Math.min(0.60,+cfg.wheelLerp||0.30));
   // Default: faster-whisper (locale, ~5× realtime, niente API key). Più veloce di
   // ai-sub Gemini per video > 5 min e senza rate limits.
@@ -16179,6 +17223,31 @@ window.addEventListener('DOMContentLoaded', ()=>{
   // i18n: inizializza prima del resto così t() è già disponibile
   try{ if(window.i18n&&window.i18n.init) window.i18n.init().catch(()=>{}); }catch(_){}
   setTimeout(()=>{try{initVenvCheck(false);}catch(e){}}, 1200);
+  // Download rimasti a metà o in coda quando l'app è stata chiusa: ripartono da
+  // soli, dentro il limite dei download concorrenti (yt-dlp riprende dal .part).
+  setTimeout(()=>{try{
+    const l=_dlLoad();const ids=[];
+    l.forEach(d=>{if(!d.torrent&&(d.status==='Queued'||d.status==='Preparing'||d.status==='Downloading')){d.status='Queued';d.note='In attesa di un posto libero';ids.push(d.id);}});
+    if(!ids.length)return;
+    if(window.__inst&&window.__inst.n>1&&window.__inst.fresh)return;
+    _dlSave(l);
+    // Senza il pannello aperto nessuno ascolta l'avanzamento: le righe resterebbero ferme.
+    wireDownloadPanel();
+    ids.forEach(id=>{try{dlRetry(id);}catch(_){}});
+  }catch(e){}},1500);
+  // Organizer automatico: parte solo se l'utente lo ha acceso per una libreria.
+  setTimeout(()=>{try{if(!window.__inst||window.__inst.n<=1)_loAutoInit();}catch(e){}}, 5000);
+  (async()=>{try{
+    const r=window.maniac&&window.maniac.instance?await window.maniac.instance():null;
+    window.__inst=r||{n:1};
+    if(r&&r.n>1){
+      const b=document.getElementById('instBadge');
+      if(b){b.textContent=r.n;b.title='Istanza '+r.n+' di Maniac (al massimo '+r.max+')';b.style.display='';}
+      // Al primo avvio la sessione è copiata dalla principale: la lista dei suoi
+      // download non riguarda questa finestra (e non va ripresa qui).
+      if(r.fresh){try{localStorage.removeItem('downloads');}catch(_){}}
+    }
+  }catch(_){}})();
   // Browser detection per cookies (popola la dropdown nelle Impostazioni)
   setTimeout(async ()=>{
     try{

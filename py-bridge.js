@@ -76,10 +76,12 @@ function spawnWorker(scriptName, args = []) {
   } catch (e) { return null; }
 }
 
-async function venvCheck() {
+// deep=false (avvio): presenza e versione dei pacchetti senza importarli, pochi ms.
+// deep=true (Ricontrolla): li importa davvero, lento ma scopre installazioni rotte.
+async function venvCheck(deep) {
   const py = resolvePython();
   if (!py) return { ok: false, python: null, error: 'python.exe non trovato. Attesa: venv311\\Scripts\\python.exe' };
-  const r = await runScript('bootstrap.py', ['--check'], { timeoutMs: 60000 });
+  const r = await runScript('bootstrap.py', deep ? ['--check', '--deep'] : ['--check'], { timeoutMs: 60000 });
   if (!r.ok) return { ok: false, python: py, error: r.error || r.stderr || ('exit ' + r.code), stdout: r.stdout };
   try {
     const lastJsonLine = r.stdout.trim().split(/\r?\n/).reverse().find(l => l.startsWith('{'));
