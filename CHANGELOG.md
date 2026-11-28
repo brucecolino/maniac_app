@@ -3,6 +3,23 @@
 Tutte le versioni pubblicate di Maniac. L'app controlla questa lista dalla
 scheda **Info → Controlla aggiornamenti**.
 
+## 1.2.4 — 2026-11-28
+
+### Fino a 4 istanze
+- Rilanciando Maniac dall'icona si apre un'altra istanza, fino a 4. La prima resta
+  la principale: riceve i link dal browser, sorveglia gli appunti, sta nel tray e
+  aggiorna yt-dlp. Le istanze 2, 3 e 4 hanno il numero nella barra in alto e nel
+  titolo, e ognuna ha la sua configurazione, la sua lista di download e il suo
+  login a X (copiati dalla principale la prima volta). Non sorvegliano gli appunti
+  e non fanno lavori automatici. Con 4 aperte, un nuovo avvio porta in primo piano
+  la principale.
+
+### Nome del file nella barra di ogni player
+- Nello spazio libero della barra compare il nome del file, tagliato con "…" se è
+  lungo; passandoci sopra si vede il percorso. Quando la barra è troppo stretta
+  (per esempio con 3 riquadri) il nome sale sopra i controlli. Si spegne da
+  Impostazioni → Generale → Icone barra player → Nome del file.
+
 ## 1.2.3 — 2026-11-26
 
 ### Più leggera all'avvio
