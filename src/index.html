@@ -1065,6 +1065,8 @@ input[type=range]::-webkit-slider-thumb{margin-top:-4.5px}
 .vc-controls.fname-top .vc-fname{position:absolute;left:10px;right:10px;bottom:calc(100% + 4px);text-align:left;color:#fff;
   text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 6px rgba(0,0,0,.8);pointer-events:none;z-index:4}
 [data-theme="light"] .vc-controls.fname-top .vc-fname{color:#fff}
+/* Maniac Vision: solo i video, nessuna scritta */
+body.maniac-vision .vc-fname,body.maniac-vision .vc-fname-wrap{display:none!important}
 .inst-badge{order:9;margin-left:6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--accent);color:#fff;font:700 11px/18px 'Inter';text-align:center;box-sizing:border-box}
 [data-theme="light"] .inst-badge{background:#4a2e75;color:#fff}
 /* ═══ MANIAC VISION ═══ solo i video: la griglia copre tutta la finestra, senza
@@ -4410,7 +4412,7 @@ function buildCellToolbar(pid,vid){
     <div class="vc-vol"><div class="vc-vol-bar"><div class="vc-vol-fill" style="width:${p.vol}%"></div></div></div>
     <button class="vc-btn" data-speed title="Velocità"><svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg></button>
     <div class="vc-fname-wrap">${(()=>{const f=p.playlist[p.idx];if(!f)return '';const e=v=>String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-      return `<span class="vc-fname" data-ti="fname" title="${e(f.path||f.url||f.name)}" style="${ic('fname',true)?'':'display:none'}">${e(String(f.name||'').replace(/\.[a-z0-9]{2,5}$/i,''))}</span>`;})()}</div>
+      return `<span class="vc-fname" data-ti="fname" title="${e(f.path||f.url||f.name)}" style="${ic('fname',true)?'':'display:none'}">${e(f.name||'')}</span>`;})()}</div>
     <button class="vc-btn ${p.shuffle?'on':''}" data-shuf data-ti="shuf" title="Casuale" style="${ic('shuf',true)?'':'display:none'}"><svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
     <button class="vc-btn ${p.loop?'on':''}" data-loop data-ti="loop" title="Loop" style="${ic('loop',true)?'':'display:none'}"><svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
     <button class="vc-btn ${(p.abLoop&&p.abLoop.on)?'on':''}" data-abloop data-ti="abloop" title="Ripetizione A-B (clic: imposta A→B; doppio clic: reset)" style="${ic('abloop',true)?'':'display:none'}"><svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M3 4v16h2V4H3zm16 0v16h2V4h-2zM7 8l5 4-5 4V8zm10 0v8l-5-4 5-4z"/></svg></button>

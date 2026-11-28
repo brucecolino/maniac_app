@@ -15,8 +15,9 @@ scheda **Info → Controlla aggiornamenti**.
   la principale.
 
 ### Nome del file nella barra di ogni player
-- Nello spazio libero della barra compare il nome del file, tagliato con "…" se è
-  lungo; passandoci sopra si vede il percorso. Quando la barra è troppo stretta
+- Nello spazio libero della barra compare il nome del file, con l'estensione,
+  tagliato con "…" se è lungo; passandoci sopra si vede il percorso. In Maniac
+  Vision non compare nessuna scritta. Quando la barra è troppo stretta
   (per esempio con 3 riquadri) il nome sale sopra i controlli. Si spegne da
   Impostazioni → Generale → Icone barra player → Nome del file.
 
